@@ -1,0 +1,13 @@
+name = "MSM"
+uuid = "553e158a-22df-4687-a16d-90d753ebe799"
+authors = ["julien.pascal@sciencespo.fr"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
