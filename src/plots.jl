@@ -1,9 +1,9 @@
 """
-  smm_slices(sMMProblem::SMMProblem)
+  smm_slices(sMMProblem::MSMProblem)
 
 Function to plot slices of the objective function.
 """
-function smm_slices(sMMProblem::SMMProblem, paramValues::Vector, nbPoints::Int64; showPlots::Bool = true)
+function smm_slices(sMMProblem::MSMProblem, paramValues::Vector, nbPoints::Int64; showPlots::Bool = true)
 
     listPlots = []
     p = Plots.plot()

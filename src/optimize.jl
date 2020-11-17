@@ -1,11 +1,11 @@
 """
-  smmoptimize!(sMMProblem::SMMProblem; verbose::Bool = true)
+  smm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
 
 Function to launch an optimization. To be used after the following functions
 have been called: (i) set_empirical_moments! (ii) set_priors!
 (iii) set_simulate_empirical_moments! (iv) construct_objective_function!
 """
-function smmoptimize!(sMMProblem::SMMProblem; verbose::Bool = true)
+function smm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
 
   # Initialize a BlackBoxOptim problem
   # this modifies sMMProblem.bbSetup
@@ -35,7 +35,7 @@ function smmoptimize!(sMMProblem::SMMProblem; verbose::Bool = true)
 
         # Save to disk
         #-------------
-        saveSMMOptim(sMMProblem, verbose = verbose, saveName = sMMProblem.options.saveName);
+        saveMSMOptim(sMMProblem, verbose = verbose, saveName = sMMProblem.options.saveName);
         push!(listBestFitness, best_fitness(sMMProblem.bbResults))
         push!(listBestCandidates, best_candidate(sMMProblem.bbResults))
     end
@@ -45,7 +45,7 @@ function smmoptimize!(sMMProblem::SMMProblem; verbose::Bool = true)
   #-------------------------------------------------
   else
 
-    Base.error("sMMProblem.options.globalOptimizer = $(sMMProblem.options.globalOptimizer) is not supported.")
+    error("sMMProblem.options.globalOptimizer = $(sMMProblem.options.globalOptimizer) is not supported.")
 
   end
 
@@ -56,11 +56,11 @@ function smmoptimize!(sMMProblem::SMMProblem; verbose::Bool = true)
 end
 
 """
-  function smm_minimizer(sMMProblem::SMMProblem)
+  function smm_minimizer(sMMProblem::MSMProblem)
 
 Function to get the parameter value minimizing the objective function
 """
-function smm_minimizer(sMMProblem::SMMProblem)
+function smm_minimizer(sMMProblem::MSMProblem)
 
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------
@@ -73,21 +73,21 @@ function smm_minimizer(sMMProblem::SMMProblem)
   #-------------------------------------------------
   else
 
-    Base.error("sMMProblem.options.globalOptimizer = $(sMMProblem.options.globalOptimizer) is not supported.")
+    error("sMMProblem.options.globalOptimizer = $(sMMProblem.options.globalOptimizer) is not supported.")
 
   end
 
 end
 
 """
-  smm_refine_globalmin!(sMMProblem::SMMProblem; verbose::Bool = true)
+  smm_refine_globalmin!(sMMProblem::MSMProblem; verbose::Bool = true)
 
 Function to refine the global minimum using a local minimization routine.
 To be used after the following functions have been called: (i) set_empirical_moments!
 (ii) set_priors! (iii) set_simulate_empirical_moments! (iv) construct_objective_function!
-(v) smmoptimize!
+(v) smm_optimize!
 """
-function smm_refine_globalmin!(sMMProblem::SMMProblem; verbose::Bool = true)
+function smm_refine_globalmin!(sMMProblem::MSMProblem; verbose::Bool = true)
 
 
   x0 = smm_minimizer(sMMProblem)
@@ -107,17 +107,13 @@ function smm_refine_globalmin!(sMMProblem::SMMProblem; verbose::Bool = true)
     #-------------------------------
     if sMMProblem.options.minBox == true
 
-      lower = create_lower_bound(sMMProblem)
-      upper = create_upper_bound(sMMProblem)
+        lower = create_lower_bound(sMMProblem)
+        upper = create_upper_bound(sMMProblem)
 
-      sMMProblem.optimResults = optimize(sMMProblem.objective_function, x0, lower, upper,
-                                        iterations = sMMProblem.options.maxFuncEvals,
-                                        convert_to_fminbox(sMMProblem.options.localOptimizer))
+        sMMProblem.optimResults = optimize(sMMProblem.objective_function, lower, upper, x0, convert_to_fminbox(sMMProblem.options.localOptimizer), Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
 
     else
-      sMMProblem.optimResults = optimize(sMMProblem.objective_function, x0,
-                                        convert_to_optim_algo(sMMProblem.options.localOptimizer),
-                                        Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
+        sMMProblem.optimResults = optimize(sMMProblem.objective_function, x0, convert_to_optim_algo(sMMProblem.options.localOptimizer), Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
     end
 
   # In the future, we may use other local minimizer
@@ -125,7 +121,7 @@ function smm_refine_globalmin!(sMMProblem::SMMProblem; verbose::Bool = true)
   #-------------------------------------------------
   else
 
-    Base.error("sMMProblem.options.localOptimizer = $(sMMProblem.options.localOptimizer) is not supported.")
+    error("sMMProblem.options.localOptimizer = $(sMMProblem.options.localOptimizer) is not supported.")
 
   end
 
@@ -135,11 +131,11 @@ end
 
 
 """
-  function smm_minimizer(sMMProblem::SMMProblem)
+  function smm_minimizer(sMMProblem::MSMProblem)
 
 Function to get the parameter value minimizing the objective function (local)
 """
-function smm_local_minimizer(sMMProblem::SMMProblem)
+function smm_local_minimizer(sMMProblem::MSMProblem)
 
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------
@@ -152,18 +148,18 @@ function smm_local_minimizer(sMMProblem::SMMProblem)
   #-------------------------------------------------
   else
 
-    Base.error("sMMProblem.options.globalOptimizer = $(sMMProblem.options.globalOptimizer) is not supported.")
+    error("sMMProblem.options.globalOptimizer = $(sMMProblem.options.globalOptimizer) is not supported.")
 
   end
 
 end
 
 """
-  function smm_minimum(sMMProblem::SMMProblem)
+  function smm_minimum(sMMProblem::MSMProblem)
 
 Function to get the local minimum value of the objetive function
 """
-function smm_local_minimum(sMMProblem::SMMProblem)
+function smm_local_minimum(sMMProblem::MSMProblem)
 
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------
@@ -176,7 +172,7 @@ function smm_local_minimum(sMMProblem::SMMProblem)
   #-------------------------------------------------
   else
 
-    Base.error("sMMProblem.options.globalOptimizer = $(sMMProblem.options.globalOptimizer) is not supported.")
+    error("sMMProblem.options.globalOptimizer = $(sMMProblem.options.globalOptimizer) is not supported.")
 
   end
 
@@ -184,14 +180,14 @@ end
 
 
 """
-  local_to_global!(sMMProblem::SMMProblem; x0 = Array{Float64}(0,0), nums::Int64 = nworkers(), verbose::Bool = true)
+  local_to_global!(sMMProblem::MSMProblem; x0 = Array{Float64}(0,0), nums::Int64 = nworkers(), verbose::Bool = true)
 
 Function to run several local minimization algorithms in parallel, with different
 starting values. The minimum is calculated as the minimum of the local minima.
 Changes sMMProblem.optimResults. This function also returns
 a list containing Optim results.
 """
-function local_to_global!(sMMProblem::SMMProblem; x0 = Array{Float64}(0,0), nums::Int64 = nworkers(), verbose::Bool = true)
+function local_to_global!(sMMProblem::MSMProblem; x0 = Array{Float64}(0,0), nums::Int64 = nworkers(), verbose::Bool = true)
 
   # Safety checks
   #--------------
@@ -216,7 +212,7 @@ function local_to_global!(sMMProblem::SMMProblem; x0 = Array{Float64}(0,0), nums
     # Check that enough starting values were provided
     if size(x0, 1) < nworkers()
       info("$(size(x0, 1)) starting value(s) were provided.")
-      Base.error("The minimum number of starting value(s) to provide is $(nworkers()).")
+      error("The minimum number of starting value(s) to provide is $(nworkers()).")
     end
 
     myGrid = x0
@@ -286,7 +282,7 @@ function local_to_global!(sMMProblem::SMMProblem; x0 = Array{Float64}(0,0), nums
   #-------------------------------------------------
   else
 
-    Base.error("sMMProblem.options.localOptimizer = $(sMMProblem.options.localOptimizer) is not supported.")
+    error("sMMProblem.options.localOptimizer = $(sMMProblem.options.localOptimizer) is not supported.")
 
   end
 
@@ -304,50 +300,47 @@ end
 
 
 """
-  smm_localmin(sMMProblem::SMMProblem, x0::Array{Float64,1}; verbose::Bool = true)
+  smm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
 
 Function find a local minimum using a local minimization routine, with starting value x0.
 To be used after the following functions have been called: (i) set_empirical_moments!
 (ii) set_priors! (iii) set_simulate_empirical_moments! (iv) construct_objective_function!
 """
-function smm_localmin(sMMProblem::SMMProblem, x0::Array{Float64,1}; verbose::Bool = true)
+function smm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
 
-  # Let's use the result from the global maximizer as the starting value
-  #---------------------------------------------------------------------
-  if verbose == true
-    info("Starting value = $(x0)")
-    info("Using Fminbox = $(sMMProblem.options.minBox)")
-  end
+    # Let's use the result from the global maximizer as the starting value
+    #---------------------------------------------------------------------
+    if verbose == true
+        info("Starting value = $(x0)")
+        info("Using Fminbox = $(sMMProblem.options.minBox)")
+    end
 
 
-  if is_local_optimizer(sMMProblem.options.localOptimizer) == true
+    if is_local_optimizer(sMMProblem.options.localOptimizer) == true
 
     # If using Fminbox option is true
     #-------------------------------
     if sMMProblem.options.minBox == true
 
-      lower = create_lower_bound(sMMProblem)
-      upper = create_upper_bound(sMMProblem)
+        lower = create_lower_bound(sMMProblem)
+        upper = create_upper_bound(sMMProblem)
 
-      optimResults = optimize(sMMProblem.objective_function, x0, lower, upper,
-                                        iterations = sMMProblem.options.maxFuncEvals,
-                                        convert_to_fminbox(sMMProblem.options.localOptimizer))
+        optimResults = optimize(sMMProblem.objective_function, lower, upper, x0, convert_to_fminbox(sMMProblem.options.localOptimizer), Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
+
     else
-      optimResults = optimize(sMMProblem.objective_function, x0,
-                            convert_to_optim_algo(sMMProblem.options.localOptimizer),
-                            Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
+        optimResults = optimize(sMMProblem.objective_function, x0, convert_to_optim_algo(sMMProblem.options.localOptimizer), Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
     end
 
-  # In the future, we may use other local minimizer
-  # routines. For the moment, let's return an error
-  #-------------------------------------------------
-  else
+    # In the future, we may use other local minimizer
+    # routines. For the moment, let's return an error
+    #-------------------------------------------------
+    else
 
-    Base.error("sMMProblem.options.localOptimizer = $(sMMProblem.options.localOptimizer) is not supported.")
+    error("sMMProblem.options.localOptimizer = $(sMMProblem.options.localOptimizer) is not supported.")
 
-  end
+    end
 
-  return optimResults
+    return optimResults
 
 end
 
@@ -355,7 +348,7 @@ end
 """
 
 """
-function wrap_smm_localmin(sMMProblem::SMMProblem, x0::Array{Float64,1}; verbose::Bool = true)
+function wrap_smm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
 
   try
     smm_localmin(sMMProblem, x0, verbose = verbose)
@@ -368,18 +361,18 @@ end
 
 
 """
-  search_starting_values(sMMProblem::SMMProblem; verbose::Bool = true, a::Array{Float64,1}, b::Array{Float64,1}, nums::Int64)
+  search_starting_values(sMMProblem::MSMProblem; verbose::Bool = true, a::Array{Float64,1}, b::Array{Float64,1}, nums::Int64)
 
 Search for nums valid starting values. To be used after the following functions have been called:
 (i) set_empirical_moments! (ii) set_priors! (iii) set_simulate_empirical_moments!
 (iv) construct_objective_function!
 """
-function search_starting_values(sMMProblem::SMMProblem, numPoints::Int64; verbose::Bool = true)
+function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbose::Bool = true)
 
   # Safety Check
   #-------------
   if is_optim_optimizer(sMMProblem.options.localOptimizer) == false
-    Base.error("sMMProblem.options.localOptimizer = $(sMMProblem.options.localOptimizer) is not supported.")
+    error("sMMProblem.options.localOptimizer = $(sMMProblem.options.localOptimizer) is not supported.")
   end
 
   if verbose == true
@@ -433,7 +426,7 @@ function search_starting_values(sMMProblem::SMMProblem, numPoints::Int64; verbos
     listGridsIndex += 1
 
     if listGridsIndex > sMMProblem.options.maxTrialsStartingValues
-      Base.error("Maximum number of attempts reached without success. maxTrialsStartingValues = $(sMMProblem.options.maxTrialsStartingValues)")
+      error("Maximum number of attempts reached without success. maxTrialsStartingValues = $(sMMProblem.options.maxTrialsStartingValues)")
     end
 
     # Use available workers to simulate moments

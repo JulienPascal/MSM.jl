@@ -16,6 +16,9 @@ module MSM
     using Distributed
     using CompEcon
     using Random
+    using Logging
+    using Statistics
+    using Distributions
 
     # Exports from BlackBoxOptim
     #---------------------------
@@ -29,7 +32,6 @@ module MSM
     #------
     include("types.jl");
 
-
     # API
     #----
     include("api.jl")
@@ -38,11 +40,11 @@ module MSM
     #---------------------------------------------
     include("generic.jl")
 
-    #=
     # Functions to load and save
     #--------------------------
     include("save_load.jl")
 
+    #=
     # Functions to minimize the objective function
     #---------------------------------------------
     include("optimize.jl")
@@ -60,7 +62,7 @@ module MSM
     #--------
     # Functions and types in types.jl
     #----------------------------------
-    export SMMOptions, SMMProblem
+    export MSMOptions, MSMProblem
     export default_function, rosenbrock2d
     export is_global_optimizer, is_local_optimizer
     export convert_to_optim_algo, convert_to_fminbox
@@ -78,17 +80,18 @@ module MSM
     export create_lower_bound, create_upper_bound
     export set_global_optimizer!
     export create_grid, latin_hypercube_sampling
-    export get_now
+    export get_now, info
 
-    #=
+
     # Functions and types in save_load.jl
     #------------------------------------
     export read_priors, read_empirical_moments
-    export saveSMMOptim, loadSMMOptim
+    export saveMSMOptim, loadMSMOptim
 
+    #=
     # Functions and types in optimize.jl
     #-----------------------------------
-    export smmoptimize!, smm_minimizer
+    export smm_optimize!, smm_minimizer
     export smm_refine_globalmin!, smm_local_minimizer
     export smm_local_minimum
     export smm_localmin, local_to_global!

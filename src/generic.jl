@@ -1,11 +1,11 @@
 """
-  set_simulate_empirical_moments!(sMMProblem::SMMProblem, f::Function)
+  set_simulate_empirical_moments!(sMMProblem::MSMProblem, f::Function)
 
-Function to set the field simulate_empirical_moments for a SMMProblem.
+Function to set the field simulate_empirical_moments for a MSMProblem.
 The function simulate_empirical_moments takes parameter values and return
 the corresponding simulate moments values.
 """
-function set_simulate_empirical_moments!(sMMProblem::SMMProblem, f::Function)
+function set_simulate_empirical_moments!(sMMProblem::MSMProblem, f::Function)
 
   # set the function that returns an ordered dictionary
   sMMProblem.simulate_empirical_moments = f
@@ -31,14 +31,14 @@ function set_simulate_empirical_moments!(sMMProblem::SMMProblem, f::Function)
 end
 
 """
-  construct_objective_function!(sMMProblem::SMMProblem, f::Function)
+  construct_objective_function!(sMMProblem::MSMProblem, f::Function)
 
 Function that construct an objective function, using the function
-SMMProblem.simulate_empirical_moments. For the moment, the objective function
+MSMProblem.simulate_empirical_moments. For the moment, the objective function
 returns the mean of the percentage deviation of simulated moments from
 their true value.
 """
-function construct_objective_function!(sMMProblem::SMMProblem, objectiveType::Symbol = :percent)
+function construct_objective_function!(sMMProblem::MSMProblem, objectiveType::Symbol = :percent)
 
 
     function objective_function_percent(x)
@@ -107,46 +107,46 @@ function construct_objective_function!(sMMProblem::SMMProblem, objectiveType::Sy
 end
 
 """
-  set_priors!(sMMProblem::SMMProblem, priors::OrderedDict{String,Array{Float64,1}})
+  set_priors!(sMMProblem::MSMProblem, priors::OrderedDict{String,Array{Float64,1}})
 
 Function to change the field sMMProblem.priors
 """
-function set_priors!(sMMProblem::SMMProblem, priors::OrderedDict{String,Array{Float64,1}})
+function set_priors!(sMMProblem::MSMProblem, priors::OrderedDict{String,Array{Float64,1}})
 
   sMMProblem.priors = priors
 
 end
 
 """
-   set_empirical_moments!(sMMProblem::SMMProblem, empiricalMoments::OrderedDict{String,Array{Float64,1}})
+   set_empirical_moments!(sMMProblem::MSMProblem, empiricalMoments::OrderedDict{String,Array{Float64,1}})
 
 Function to change the field sMMProblem.empiricalMoments
 """
-function set_empirical_moments!(sMMProblem::SMMProblem, empiricalMoments::OrderedDict{String,Array{Float64,1}})
+function set_empirical_moments!(sMMProblem::MSMProblem, empiricalMoments::OrderedDict{String,Array{Float64,1}})
 
   sMMProblem.empiricalMoments = empiricalMoments
 
 end
 
 """
-   set_Sigma0!(sMMProblem::SMMProblem, Sigma0::Array{Float64,2})
+   set_Sigma0!(sMMProblem::MSMProblem, Sigma0::Array{Float64,2})
 
 Function to change the field sMMProblem.Sigma0, where Sigma0 is the distance matrix,
 in the terminology of Duffie and Singleton (1993)
 """
-function  set_Sigma0!(sMMProblem::SMMProblem, Sigma0::Array{Float64,2})
+function  set_Sigma0!(sMMProblem::MSMProblem, Sigma0::Array{Float64,2})
 
   sMMProblem.Sigma0 = Sigma0
 
 end
 
 """
-  set_global_optimizer!(sMMProblem::SMMProblem)
+  set_global_optimizer!(sMMProblem::MSMProblem)
 
 Function to set the fields corresponding to the global
 optimizer problem.
 """
-function set_global_optimizer!(sMMProblem::SMMProblem)
+function set_global_optimizer!(sMMProblem::MSMProblem)
 
   if is_bb_optimizer(sMMProblem.options.globalOptimizer) == true
 
@@ -161,11 +161,11 @@ function set_global_optimizer!(sMMProblem::SMMProblem)
 end
 
 """
-  set_bbSetup!(sMMProblem::SMMProblem)
+  set_bbSetup!(sMMProblem::MSMProblem)
 
-Function to set the field bbSetup for a SMMProblem.
+Function to set the field bbSetup for a MSMProblem.
 """
-function set_bbSetup!(sMMProblem::SMMProblem)
+function set_bbSetup!(sMMProblem::MSMProblem)
 
   # A. using sMMProblem.priors, generate searchRange:
   #-------------------------------------------------
@@ -203,12 +203,12 @@ function set_bbSetup!(sMMProblem::SMMProblem)
 end
 
 """
-  generate_bbSearchRange(sMMProblem::SMMProblem)
+  generate_bbSearchRange(sMMProblem::MSMProblem)
 
 Function to generate a search range that matches the convention used by
 BlackBoxOptim.
 """
-function generate_bbSearchRange(sMMProblem::SMMProblem)
+function generate_bbSearchRange(sMMProblem::MSMProblem)
 
   # sMMProblem.priors["key"][1] contains the initial guess
   # sMMProblem.priors["key"][2] contains the lower bound
@@ -218,12 +218,12 @@ function generate_bbSearchRange(sMMProblem::SMMProblem)
 end
 
 """
-  create_lower_bound(sMMProblem::SMMProblem)
+  create_lower_bound(sMMProblem::MSMProblem)
 
 Function to generate a lower bound used by Optim when minimizing with Fminbox.
 The lower bound is of type Array{Float64,1}.
 """
-function create_lower_bound(sMMProblem::SMMProblem)
+function create_lower_bound(sMMProblem::MSMProblem)
 
   # sMMProblem.priors["key"][1] contains the initial guess
   # sMMProblem.priors["key"][2] contains the lower bound
@@ -233,12 +233,12 @@ function create_lower_bound(sMMProblem::SMMProblem)
 end
 
 """
-  create_upper_bound(sMMProblem::SMMProblem)
+  create_upper_bound(sMMProblem::MSMProblem)
 
 Function to generate a lower bound used by Optim when minimizing with Fminbox.
 The upper bound is of type Array{Float64,1}.
 """
-function create_upper_bound(sMMProblem::SMMProblem)
+function create_upper_bound(sMMProblem::MSMProblem)
 
   # sMMProblem.priors["key"][1] contains the initial guess
   # sMMProblem.priors["key"][2] contains the lower bound
@@ -329,4 +329,8 @@ function get_now()
 
   "$(Dates.today())--$(Dates.hour(Dates.now()))h-$(Dates.minute(Dates.now()))m-$(Dates.second(Dates.now()))s"
 
+end
+
+function info(text)
+    @info text
 end

@@ -1,19 +1,19 @@
 """
-  function calculate_D(sMMProblem::SMMProblem, theta0::Array{Float64,1}; method::Symbol = :central)
+  function calculate_D(sMMProblem::MSMProblem, theta0::Array{Float64,1}; method::Symbol = :central)
 
 Function to calculate the jacobian of the simulated moments.
 If the simulation is long enough, this provideds a good approximation for
 the expected value of the jacobian. The output is the "D" matrix in the terminology
 of Gouriéroux and Monfort (1996).
 """
-function calculate_D(sMMProblem::SMMProblem, theta0::Array{Float64,1}; method::Symbol = :central)
+function calculate_D(sMMProblem::MSMProblem, theta0::Array{Float64,1}; method::Symbol = :central)
 
   Calculus.jacobian(x -> sMMProblem.simulate_empirical_moments_array(x), theta0, method)
 
 end
 
 """
-  calculate_Avar!(sMMProblem::SMMProblem, theta0::Array{Float64,1}; method::Symbol = :central)
+  calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}; method::Symbol = :central)
 
 Calculate the asymptotic variance of the SMM estimator using the sandwich formula.
 This function assume that your model is simulating time series.
@@ -21,7 +21,7 @@ As a result, the asymptotic variance of the SMM estimator is (1+tau) times
 the asymptotic variance of the GMM one, where tau is the ratio of the sample size
 to the size of the simulated sample. See Duffie and Singleton (1993) and Gouriéroux and Monfort (1996).
 """
-function calculate_Avar!(sMMProblem::SMMProblem, theta0::Array{Float64,1}, tData::Int64, tSimulation::Int64; method::Symbol = :central)
+function calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, tSimulation::Int64; method::Symbol = :central)
 
   # Safety Checks
   if sMMProblem.Sigma0 == Array{Float64}(0,0)
@@ -51,12 +51,12 @@ function calculate_Avar!(sMMProblem::SMMProblem, theta0::Array{Float64,1}, tData
 end
 
 """
-  calculate_se(sMMProblem::SMMProblem, tData::Int64, tSimulation::Int64)
+  calculate_se(sMMProblem::MSMProblem, tData::Int64, tSimulation::Int64)
 
 Function to calculate the standard error associated to the the ith parameter,
 respecting the ordering given by the ordered dictionary sMMProblem.priors
 """
-function calculate_se(sMMProblem::SMMProblem, tData::Int64, i::Int64)
+function calculate_se(sMMProblem::MSMProblem, tData::Int64, i::Int64)
 
   # Safety Checks
   if sMMProblem.Avar == Array{Float64}(0,0)
@@ -69,14 +69,14 @@ end
 
 
 """
-  calculate_t(sMMProblem::SMMProblem, tData::Int64, tSimulation::Int64)
+  calculate_t(sMMProblem::MSMProblem, tData::Int64, tSimulation::Int64)
 
 Function to calculate the t-statistic associated to following test:
 H0: theta_i = 0
 H1: theta_i != 0
 The ordering of parameters is the one given by the ordered dictionary sMMProblem.priors
 """
-function calculate_t(sMMProblem::SMMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64)
+function calculate_t(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64)
 
   # Safety Checks
   if sMMProblem.Avar == Array{Float64}(0,0)
@@ -89,14 +89,14 @@ end
 
 
 """
-  calculate_pvalue(sMMProblem::SMMProblem, tData::Int64, tSimulation::Int64)
+  calculate_pvalue(sMMProblem::MSMProblem, tData::Int64, tSimulation::Int64)
 
 Function to calculate the p-value associated to following test:
 H0: theta_i = 0
 H1: theta_i != 0
 The ordering of parameters is the one given by the ordered dictionary sMMProblem.priors
 """
-function calculate_pvalue(sMMProblem::SMMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64)
+function calculate_pvalue(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64)
 
   # Safety Checks
   if sMMProblem.Avar == Array{Float64}(0,0)
@@ -117,11 +117,11 @@ end
 
 
 """
-  calculate_CI(sMMProblem::SMMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64)
+  calculate_CI(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64)
 
 Function to calculate an alpha confidence interval for the ith parameter.
 """
-function calculate_CI(sMMProblem::SMMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64, alpha::Float64)
+function calculate_CI(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64, alpha::Float64)
 
   # Safety Checks
   if sMMProblem.Avar == Array{Float64}(0,0)
@@ -142,7 +142,7 @@ function calculate_CI(sMMProblem::SMMProblem, theta0::Array{Float64,1}, tData::I
 end
 
 
-function summary_table(sMMProblem::SMMProblem, theta0::Array{Float64,1}, tData::Int64, alpha::Float64)
+function summary_table(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, alpha::Float64)
 
   # Safety Checks
   if sMMProblem.Avar == Array{Float64}(0,0)

@@ -7,6 +7,11 @@ end
 @everywhere using MSM
 using Test
 @everywhere using DataStructures
+using Optim
+using Pkg
+using Random
+using Distributions
+using Statistics
 
 # Uncomment to make sure Travis CI works as expected
 # @test 1 == 2
@@ -19,11 +24,9 @@ do_plots = false #To create "visual tests"
 
     @testset "testing Types" begin
 
-        @testset "testing SMMOptions" begin
+        @testset "testing MSMOptions" begin
 
-            saveName = get_now()
-
-            t = SMMOptions()
+            t = MSMOptions()
 
             # Testing default values
             #-----------------------------------------------------------------------
@@ -31,7 +34,6 @@ do_plots = false #To create "visual tests"
             @test t.localOptimizer == :LBFGS
             @test t.maxFuncEvals == 1000
             @test t.saveSteps == t.maxFuncEvals
-            @test t.saveName == saveName
             @test t.showDistance == false
             @test t.minBox == false
             @test t.populationSize == 50
@@ -44,9 +46,9 @@ do_plots = false #To create "visual tests"
         end
 
 
-        @testset "testing SMMOptions" begin
+        @testset "testing MSMOptions" begin
 
-            t = SMMProblem()
+            t = MSMProblem()
 
             # When initialized, iter is equal to 0
             @test t.iter == 0
@@ -57,7 +59,7 @@ do_plots = false #To create "visual tests"
             # the functions t.simulate_empirical_moments are initialized with x->x
             @test t.simulate_empirical_moments(1.0) == 1.0
             @test t.objective_function(1.0) == 1.0
-            @test typeof(t.options) == SMMOptions
+            @test typeof(t.options) == MSMOptions
 
 
         end
@@ -150,15 +152,17 @@ do_plots = false #To create "visual tests"
 
     end
 
-    #=
-    @testset "testing FminBox, non binding" begin
+    @testset "testing Optim" begin
 
-      atolOptim = 0.5
-      # ParticleSwarm is not working here
-      # I don't know why
-      listValidLocalOptimizers = [:NelderMead, :SimulatedAnnealing,
-                                :BFGS, :LBFGS, :ConjugateGradient, :GradientDescent,
-                                :MomentumGradientDescent, :AcceleratedGradientDescent]
+        atolOptim = 0.5
+        # Algorthims working with FminBox()
+        # * GradientDescent
+        # * BFGS
+        # * LBFGS
+        # * ConjugateGradient
+        listValidLocalOptimizers = [:GradientDescent, :NelderMead, :SimulatedAnnealing,
+                            :BFGS, :LBFGS, :ConjugateGradient,
+                            :MomentumGradientDescent, :AcceleratedGradientDescent]
 
         f(x) = (1.0 - x[1])^2 + 100.0 * (x[2] - x[1]^2)^2
         x0 = [0.0, 0.0]
@@ -167,23 +171,49 @@ do_plots = false #To create "visual tests"
 
         for localOptim in listValidLocalOptimizers
 
-          results = optimize(f, x0, lower, upper, iterations = 2000, convert_to_fminbox(localOptim))
 
-          @test Optim.minimizer(results)[1] ≈ 1.0 atol = atolOptim
-          @test Optim.minimizer(results)[2] ≈ 1.0 atol = atolOptim
+            results = optimize(f, x0, convert_to_optim_algo(localOptim), Optim.Options(iterations = 2000))
+
+            @test Optim.minimizer(results)[1] ≈ 1.0 atol = atolOptim
+            @test Optim.minimizer(results)[2] ≈ 1.0 atol = atolOptim
+
+        end
+
+
+    end
+
+    @testset "testing FminBox, non binding" begin
+
+        atolOptim = 0.5
+        # Algorthims working with FminBox()
+        # * GradientDescent
+        # * BFGS
+        # * LBFGS
+        # * ConjugateGradient
+        listValidLocalOptimizers = [:GradientDescent, :BFGS, :LBFGS, :ConjugateGradient]
+
+        f(x) = (1.0 - x[1])^2 + 100.0 * (x[2] - x[1]^2)^2
+        x0 = [0.0, 0.0]
+        lower = [-2.0; -2.0]
+        upper = [2.0; 2.0]
+
+        for localOptim in listValidLocalOptimizers
+
+            results = optimize(f, lower, upper, x0, convert_to_fminbox(localOptim), Optim.Options(iterations = 2000))
+
+            @test Optim.minimizer(results)[1] ≈ 1.0 atol = atolOptim
+            @test Optim.minimizer(results)[2] ≈ 1.0 atol = atolOptim
 
         end
 
     end
 
+
     @testset "testing FminBox binding" begin
 
-      atolOptim = 1e-1
-      # ParticleSwarm is not working here
-      # I don't know why
-      listValidLocalOptimizers = [:NelderMead, :SimulatedAnnealing,
-                                :BFGS, :LBFGS, :ConjugateGradient, :GradientDescent,
-                                :MomentumGradientDescent, :AcceleratedGradientDescent]
+        atolOptim = 1e-1
+
+        listValidLocalOptimizers = [:GradientDescent, :BFGS, :LBFGS, :ConjugateGradient]
 
         f(x) = (1.0 - x[1])^2 + 100.0 * (x[2] - x[1]^2)^2
         x0 = [0.0, 0.0]
@@ -193,12 +223,12 @@ do_plots = false #To create "visual tests"
         for localOptim in listValidLocalOptimizers
 
 
-          results = optimize(f, x0, lower, upper, iterations = 2000, convert_to_fminbox(localOptim))
+            results = optimize(f, lower, upper, x0, convert_to_fminbox(localOptim), Optim.Options(iterations = 2000))
 
-          @test Optim.minimizer(results)[1] < 0.5
-          @test Optim.minimizer(results)[1] > -2.0
-          @test Optim.minimizer(results)[2] < 0.5
-          @test Optim.minimizer(results)[2] > -2.0
+            @test Optim.minimizer(results)[1] < 0.5
+            @test Optim.minimizer(results)[1] > -2.0
+            @test Optim.minimizer(results)[2] < 0.5
+            @test Optim.minimizer(results)[2] > -2.0
 
         end
 
@@ -211,7 +241,7 @@ do_plots = false #To create "visual tests"
 
        @testset "testing read_priors" begin
 
-            dictPriors = read_priors(joinpath(Pkg.dir("SMM"), "test/priorsTest.csv"))
+            dictPriors = read_priors(joinpath(Pkg.dir("MSM"), "test/priorsTest.csv"))
 
             @test typeof(dictPriors) == OrderedDict{String,Array{Float64,1}}
             # First component stores the value
@@ -226,7 +256,7 @@ do_plots = false #To create "visual tests"
 
        @testset "testing read_empirical_moments" begin
 
-            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("SMM"), "test/empiricalMomentsTest.csv"))
+            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
 
             @test typeof(dictEmpiricalMoments) == OrderedDict{String,Array{Float64,1}}
 
@@ -244,11 +274,11 @@ do_plots = false #To create "visual tests"
 
     @testset "set_priors!, set_empirical_moments!" begin
 
-        t = SMMProblem()
+        t = MSMProblem();
 
         @testset "testing set_priors!" begin
 
-            dictPriors = read_priors(joinpath(Pkg.dir("SMM"), "test/priorsTest.csv"))
+            dictPriors = read_priors(joinpath(Pkg.dir("MSM"), "test/priorsTest.csv"))
 
             set_priors!(t, dictPriors)
 
@@ -258,7 +288,7 @@ do_plots = false #To create "visual tests"
 
         @testset "set_empirical_moments!" begin
 
-            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("SMM"), "test/empiricalMomentsTest.csv"))
+            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
 
             set_empirical_moments!(t, dictEmpiricalMoments)
 
@@ -282,7 +312,7 @@ do_plots = false #To create "visual tests"
                 return output
             end
 
-            t = SMMProblem()
+            t = MSMProblem();
 
             set_simulate_empirical_moments!(t, functionTest)
 
@@ -296,7 +326,7 @@ do_plots = false #To create "visual tests"
 
        @testset "Testing construct_objective_function!" begin
 
-            srand(1234)
+            Random.seed!(1234)
             tol1dMean = 0.01
 
             function functionTest(x::Vector)
@@ -308,14 +338,14 @@ do_plots = false #To create "visual tests"
                 return output
             end
 
-            t = SMMProblem()
+            t = MSMProblem();
 
             set_simulate_empirical_moments!(t, functionTest)
 
             # For the test to make sense, we need to set the field
             # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
             #------------------------------------------------------
-            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("SMM"), "test/empiricalMomentsTest.csv"))
+            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
             set_empirical_moments!(t, dictEmpiricalMoments)
 
             # A. Set the function: parameter -> simulated moments
@@ -332,13 +362,14 @@ do_plots = false #To create "visual tests"
 
         end
 
+
         @testset "Testing generate_bbSearchRange" begin
 
             # A.
             #----
-            t = SMMProblem()
+            t = MSMProblem();
 
-            dictPriors = read_priors(joinpath(Pkg.dir("SMM"), "test/priorsTest.csv"))
+            dictPriors = read_priors(joinpath(Pkg.dir("MSM"), "test/priorsTest.csv"))
 
             set_priors!(t, dictPriors)
 
@@ -351,7 +382,7 @@ do_plots = false #To create "visual tests"
 
             # B.
             #---
-            t = SMMProblem()
+            t = MSMProblem()
 
             dictPriors = OrderedDict{String,Array{Float64,1}}()
             dictPriors["mu1"] = [0., -5.0, 5.0]
@@ -375,10 +406,11 @@ do_plots = false #To create "visual tests"
 
     end
 
+
     @testset "testing loading and saving an optimization" begin
 
 
-        srand(1234)
+        Random.seed!(1234)
         tol1dMean = 0.01
 
         function functionTest(x::Vector)
@@ -390,14 +422,14 @@ do_plots = false #To create "visual tests"
             return output
         end
 
-        t = SMMProblem()
+        t = MSMProblem()
 
         set_simulate_empirical_moments!(t, functionTest)
 
         # For the test to make sense, we need to set the field
         # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
         #------------------------------------------------------
-        dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("SMM"), "test/empiricalMomentsTest.csv"))
+        dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
         set_empirical_moments!(t, dictEmpiricalMoments)
 
         # A. Set the function: parameter -> simulated moments
@@ -407,18 +439,17 @@ do_plots = false #To create "visual tests"
         # and moments' weights:
         construct_objective_function!(t)
 
-
-        saveSMMOptim(t, saveName = "iamatest")
-        t2 = loadSMMOptim("iamatest")
+        saveMSMOptim(t, saveName = "iamatest")
+        t2 = loadMSMOptim("iamatest")
 
         # Test the objective function is correctly loaded
         #------------------------------------------------
-        # [TODO] test other fields
+
         @test t.objective_function([dictEmpiricalMoments["meanU"][1]]) ≈ t2.objective_function([dictEmpiricalMoments["meanU"][1]]) atol = tol1dMean
 
     end
 
-
+    #=
     @testset "Testing smmoptimize" begin
 
 
@@ -427,7 +458,7 @@ do_plots = false #To create "visual tests"
         @testset "Testing smmoptimize with 1d" begin
 
             # Rermark:
-            # It is important NOT to use srand()
+            # It is important NOT to use Random.seed!()
             # within the function simulate_empirical_moments!
             # Otherwise, BlackBoxOptim does not find the solution
             #----------------------------------------------------
@@ -444,12 +475,12 @@ do_plots = false #To create "visual tests"
             end
 
 
-            t = SMMProblem(options = SMMOptions(maxFuncEvals=200,saveSteps = 100))
+            t = MSMProblem(options = MSMOptions(maxFuncEvals=200,saveSteps = 100))
 
             # For the test to make sense, we need to set the field
             # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
             #------------------------------------------------------
-            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("SMM"), "test/empiricalMomentsTest.csv"))
+            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
             set_empirical_moments!(t, dictEmpiricalMoments)
 
 
@@ -466,7 +497,7 @@ do_plots = false #To create "visual tests"
             #----------------------------------------------------
             construct_objective_function!(t)
 
-            smmoptimize!(t, verbose = true)
+            smm_optimize!(t, verbose = true)
 
             @test best_candidate(t.bbResults)[1] ≈ 0.05 atol = tol1dMean
 
@@ -488,7 +519,7 @@ do_plots = false #To create "visual tests"
               # When using one of the deterministic methods of Optim,
               # we can safely "control" for randomness
               #-----------------------------------------------------
-              srand(1234)
+              Random.seed!(1234)
               d = Normal(x[1])
               output = OrderedDict{String,Float64}()
 
@@ -498,12 +529,12 @@ do_plots = false #To create "visual tests"
           end
 
 
-          t = SMMProblem(options = SMMOptions(maxFuncEvals=200,saveSteps = 100))
+          t = MSMProblem(options = MSMOptions(maxFuncEvals=200,saveSteps = 100))
 
           # For the test to make sense, we need to set the field
           # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
           #------------------------------------------------------
-          dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("SMM"), "test/empiricalMomentsTest.csv"))
+          dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
           set_empirical_moments!(t, dictEmpiricalMoments)
 
 
@@ -538,7 +569,7 @@ do_plots = false #To create "visual tests"
               # When using one of the deterministic methods of Optim,
               # we can safely "control" for randomness
               #-----------------------------------------------------
-              srand(1234)
+              Random.seed!(1234)
               d = Normal(x[1])
               output = OrderedDict{String,Float64}()
 
@@ -549,12 +580,12 @@ do_plots = false #To create "visual tests"
 
           # Let's try with the optim minBox on
           #-----------------------------------
-          t = SMMProblem(options = SMMOptions(maxFuncEvals=200, saveSteps = 100, localOptimizer = :LBFGS, minBox = true))
+          t = MSMProblem(options = MSMOptions(maxFuncEvals=200, saveSteps = 100, localOptimizer = :LBFGS, minBox = true))
 
           # For the test to make sense, we need to set the field
           # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
           #------------------------------------------------------
-          dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("SMM"), "test/empiricalMomentsTest.csv"))
+          dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
           set_empirical_moments!(t, dictEmpiricalMoments)
 
 
@@ -585,7 +616,7 @@ do_plots = false #To create "visual tests"
         @testset "Testing smmoptimize with 2d and same magnitude" begin
 
             # Rermark:
-            # It is important NOT to use srand()
+            # It is important NOT to use Random.seed!()
             # within the function simulate_empirical_moments!
             # Otherwise, BlackBoxOptim does not find the solution
             #----------------------------------------------------
@@ -604,7 +635,7 @@ do_plots = false #To create "visual tests"
             end
 
 
-            t = SMMProblem(options = SMMOptions(maxFuncEvals=1000,saveSteps = 1000))
+            t = MSMProblem(options = MSMOptions(maxFuncEvals=1000,saveSteps = 1000))
 
 
             # For the test to make sense, we need to set the field
@@ -631,7 +662,7 @@ do_plots = false #To create "visual tests"
             # C. Run the optimization
             # This function first modifies t.bbSetup
             # and then modifies t.bbResults
-            smmoptimize!(t, verbose = true)
+            smm_optimize!(t, verbose = true)
 
             @test best_candidate(t.bbResults)[1] ≈ 1.0 atol = tol2dMean
             @test best_candidate(t.bbResults)[2] ≈ -1.0 atol = tol2dMean
@@ -645,7 +676,7 @@ do_plots = false #To create "visual tests"
         @testset "Testing local_to_global! with 2d and same magnitude" begin
 
             # Rermark:
-            # It is important NOT to use srand()
+            # It is important NOT to use Random.seed!()
             # within the function simulate_empirical_moments!
             # Otherwise, BlackBoxOptim does not find the solution
             #----------------------------------------------------
@@ -659,7 +690,7 @@ do_plots = false #To create "visual tests"
                 # When using one of the deterministic methods of Optim,
                 # we can safely "control" for randomness
                 #-----------------------------------------------------
-                srand(1234)
+                Random.seed!(1234)
                 draws = rand(d, 1000000)
                 output["mean1"] = mean(draws[1,:])
                 output["mean2"] = mean(draws[2,:])
@@ -668,7 +699,7 @@ do_plots = false #To create "visual tests"
             end
 
 
-            t = SMMProblem(options = SMMOptions(maxFuncEvals=1000,saveSteps = 1000))
+            t = MSMProblem(options = MSMOptions(maxFuncEvals=1000,saveSteps = 1000))
 
 
             # For the test to make sense, we need to set the field
@@ -704,7 +735,7 @@ do_plots = false #To create "visual tests"
           @testset "Testing local_to_global! with 2d, same magnitude and minBox = true" begin
 
               # Rermark:
-              # It is important NOT to use srand()
+              # It is important NOT to use Random.seed!()
               # within the function simulate_empirical_moments!
               # Otherwise, BlackBoxOptim does not find the solution
               #----------------------------------------------------
@@ -718,7 +749,7 @@ do_plots = false #To create "visual tests"
                   # When using one of the deterministic methods of Optim,
                   # we can safely "control" for randomness
                   #-----------------------------------------------------
-                  srand(1234)
+                  Random.seed!(1234)
                   draws = rand(d, 1000000)
                   output["mean1"] = mean(draws[1,:])
                   output["mean2"] = mean(draws[2,:])
@@ -727,7 +758,7 @@ do_plots = false #To create "visual tests"
               end
 
 
-              t = SMMProblem(options = SMMOptions(maxFuncEvals=1000,saveSteps = 1000, localOptimizer = :NelderMead, minBox = true))
+              t = MSMProblem(options = MSMOptions(maxFuncEvals=1000,saveSteps = 1000, localOptimizer = :NelderMead, minBox = true))
 
 
               # For the test to make sense, we need to set the field
@@ -765,7 +796,7 @@ do_plots = false #To create "visual tests"
         @testset "Testing smmoptimize with 2d with a 1-order magnitude difference" begin
 
             # Rermark:
-            # It is important NOT to use srand()
+            # It is important NOT to use Random.seed!()
             # within the function simulate_empirical_moments!
             # Otherwise, BlackBoxOptim does not find the solution
             #----------------------------------------------------
@@ -785,7 +816,7 @@ do_plots = false #To create "visual tests"
             end
 
 
-            t = SMMProblem(options = SMMOptions(maxFuncEvals=1000,saveSteps = 1000))
+            t = MSMProblem(options = MSMOptions(maxFuncEvals=1000,saveSteps = 1000))
 
 
             # For the test to make sense, we need to set the field
@@ -812,7 +843,7 @@ do_plots = false #To create "visual tests"
             # C. Run the optimization
             # This function first modifies t.bbSetup
             # and then modifies t.bbResults
-            smmoptimize!(t, verbose = true)
+            smm_optimize!(t, verbose = true)
 
             @test best_candidate(t.bbResults)[1] ≈  1.0 atol = tol2dMean
             @test best_candidate(t.bbResults)[2] ≈ -12.0 atol = tol2dMean
@@ -847,7 +878,7 @@ do_plots = false #To create "visual tests"
               end
 
 
-              t = SMMProblem(options = SMMOptions(maxFuncEvals=2000,saveSteps = 2000, globalOptimizer = :dxnes, localOptimizer = :NelderMead, minBox = false))
+              t = MSMProblem(options = MSMOptions(maxFuncEvals=2000,saveSteps = 2000, globalOptimizer = :dxnes, localOptimizer = :NelderMead, minBox = false))
 
               #---------------------------------------------------------------------
               # Using multistart algo
@@ -883,7 +914,7 @@ do_plots = false #To create "visual tests"
               #---------------------------------------------------------------------
               # Using BlackBoxOptim
               #---------------------------------------------------------------------
-              t = SMMProblem(options = SMMOptions(maxFuncEvals=1000,saveSteps = 1000, globalOptimizer = :dxnes, localOptimizer = :NelderMead, minBox = false))
+              t = MSMProblem(options = MSMOptions(maxFuncEvals=1000,saveSteps = 1000, globalOptimizer = :dxnes, localOptimizer = :NelderMead, minBox = false))
 
               dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
               dictEmpiricalMoments["mean1"] = [1.0; 1.0]
@@ -903,7 +934,7 @@ do_plots = false #To create "visual tests"
               # and moments' weights:
               construct_objective_function!(t)
 
-              smmoptimize!(t, verbose = true)
+              smm_optimize!(t, verbose = true)
 
               @test best_candidate(t.bbResults)[1] ≈  1.0 atol = tol2dMean
               @test best_candidate(t.bbResults)[2] ≈  - 1.0 atol = tol2dMean
@@ -916,7 +947,7 @@ do_plots = false #To create "visual tests"
 
       # Inference in the linear model
       #------------------------------
-      srand(1234)         #for replicability reasons
+      Random.seed!(1234)         #for replicability reasons
       T = 100000          #number of periods
       P = 2               #number of dependent variables
       beta0 = rand(P)     #choose true coefficients by drawing from a uniform distribution on [0,1]
@@ -954,7 +985,7 @@ do_plots = false #To create "visual tests"
           y[t] = alpha0 + x[t,1]*beta0[1] + x[t,2]*beta0[2] + U[t]
       end
 
-      myProblem = SMMProblem(options = SMMOptions(maxFuncEvals=500, saveSteps = 500, globalOptimizer = :dxnes, localOptimizer = :LBFGS, minBox = false, showDistance = false));
+      myProblem = MSMProblem(options = MSMOptions(maxFuncEvals=500, saveSteps = 500, globalOptimizer = :dxnes, localOptimizer = :LBFGS, minBox = false, showDistance = false));
 
       # Empirical moments
       #------------------
@@ -981,7 +1012,7 @@ do_plots = false #To create "visual tests"
 
           # Structural Model
           #-----------------
-          srand(1234) #for replicability reasons
+          Random.seed!(1234) #for replicability reasons
           T = nbDraws
           P = 2       #number of dependent variables
 

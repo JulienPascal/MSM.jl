@@ -1,9 +1,9 @@
 """
-	SMMOptions
+	MSMOptions
 
-SMMOptions is a struct that contains options related to the optimization.
+MSMOptions is a mutable struct that contains options related to the optimization.
 """
-mutable struct SMMOptions
+mutable struct MSMOptions
 	globalOptimizer::Symbol #algorithm for finding a global maximum
 	localOptimizer::Symbol 	#algorithm for finding a local maximum
 	maxFuncEvals::Int64			#maximum number of evaluations
@@ -19,7 +19,7 @@ mutable struct SMMOptions
 	thresholdStartingValue::Float64 #value under which a point is considered as a valid starting value
 end
 
-function SMMOptions( ;globalOptimizer::Symbol=:dxnes,
+function MSMOptions( ;globalOptimizer::Symbol=:dxnes,
 					localOptimizer::Symbol=:LBFGS,
 					maxFuncEvals::Int64=1000,
 					saveSteps::Int64 = maxFuncEvals,
@@ -40,11 +40,11 @@ function SMMOptions( ;globalOptimizer::Symbol=:dxnes,
 	end
 
 	if saveSteps > maxFuncEvals
-		error("Error in the constructor for SMMOptions. \n saveSteps = $(saveSteps) > maxFuncEvals = $(maxFuncEvals)")
+		error("Error in the constructor for MSMOptions. \n saveSteps = $(saveSteps) > maxFuncEvals = $(maxFuncEvals)")
 	end
 
 	if mod(maxFuncEvals, saveSteps) != 0
-		error("Error in the constructor for SMMOptions. \n maxFuncEvals should be a multiple of saveSteps")
+		error("Error in the constructor for MSMOptions. \n maxFuncEvals should be a multiple of saveSteps")
 	end
 
 	if thresholdStartingValue > penaltyValue
@@ -52,7 +52,7 @@ function SMMOptions( ;globalOptimizer::Symbol=:dxnes,
 	end
 
 
-	SMMOptions(globalOptimizer,
+	MSMOptions(globalOptimizer,
 				localOptimizer,
 				maxFuncEvals,
 				saveSteps,
@@ -69,12 +69,12 @@ function SMMOptions( ;globalOptimizer::Symbol=:dxnes,
 end
 
 """
-	SMMProblem
+	MSMProblem
 
-SMMProblem is a mutable struct that caries all the information needed to
+MSMProblem is a mutable struct that caries all the information needed to
 perform the optimization and display the results.
 """
-mutable struct SMMProblem
+mutable struct MSMProblem
 	iter::Int64
 	priors::OrderedDict{String,Array{Float64,1}}
 	empiricalMoments::OrderedDict{String,Array{Float64,1}}
@@ -83,7 +83,7 @@ mutable struct SMMProblem
 	simulate_empirical_moments::Function					#returns an ordered dict
 	simulate_empirical_moments_array::Function		#returns an Array
 	objective_function::Function
-	options::SMMOptions
+	options::MSMOptions
 	bbSetup::BlackBoxOptim.OptController					#set up when using BlackBoxOptim (global minimum)
 	bbResults::BlackBoxOptim.OptimizationResults	#results when using BlackBoxOptim (global minimum)
 	optimResults::Optim.OptimizationResults				#results when using Optim (local minimum)
@@ -91,9 +91,9 @@ mutable struct SMMProblem
 	Avar::Array{Float64,2}											  #asymptotic variance of the SMM estimate
 end
 
-# Constructor for SMMProblem
+# Constructor for MSMProblem
 #------------------------------------------------------------------------------
-function SMMProblem(  ;iter::Int64 = 0,
+function MSMProblem(  ;iter::Int64 = 0,
 						priors::OrderedDict{String,Array{Float64,1}} = OrderedDict{String,Array{Float64,1}}(),
 						empiricalMoments::OrderedDict{String,Array{Float64,1}} = OrderedDict{String,Array{Float64,1}}(),
 						simulatedMoments::OrderedDict{String, Float64} = OrderedDict{String,Float64}(),
@@ -101,14 +101,14 @@ function SMMProblem(  ;iter::Int64 = 0,
 						simulate_empirical_moments::Function = default_function,       #returns an ordered dict
 						simulate_empirical_moments_array::Function = default_function, #returns an Array
 						objective_function::Function = default_function,
-						options::SMMOptions = SMMOptions(),
+						options::MSMOptions = MSMOptions(),
 						bbSetup::BlackBoxOptim.OptController = defaultbbOptimOptController,
 						bbResults::BlackBoxOptim.OptimizationResults = defaultbbOptimOptimizationResults,
 						optimResults::Optim.OptimizationResults = defaultOptimResults,
 						Sigma0::Array{Float64,2} = Array{Float64}(undef,0,0),
 						Avar::Array{Float64,2} = Array{Float64}(undef,0,0))
 
-	SMMProblem(iter,
+	MSMProblem(iter,
 				priors,
 				empiricalMoments,
 				simulatedMoments,
@@ -131,7 +131,6 @@ end
 Function x->x. Used to initialize functions.
 """
 function default_function(x)
-	println("default_function, returns input")
 	x
 end
 
@@ -253,6 +252,6 @@ function convert_to_fminbox(s::Symbol)
 
 	# Old API (before v0.15.0)
 	# To be changed when switching to Julia v0.7
-	eval(Meta.parse("Fminbox{$(s)}()"))
+	eval(Meta.parse("Fminbox($(String(s))())"))
 
 end
