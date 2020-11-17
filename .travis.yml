@@ -1,21 +1,27 @@
-# Documentation: http://docs.travis-ci.com/user/languages/julia
+## Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
-notifications:
-  email: false
+os:
+  - linux
+  - osx
 julia:
   - 1.0
   - 1.5
   - nightly
-os:
-  - linux
-  - osx
-  - windows
-arch:
-  - x64
-cache:
-  directories:
-    - ~/.julia/artifacts
-jobs:
-  fast_finish: true
+notifications:
+  email: true
+git:
+  depth: 99999999
+
+## uncomment the following lines to allow failures on nightly julia
+## (tests will run but not make your overall status red)
+matrix:
   allow_failures:
-    - julia: nightly
+  - julia: 1.0
+  - julia: nightly
+
+script:
+  - julia --project --check-bounds=yes -e 'import Pkg; Pkg.build(); Pkg.test("MSM"; coverage=true)'
+
+after_success:
+    # Submit test coverage report
+  - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
