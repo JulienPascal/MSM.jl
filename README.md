@@ -10,21 +10,20 @@ via the [Method of Simulated Moments](https://en.wikipedia.org/wiki/Method_of_si
 ## Why
 
 An economic theory can be written as a system of equations that depends on primitive
-parameters. The aim of the econometrician is to recover the unknown parameters
-using empirical data. In many instances, this likelihood function is untractable.
+parameters. The aim of the econometrician is to **recover the unknown parameters**
+using **empirical data**. One popular approach is to maximize the [likelihood funtion](https://en.wikipedia.org/wiki/Likelihood_function).
+Yet in many instances, the likelihood function is intractable. An alternative approach to estimate the unknown parameters is to minimize a (weighted) distance between
+the empirical [moments](https://en.wikipedia.org/wiki/Moment_(mathematics)) and their theoretical counterparts.
 
-An alternative approach to estimate the unknown parameters is to minimize a (weighted) distance between
-the empirical [moments](https://en.wikipedia.org/wiki/Moment_(mathematics)) and their theoretical counterparts (which depend on paramaters). When the function mapping
-the set of parameter values to the theoretical moments (the "expected response function") is known, this method is called
+When the function mapping the set of parameter values to the theoretical moments (the *expected response function*) is known, this method is called
 the [Generalized Method of Moments](https://en.wikipedia.org/wiki/Generalized_method_of_moments).
-Yet, in many cases the expected response function is unknown. This issue may be circumvented by
-simulating the expected response function, which is often an easy task. In this case, the method is called the [Method of Simulated Moments](https://en.wikipedia.org/wiki/Method_of_simulated_moments).
+However, in many interesting cases the *expected response function* is unknown. This issue may be circumvented by simulating the expected response function, which is often an easy task. In this case, the method is called the [Method of Simulated Moments](https://en.wikipedia.org/wiki/Method_of_simulated_moments).
 
 ## Philosophy
 
 `MSM.jl` is being developed with the following constraints in mind:
 * the minimizing algorithm should be able to run in **parallel**, as the computational cost of simulating moments, for a given parameter value, is potentially high.
-* Parallelization within the function generating simulated moments is difficult
+* Parallelization **within** the function generating simulated moments is difficult
 to achieve. This is generally the case when working with the simulated method of moments,
  as the time series generated are often serially correlated. This is why parallelization is done at the level of the minimization
 algorithm itself.
