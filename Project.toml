@@ -3,6 +3,21 @@ uuid = "553e158a-22df-4687-a16d-90d753ebe799"
 authors = ["julien.pascal@sciencespo.fr"]
 version = "0.1.0"
 
+[deps]
+BlackBoxOptim = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+Calculus = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
+CompEcon = "1375f997-1772-542d-b6fa-a8ee39124556"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+Optim = "429524aa-4258-5aef-a3af-852621145aeb"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
 [compat]
 julia = "1"
 
