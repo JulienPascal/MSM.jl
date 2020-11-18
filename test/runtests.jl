@@ -68,27 +68,6 @@ do_plots = false #To create "visual tests"
 
     end #end "testing Types"
 
-
-    @testset "testing creation of Cartesian grids" begin
-
-        a = zeros(3)
-        b = ones(3)
-        nums = 2
-
-        points = create_grid(a, b, nums)
-
-        @test points[1,:] == [0.0; 0.0; 0.0]
-        @test points[2,:] == [1.0, 0.0, 0.0]
-        @test points[3,:] == [0.0, 1.0, 0.0]
-        @test points[4,:] == [1.0, 1.0, 0.0]
-        @test points[5,:] == [0.0, 0.0, 1.0]
-        @test points[6,:] == [1.0, 0.0, 1.0]
-        @test points[7,:] == [0.0, 1.0, 1.0]
-        @test points[8,:] == [1.0, 1.0, 1.0]
-
-
-    end
-
     @testset "Latin hypercube sampling" begin
 
         a = zeros(3)

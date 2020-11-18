@@ -14,7 +14,6 @@ module MSM
     using DataStructures
     using Dates
     using Distributed
-    using CompEcon
     using Random
     using Logging
     using Statistics
@@ -79,7 +78,7 @@ module MSM
     export set_bbSetup!, generate_bbSearchRange
     export create_lower_bound, create_upper_bound
     export set_global_optimizer!
-    export create_grid, latin_hypercube_sampling
+    export latin_hypercube_sampling
     export get_now, info
 
 

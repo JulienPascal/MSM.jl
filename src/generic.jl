@@ -247,46 +247,11 @@ function create_upper_bound(sMMProblem::MSMProblem)
   [sMMProblem.priors[k][3] for k in keys(sMMProblem.priors)]
 end
 
-"""
-  create_grid(a::Array{Float64,1}, b::Array{Float64,1}, nums::Int64)
-
-Function to create a grid. a is a vector of lower
-bounds, b a vector of upper bounds and nums is the number of points
-along each dimension. The type of grid to use can be specified using gridType.
-By default, the functions returns the cartesian product. The output is an
-Array{Float64,2}, where each row is a new point and each column is a dimension
-of this points.
-"""
-function create_grid(a::Array{Float64,1}, b::Array{Float64,1}, nums::Int64; gridType::Symbol = :lin)
-
-    #Safety checks
-    #-------------
-    if nums < 2
-        Base.error("The input nums should be >= 2. nums = $(nums).")
-    end
-
-    if length(a) != length(b)
-        Base.error("length(a) != length(b)")
-    end
-
-    if gridType != :cheb && gridType == :spli && gridType == :lin
-        Base.error("gridType has to be either :chebn, :spli or :lin")
-    end
-
-    Fspace = fundefn(gridType, collect([nums for i =1:length(a)]), a, b)
-
-    Fnodes = funnode(Fspace)[1]
-
-end
-
-
-
 
 
 # Function coded by Robert Feldt. All credits to him. I only changed two lines:
 # * cubedim = Vector{T}(n) instead of cubedim = Vector{T}(undef, n)
-# * I return return transpose(result) instead of result, to be consistent with
-# the function create_grid
+# * I return return transpose(result) instead of result
 # source: https://github.com/robertfeldt/BlackBoxOptim.jl/blob/master/src/utilities/latin_hypercube_sampling.jl
 """
     latin_hypercube_sampling(mins, maxs, n)

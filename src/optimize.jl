@@ -379,7 +379,7 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
     info("Searching for $(numPoints) valid starting values")
   end
 
-  # Generate upper and lower bounds vector readable by create_grid_stochastic
+  # Generate upper and lower bounds vector
   #--------------------------------------------------------------------------
   lower_bound = zeros(length(keys(sMMProblem.priors)))
   upper_bound = zeros(length(keys(sMMProblem.priors)))
@@ -404,11 +404,7 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
 
   listGrids = []
   for i=1:sMMProblem.options.maxTrialsStartingValues
-    # sampling from uniform distribution or normal distribution
-    if sMMProblem.options.gridType == :uniform || sMMProblem.options.gridType == :normal
-      push!(listGrids, create_grid_stochastic(lower_bound, upper_bound, numPoints, gridType = sMMProblem.options.gridType))
-    # latin hypercube
-    elseif sMMProblem.options.gridType == :latin
+    if sMMProblem.options.gridType == :latin
       push!(listGrids, latin_hypercube_sampling(lower_bound, upper_bound, numPoints))
     else
       Base.err("sMMProblem.options.gridType = $(sMMProblem.options.gridType) is not a valid sampling procedure.")

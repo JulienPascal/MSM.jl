@@ -18,17 +18,17 @@ function read_priors(pathToCsv::String)
 
     # If file exists
     #----------------------------------
-    dataFrame = CSV.read(pathToCsv)
+    #dataFrame = CSV.read(pathToCsv)
+    dataFrame = CSV.File(open(read, pathToCsv)) |> DataFrame
 
     # Check whether the csv file has the appropriate columns
     #-------------------------------------------------------
-    ListToCheck = [:name, :value, :upper_bound, :lower_bound]
+    list_to_check = ["name", "value", "upper_bound", "lower_bound"]
+    col_names = names(dataFrame)
 
-    for colName in ListToCheck
-        try
-            dataFrame[colName]
-        catch
-            error("column $(colName) does not exist.")
+    for col_name in list_to_check
+        if in(col_name, col_names) == false
+            error("column $(col_name) does not exist.")
         end
     end
 
@@ -68,17 +68,17 @@ function read_empirical_moments(pathToCsv::String)
 
     # If file exists:
     #----------------
-    dataFrame =  CSV.read(pathToCsv)
+    #dataFrame =  CSV.read(pathToCsv)
+    dataFrame = CSV.File(open(read, pathToCsv)) |> DataFrame
 
     #check whether the csv file has the columns "name" and "value"
     #-------------------------------------------------------------
-    ListToCheck = [:name, :value, :weight]
+    list_to_check = ["name", "value", "weight"]
+    col_names = names(dataFrame)
 
-    for colName in ListToCheck
-        try
-            dataFrame[colName]
-        catch
-            error("column $(colName) does not exist.")
+    for col_name in list_to_check
+        if in(col_name, col_names) == false
+            error("column $(col_name) does not exist.")
         end
     end
 
