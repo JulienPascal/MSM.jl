@@ -7,7 +7,7 @@ end
 @everywhere using MSM
 using Test
 @everywhere using DataStructures
-using Optim
+
 using Pkg
 using Random
 using Distributions
@@ -15,6 +15,13 @@ using Statistics
 
 # Uncomment to make sure Travis CI works as expected
 # @test 1 == 2
+
+# Because of this issue (https://github.com/JuliaIO/JLD2.jl/issues/107)
+# we also need to import BlackBoxOptim and Optim to load and save
+#----------------------------------------------------------------------
+using BlackBoxOptim
+using Optim
+
 
 # OPTIONS
 do_plots = false #To create "visual tests"

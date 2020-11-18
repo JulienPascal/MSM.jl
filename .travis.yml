@@ -25,3 +25,4 @@ script:
 after_success:
     # Submit test coverage report
   - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+  - julia -e 'using Pkg; cd(Pkg.dir("MSM")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
