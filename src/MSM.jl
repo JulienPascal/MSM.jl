@@ -5,13 +5,15 @@ module MSM
     #---------------------------------------------------------------------------
     using BlackBoxOptim
     using Optim
-    using JLD2
+    #using JLD2
+    using BSON
     using Plots
     using CSV
     using ProgressMeter
     using Calculus
     using DataFrames
     using DataStructures
+    using OrderedCollections
     using Dates
     using Distributed
     using Random
@@ -22,7 +24,6 @@ module MSM
     # Exports from BlackBoxOptim
     #---------------------------
     export best_candidate
-
 
     #---------------------------------------------------------------------------
     # Includes
@@ -43,11 +44,12 @@ module MSM
     #--------------------------
     include("save_load.jl")
 
-    #=
+
     # Functions to minimize the objective function
     #---------------------------------------------
     include("optimize.jl")
 
+    #=
     # Functions to do inference
     #---------------------------------------------
     include("econometrics.jl")
@@ -85,16 +87,18 @@ module MSM
     # Functions and types in save_load.jl
     #------------------------------------
     export read_priors, read_empirical_moments
-    export saveMSMOptim, loadMSMOptim
 
-    #=
+    #export saveMSMOptim, loadMSMOptim
+
+
     # Functions and types in optimize.jl
     #-----------------------------------
     export smm_optimize!, smm_minimizer
     export smm_refine_globalmin!, smm_local_minimizer
     export smm_local_minimum
-    export smm_localmin, local_to_global!
+    export smm_localmin, local_multistart!
 
+    #=
     # Functions in econometrics.jl
     #-----------------------------
     export calculate_D, calculate_Avar!, calculate_se, calculate_t, calculate_pvalue, calculate_CI

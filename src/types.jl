@@ -7,7 +7,6 @@ mutable struct MSMOptions
 	globalOptimizer::Symbol #algorithm for finding a global maximum
 	localOptimizer::Symbol 	#algorithm for finding a local maximum
 	maxFuncEvals::Int64			#maximum number of evaluations
-	saveSteps::Int64				#maximum number of steps
 	saveName::String				#name under which the optimization should be saved
 	showDistance::Bool			#show the distance, everytime the objective function is calculated?
 	minBox::Bool						#When looking for a local maximum, use Fminbox ?
@@ -22,7 +21,6 @@ end
 function MSMOptions( ;globalOptimizer::Symbol=:dxnes,
 					localOptimizer::Symbol=:LBFGS,
 					maxFuncEvals::Int64=1000,
-					saveSteps::Int64 = maxFuncEvals,
 					saveName::String = get_now(),
 					showDistance::Bool = false,
 					minBox::Bool = false,
@@ -33,19 +31,6 @@ function MSMOptions( ;globalOptimizer::Symbol=:dxnes,
 					maxTrialsStartingValues::Int64 = 1000,
 					thresholdStartingValue::Float64 = 99999.0)
 
-	# Safety Checks
-	#--------------
-	if saveSteps == 0
-		error("You cannot set saveSteps equal to 0.")
-	end
-
-	if saveSteps > maxFuncEvals
-		error("Error in the constructor for MSMOptions. \n saveSteps = $(saveSteps) > maxFuncEvals = $(maxFuncEvals)")
-	end
-
-	if mod(maxFuncEvals, saveSteps) != 0
-		error("Error in the constructor for MSMOptions. \n maxFuncEvals should be a multiple of saveSteps")
-	end
 
 	if thresholdStartingValue > penaltyValue
 		error("Please set thresholdStartingValue < penaltyValue.")
@@ -55,7 +40,6 @@ function MSMOptions( ;globalOptimizer::Symbol=:dxnes,
 	MSMOptions(globalOptimizer,
 				localOptimizer,
 				maxFuncEvals,
-				saveSteps,
 				saveName,
 				showDistance,
 				minBox,

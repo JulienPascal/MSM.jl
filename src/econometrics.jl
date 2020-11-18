@@ -24,8 +24,8 @@ to the size of the simulated sample. See Duffie and Singleton (1993) and Gourié
 function calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, tSimulation::Int64; method::Symbol = :central)
 
   # Safety Checks
-  if sMMProblem.Sigma0 == Array{Float64}(0,0)
-    Base.error("Please initialize sMMProblem.Sigma0 using the function set_Sigma0!.")
+  if sMMProblem.Sigma0 == Array{Float64}(undef, 0,0)
+    error("Please initialize sMMProblem.Sigma0 using the function set_Sigma0!.")
   end
 
   tau = tData/tSimulation
@@ -59,8 +59,8 @@ respecting the ordering given by the ordered dictionary sMMProblem.priors
 function calculate_se(sMMProblem::MSMProblem, tData::Int64, i::Int64)
 
   # Safety Checks
-  if sMMProblem.Avar == Array{Float64}(0,0)
-    Base.error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
+  if sMMProblem.Avar == Array{Float64}(undef, 0,0)
+    error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
   end
 
   sqrt((1/tData)*sMMProblem.Avar[i,i])
@@ -79,8 +79,8 @@ The ordering of parameters is the one given by the ordered dictionary sMMProblem
 function calculate_t(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64)
 
   # Safety Checks
-  if sMMProblem.Avar == Array{Float64}(0,0)
-    Base.error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
+  if sMMProblem.Avar == Array{Float64}(undef, 0,0)
+    error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
   end
 
   theta0[i]/calculate_se(sMMProblem, tData, i)
@@ -99,8 +99,8 @@ The ordering of parameters is the one given by the ordered dictionary sMMProblem
 function calculate_pvalue(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64)
 
   # Safety Checks
-  if sMMProblem.Avar == Array{Float64}(0,0)
-    Base.error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
+  if sMMProblem.Avar == Array{Float64}(undef, 0,0)
+    error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
   end
 
   t =  calculate_t(sMMProblem, theta0, tData, i)
@@ -124,8 +124,8 @@ Function to calculate an alpha confidence interval for the ith parameter.
 function calculate_CI(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64, alpha::Float64)
 
   # Safety Checks
-  if sMMProblem.Avar == Array{Float64}(0,0)
-    Base.error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
+  if sMMProblem.Avar == Array{Float64}(undef, 0,0)
+    error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
   end
 
   # standard error
@@ -145,8 +145,8 @@ end
 function summary_table(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, alpha::Float64)
 
   # Safety Checks
-  if sMMProblem.Avar == Array{Float64}(0,0)
-    Base.error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
+  if sMMProblem.Avar == Array{Float64}(undef, 0,0)
+    error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
   end
 
   df = DataFrame(Estimate = Float64[], StdError = Float64[], tValue = Float64[], pValue = Float64[], ConfIntervalLower = Float64[], ConfIntervalUpper = Float64[])

@@ -16,29 +16,18 @@ function smm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
   #-----------------------------------------------
   if is_bb_optimizer(sMMProblem.options.globalOptimizer) == true
 
-    # Run the optimization by "batches"
-    numberBatches = sMMProblem.options.maxFuncEvals/sMMProblem.options.saveSteps
+
     # Store best fitness and best candidates
     listBestFitness = []
     listBestCandidates = []
-    @showprogress for i=1:numberBatches
 
-        if verbose == true
-          info("-------------------------------------")
-          info("Batch $(i) / $(numberBatches)")
-          info("------------------------------------- \n")
-        end
+    # Run the optimization with BlackBoxOptim
+    #----------------------------------------
+    sMMProblem.bbResults = bboptimize(sMMProblem.bbSetup)
 
-        # Run the optimization with BlackBoxOptim
-        #----------------------------------------
-        sMMProblem.bbResults = bboptimize(sMMProblem.bbSetup)
+    push!(listBestFitness, best_fitness(sMMProblem.bbResults))
+    push!(listBestCandidates, best_candidate(sMMProblem.bbResults))
 
-        # Save to disk
-        #-------------
-        saveMSMOptim(sMMProblem, verbose = verbose, saveName = sMMProblem.options.saveName);
-        push!(listBestFitness, best_fitness(sMMProblem.bbResults))
-        push!(listBestCandidates, best_candidate(sMMProblem.bbResults))
-    end
 
   # In the future, we may use other global minimizer
   # routines. For the moment, let's return an error
@@ -180,19 +169,19 @@ end
 
 
 """
-  local_to_global!(sMMProblem::MSMProblem; x0 = Array{Float64}(0,0), nums::Int64 = nworkers(), verbose::Bool = true)
+  local_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true)
 
 Function to run several local minimization algorithms in parallel, with different
 starting values. The minimum is calculated as the minimum of the local minima.
 Changes sMMProblem.optimResults. This function also returns
 a list containing Optim results.
 """
-function local_to_global!(sMMProblem::MSMProblem; x0 = Array{Float64}(0,0), nums::Int64 = nworkers(), verbose::Bool = true)
+function local_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true)
 
   # Safety checks
   #--------------
   if nums < nworkers()
-    Base.errors("nums < nworkers()")
+    errors("nums < nworkers()")
   elseif nums > nworkers()
     info("nums > nworkers(). Some starting values will be ignored.")
   end
@@ -203,7 +192,7 @@ function local_to_global!(sMMProblem::MSMProblem; x0 = Array{Float64}(0,0), nums
 
   # Look for valid starting values (for which convergence is reached)
   #-------------------------------------------------------------------
-  if x0 == Array{Float64}(0,0)
+  if x0 == Array{Float64}(undef, 0,0)
     myGrid = search_starting_values(sMMProblem, nums, verbose = verbose)
   # Using starting values provided by the user
   #-------------------------------------------
@@ -407,7 +396,7 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
     if sMMProblem.options.gridType == :latin
       push!(listGrids, latin_hypercube_sampling(lower_bound, upper_bound, numPoints))
     else
-      Base.err("sMMProblem.options.gridType = $(sMMProblem.options.gridType) is not a valid sampling procedure.")
+      err("sMMProblem.options.gridType = $(sMMProblem.options.gridType) is not a valid sampling procedure.")
     end
 
   end
@@ -479,11 +468,17 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
       info("Saving starting values to disk.")
     end
 
-    tempfilename = "starting_values_"* sMMProblem.options.saveName * ".jld2"
-    JLD2.@save tempfilename Validx0
+    # tempfilename = "starting_values_"* sMMProblem.options.saveName * ".jld2"
+    # JLD2.@save tempfilename Validx0
+    #
+    # tempfilename = "starting_distances_"* sMMProblem.options.saveName * ".jld2"
+    # JLD2.@save tempfilename distanceValue
 
-    tempfilename = "starting_distances_"* sMMProblem.options.saveName * ".jld2"
-    JLD2.@save tempfilename distanceValue
+    tempfilename = "starting_values_"* sMMProblem.options.saveName * ".bson"
+    bson(tempfilename, Dict(:Validx0=>Validx0))
+
+    tempfilename = "starting_distances_"* sMMProblem.options.saveName * ".bson"
+    bson(tempfilename, Dict(:distanceValue=>distanceValue))
 
   end
 

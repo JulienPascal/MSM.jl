@@ -183,7 +183,7 @@ function set_bbSetup!(sMMProblem::MSMProblem)
     sMMProblem.bbSetup = bbsetup(sMMProblem.objective_function;
                               Method = sMMProblem.options.globalOptimizer,
                               SearchRange = mySearchRange,
-                              MaxFuncEvals = sMMProblem.options.saveSteps,
+                              MaxFuncEvals = sMMProblem.options.maxFuncEvals,
                               TraceMode = :verbose,
                               PopulationSize = sMMProblem.options.populationSize,
                               NumDimensions = length(keys(sMMProblem.priors)))
@@ -192,7 +192,7 @@ function set_bbSetup!(sMMProblem::MSMProblem)
     sMMProblem.bbSetup = bbsetup(sMMProblem.objective_function;
                                 Method = sMMProblem.options.globalOptimizer,
                                 SearchRange = mySearchRange,
-                                MaxFuncEvals = sMMProblem.options.saveSteps,
+                                MaxFuncEvals = sMMProblem.options.maxFuncEvals,
                                 Workers = workers(),
                                 PopulationSize = sMMProblem.options.populationSize,
                                 TraceMode = :verbose,
