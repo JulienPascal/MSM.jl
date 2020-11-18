@@ -15,8 +15,7 @@ function set_simulate_empirical_moments!(sMMProblem::MSMProblem, f::Function)
   function simulate_empirical_moments_array(x)
 
     momentsODict = sMMProblem.simulate_empirical_moments(x)
-
-    momentsArray = Array{Float64}(length(momentsODict))
+    momentsArray = Array{Float64}(undef, length(momentsODict))
 
     for (i, k) in enumerate(keys(momentsODict))
         momentsArray[i] = momentsODict[k]
@@ -296,6 +295,20 @@ function get_now()
 
 end
 
+"""
+    info(text)
+
+To display information to user
+"""
 function info(text)
     @info text
+end
+
+"""
+  linspace(z_n::Int64, z_start::Real, z_end::Real)
+
+Similar behavior of Base.linespace on julia v. < 0.6
+"""
+function linspace(z_start::Real, z_end::Real, z_n::Int64)
+    return collect(range(z_start,stop=z_end,length=z_n))
 end

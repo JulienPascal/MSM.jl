@@ -6,9 +6,10 @@ If the simulation is long enough, this provideds a good approximation for
 the expected value of the jacobian. The output is the "D" matrix in the terminology
 of Gouriéroux and Monfort (1996).
 """
-function calculate_D(sMMProblem::MSMProblem, theta0::Array{Float64,1}; method::Symbol = :central)
+function calculate_D(sMMProblem::MSMProblem, theta0::Array{Float64,1})
 
-  Calculus.jacobian(x -> sMMProblem.simulate_empirical_moments_array(x), theta0, method)
+  #Calculus.jacobian(x -> sMMProblem.simulate_empirical_moments_array(x), theta0, method)
+  jacobian(central_fdm(5, 1), x -> sMMProblem.simulate_empirical_moments_array(x), theta0)[1]
 
 end
 
@@ -21,17 +22,17 @@ As a result, the asymptotic variance of the SMM estimator is (1+tau) times
 the asymptotic variance of the GMM one, where tau is the ratio of the sample size
 to the size of the simulated sample. See Duffie and Singleton (1993) and Gouriéroux and Monfort (1996).
 """
-function calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, tSimulation::Int64; method::Symbol = :central)
+function calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, tSimulation::Int64)
 
   # Safety Checks
-  if sMMProblem.Sigma0 == Array{Float64}(undef, 0,0)
+  if isempty(sMMProblem.Sigma0) == true
     error("Please initialize sMMProblem.Sigma0 using the function set_Sigma0!.")
   end
 
   tau = tData/tSimulation
 
   # Jacobian matrix
-  D = calculate_D(sMMProblem, theta0, method = method)
+  D = calculate_D(sMMProblem, theta0)
 
   # Weigthing matrix (only diagonal matrix for the moment)
   W = diagm([1/sMMProblem.empiricalMoments[k][2] for k in keys(sMMProblem.empiricalMoments)])
@@ -59,7 +60,7 @@ respecting the ordering given by the ordered dictionary sMMProblem.priors
 function calculate_se(sMMProblem::MSMProblem, tData::Int64, i::Int64)
 
   # Safety Checks
-  if sMMProblem.Avar == Array{Float64}(undef, 0,0)
+  if isempty(sMMProblem.Avar) == true
     error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
   end
 
@@ -79,7 +80,7 @@ The ordering of parameters is the one given by the ordered dictionary sMMProblem
 function calculate_t(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64)
 
   # Safety Checks
-  if sMMProblem.Avar == Array{Float64}(undef, 0,0)
+  if isempty(sMMProblem.Avar) == true
     error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
   end
 
@@ -99,7 +100,7 @@ The ordering of parameters is the one given by the ordered dictionary sMMProblem
 function calculate_pvalue(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64)
 
   # Safety Checks
-  if sMMProblem.Avar == Array{Float64}(undef, 0,0)
+  if isempty(sMMProblem.Avar) == true
     error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
   end
 
@@ -124,7 +125,7 @@ Function to calculate an alpha confidence interval for the ith parameter.
 function calculate_CI(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64, alpha::Float64)
 
   # Safety Checks
-  if sMMProblem.Avar == Array{Float64}(undef, 0,0)
+  if isempty(sMMProblem.Avar) == true
     error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
   end
 
@@ -145,7 +146,7 @@ end
 function summary_table(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, alpha::Float64)
 
   # Safety Checks
-  if sMMProblem.Avar == Array{Float64}(undef, 0,0)
+  if isempty(sMMProblem.Avar) == true
     error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
   end
 

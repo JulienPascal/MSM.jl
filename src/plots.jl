@@ -3,9 +3,9 @@
 
 Function to plot slices of the objective function.
 """
-function smm_slices(sMMProblem::MSMProblem, paramValues::Vector, nbPoints::Int64; showPlots::Bool = true)
+function smm_slices(sMMProblem::MSMProblem, paramValues::Vector, nbPoints::Int64; showPlot::Bool = false)
 
-    listPlots = []
+    list_plots = []
     p = Plots.plot()
 
     # Loop over parameter values
@@ -18,7 +18,7 @@ function smm_slices(sMMProblem::MSMProblem, paramValues::Vector, nbPoints::Int64
         info("slicing along $(keyValue)")
         # Options A.
         #-----------
-        @sync @parallel for xIndex = 1:1:length(vXGrid)
+        @sync @distributed for xIndex = 1:1:length(vXGrid)
 
           # Move along one dimension, keeping other values constant
           #--------------------------------------------------------
@@ -29,15 +29,29 @@ function smm_slices(sMMProblem::MSMProblem, paramValues::Vector, nbPoints::Int64
 
         end
 
-        p = Plots.plot(vXGrid, vYGrid, title = "$(keyValue)")
-        push!(listPlots, p)
-
-        if showPlots == true
-            display(p)
-        end
+        p = Plots.plot(vXGrid, vYGrid, title = "$(keyValue)", label = "")
+        push!(list_plots, p)
 
     end
 
-    return listPlots
+    #Let's combine all the plots in a single plot
+    # s0 = ""
+    # for i = 1:length(keys(sMMProblem.priors))
+    #     if i==1
+    #         s0 = string("list_plots[$(i)]" )
+    #     else
+    #         s0 = string(s0, ", ", "list_plots[$(i)]" )
+    #     end
+    # end
+
+    # print(string("plot(", s0, ")"))
+    # plot_combined = eval(Meta.parse(string("plot(", s0, ")")))
+    #
+    # if showPlot == true
+    #     display(plot_combined)
+    # end
+
+    #return plot_combined, list_plots
+    return list_plots
 
 end

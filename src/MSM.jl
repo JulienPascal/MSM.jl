@@ -10,7 +10,8 @@ module MSM
     using Plots
     using CSV
     using ProgressMeter
-    using Calculus
+    #using Calculus
+    using FiniteDifferences
     using DataFrames
     using DataStructures
     using OrderedCollections
@@ -20,6 +21,8 @@ module MSM
     using Logging
     using Statistics
     using Distributions
+    using LinearAlgebra
+    using SharedArrays
 
     # Exports from BlackBoxOptim
     #---------------------------
@@ -49,7 +52,7 @@ module MSM
     #---------------------------------------------
     include("optimize.jl")
 
-    #=
+
     # Functions to do inference
     #---------------------------------------------
     include("econometrics.jl")
@@ -57,7 +60,7 @@ module MSM
     # Functions to do plots
     #---------------------------------------------
     include("plots.jl")
-    =#
+
 
     # Exports
     #--------
@@ -81,7 +84,7 @@ module MSM
     export create_lower_bound, create_upper_bound
     export set_global_optimizer!
     export latin_hypercube_sampling
-    export get_now, info
+    export get_now, info, linspace
 
 
     # Functions and types in save_load.jl
@@ -98,7 +101,7 @@ module MSM
     export smm_local_minimum
     export smm_localmin, local_multistart!
 
-    #=
+
     # Functions in econometrics.jl
     #-----------------------------
     export calculate_D, calculate_Avar!, calculate_se, calculate_t, calculate_pvalue, calculate_CI
@@ -107,7 +110,7 @@ module MSM
     # Functions in plots.jl
     #----------------------
     export smm_slices
-    =#
+
 
 
 end

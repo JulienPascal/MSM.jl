@@ -47,8 +47,8 @@ end
             @test t.penaltyValue == 999999.0
             @test t.gridType == :latin
             @test t.saveStartingValues == true
-            @test t.maxTrialsStartingValues == 1000
-            @test t.thresholdStartingValue == 99999.0
+            @test t.maxTrialsStartingValues == t.maxFuncEvals
+            @test t.thresholdStartingValue == t.penaltyValue/10.0
 
         end
 
@@ -658,7 +658,7 @@ end
 
         end
 
-        #=
+
         # 2d problem
         #-----------
         @testset "Testing local_multistart! with 2d and same magnitude" begin
@@ -746,7 +746,7 @@ end
               end
 
 
-              t = MSMProblem(options = MSMOptions(maxFuncEvals=1000, localOptimizer = :NelderMead, minBox = true))
+              t = MSMProblem(options = MSMOptions(maxFuncEvals=1000, localOptimizer = :GradientDescent, minBox = true))
 
 
               # For the test to make sense, we need to set the field
@@ -789,7 +789,7 @@ end
             # Otherwise, BlackBoxOptim does not find the solution
             #----------------------------------------------------
             # The difference of magniture make it more difficult to find the minimum
-            tol2dMean = 0.5
+            tol2dMean = 2.0
 
             function functionTest2d(x)
 
@@ -846,8 +846,10 @@ end
 
               #---------------------------------------------------
               tol2dMean = 0.5
+              @everywhere d_Uni = Uniform(0,1)
+              @everywhere uniform_draws = rand(d_Uni, 10000)
 
-              @everywhere function functionTest2d(x)
+              @everywhere function functionTest2d(x, uniform_draws::Array{Float64,1})
 
                   # function that fails when the first input
                   # is smaller than minus 1:
@@ -856,17 +858,18 @@ end
                     error("I failed")
                   end
 
-                  d = MvNormal( [x[1]; x[2]], eye(2))
+                  d = Normal(x[1], 1.0)
+                  # Inverse cdf (i.e. quantile)
+                  draws = quantile.(d, uniform_draws)
                   output = OrderedDict{String,Float64}()
-                  draws = rand(d, 1000000)
-                  output["mean1"] = mean(draws[1,:])
-                  output["mean2"] = mean(draws[2,:])
+                  output["mean1"] = mean(draws)
 
                   return output
               end
 
 
-              t = MSMProblem(options = MSMOptions(maxFuncEvals=2000, globalOptimizer = :dxnes, localOptimizer = :NelderMead, minBox = false))
+              t = MSMProblem(options = MSMOptions(maxFuncEvals=200, globalOptimizer = :dxnes,
+                            localOptimizer = :NelderMead, penaltyValue = 100.0, showDistance=true))
 
               #---------------------------------------------------------------------
               # Using multistart algo
@@ -876,47 +879,40 @@ end
               #------------------------------------------------------
               dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
               dictEmpiricalMoments["mean1"] = [1.0; 1.0]
-              dictEmpiricalMoments["mean2"] = [-1.0; -1.0]
               set_empirical_moments!(t, dictEmpiricalMoments)
 
 
               dictPriors = OrderedDict{String,Array{Float64,1}}()
               dictPriors["mu1"] = [0., -5.0, 5.0]
-              dictPriors["mu2"] = [0., -5.0, 5.0]
               set_priors!(t, dictPriors)
 
               # A. Set the function: parameter -> simulated moments
-              set_simulate_empirical_moments!(t, functionTest2d)
+              set_simulate_empirical_moments!(t, x -> functionTest2d(x,uniform_draws))
 
               # B. Construct the objective function, using the function: parameter -> simulated moments
               # and moments' weights:
               construct_objective_function!(t)
 
               local_multistart!(t, nums = nworkers(), verbose = true)
-
               @test smm_local_minimum(t) ≈ 0.0 atol = tol2dMean
-
               @test smm_local_minimizer(t)[1] ≈ 1.0 atol = tol2dMean
-              @test smm_local_minimizer(t)[2] ≈ - 1.0 atol = tol2dMean
 
               #---------------------------------------------------------------------
               # Using BlackBoxOptim
               #---------------------------------------------------------------------
-              t = MSMProblem(options = MSMOptions(maxFuncEvals=1000, globalOptimizer = :dxnes, localOptimizer = :NelderMead, minBox = false))
+              t = MSMProblem(options = MSMOptions(maxFuncEvals=1000, globalOptimizer = :dxnes))
 
               dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
               dictEmpiricalMoments["mean1"] = [1.0; 1.0]
-              dictEmpiricalMoments["mean2"] = [-1.0; -1.0]
               set_empirical_moments!(t, dictEmpiricalMoments)
 
 
               dictPriors = OrderedDict{String,Array{Float64,1}}()
               dictPriors["mu1"] = [0., -5.0, 5.0]
-              dictPriors["mu2"] = [0., -5.0, 5.0]
               set_priors!(t, dictPriors)
 
               # A. Set the function: parameter -> simulated moments
-              set_simulate_empirical_moments!(t, functionTest2d)
+              set_simulate_empirical_moments!(t, x -> functionTest2d(x, uniform_draws))
 
               # B. Construct the objective function, using the function: parameter -> simulated moments
               # and moments' weights:
@@ -925,9 +921,10 @@ end
               smm_optimize!(t, verbose = true)
 
               @test best_candidate(t.bbResults)[1] ≈  1.0 atol = tol2dMean
-              @test best_candidate(t.bbResults)[2] ≈  - 1.0 atol = tol2dMean
+
 
     end
+
 
     @testset "Testing Inference" begin
 
@@ -973,7 +970,7 @@ end
           y[t] = alpha0 + x[t,1]*beta0[1] + x[t,2]*beta0[2] + U[t]
       end
 
-      myProblem = MSMProblem(options = MSMOptions(maxFuncEvals=500, globalOptimizer = :dxnes, localOptimizer = :LBFGS, minBox = false, showDistance = false));
+      myProblem = MSMProblem(options = MSMOptions(maxFuncEvals=500, globalOptimizer = :dxnes, localOptimizer = :LBFGS));
 
       # Empirical moments
       #------------------
@@ -996,11 +993,9 @@ end
       # x[1] corresponds to the intercept
       # x[1] corresponds to beta1
       # x[3] corresponds to beta2
-      @everywhere function functionLinearModel(x; nbDraws::Int64 = 1000000, burnInPerc::Int64 = 10)
+      @everywhere function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 10)
 
-          # Structural Model
-          #-----------------
-          Random.seed!(1234) #for replicability reasons
+
           T = nbDraws
           P = 2       #number of dependent variables
 
@@ -1014,16 +1009,13 @@ end
           # column = time dimension
           U = zeros(T)
           d = Normal()
-          U[1] = rand(d, 1)[] #first error term
+          # Inverse cdf (i.e. quantile)
+          gaussian_draws = quantile.(d, uniform_draws)
+          U[1] = gaussian_draws[1] #first error term
+
           # loop over time periods
           for t = 2:T
-              U[t] = rand(d, 1)[] + theta*U[t-1]
-          end
-
-          simX = zeros(T, P)
-          d = Uniform(0, 5)
-          for p = 1:P
-                  simX[:,p] = rand(d, T)
+              U[t] = gaussian_draws[t] + theta*U[t-1]
           end
 
           # Let's calculate the resulting y_t
@@ -1049,7 +1041,18 @@ end
           return output
       end
 
-      set_simulate_empirical_moments!(myProblem, functionLinearModel)
+
+      # Let's freeze the randomness during the minimization
+      @everywhere d_Uni = Uniform(0,1)
+      @everywhere nbDraws = 100000 #number of draws in the simulated data
+      @everywhere uniform_draws = rand(d_Uni, nbDraws)
+      simX = zeros(length(uniform_draws), 2)
+      d = Uniform(0, 5)
+      for p = 1:2
+          simX[:,p] = rand(d, length(uniform_draws))
+      end
+
+      set_simulate_empirical_moments!(myProblem, x -> functionLinearModel(x, uniform_draws = uniform_draws, simX = simX))
 
       # Construct the objective function using:
       #* the function: parameter -> simulated moments
@@ -1062,6 +1065,9 @@ end
       #--------------------------------------------------------------------
       @time listOptimResults = local_multistart!(myProblem, verbose = true)
 
+      # Remark: it would not be appropriate to use BlackBoxOptim because the
+      # objective function contains Random.seed!(1234)
+      # No big deal here, because we use Optim
       minimizer = smm_local_minimizer(myProblem)
 
       # The minimizer should not be too far from the true values
@@ -1086,7 +1092,6 @@ end
 
       @test myProblem.Sigma0 == Sigma0
 
-      nbDraws = 1000000 #number of draws in the simulated data
       calculate_Avar!(myProblem, minimizer, T, nbDraws)
 
       # The asymptotic variance should be
@@ -1125,7 +1130,8 @@ end
         @test df[:ConfIntervalLower][i] <= df[:ConfIntervalUpper][i]
       end
 
-    =#
+      #plot_combined, list_plots = smm_slices(myProblem, minimizer, 3)
+      list_plots = smm_slices(myProblem, minimizer, 3)
 
     end
 

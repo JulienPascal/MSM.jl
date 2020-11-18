@@ -365,7 +365,7 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
   end
 
   if verbose == true
-    info("Searching for $(numPoints) valid starting values")
+    info("Searching for $(numPoints) valid starting value(s)")
   end
 
   # Generate upper and lower bounds vector
@@ -387,7 +387,7 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
   # Create many grids (stochastic draws) with many potential points
   #----------------------------------------------------------------
   if verbose == true
-    info("Creating $(sMMProblem.options.maxTrialsStartingValues) potential grids")
+    info("Creating $(sMMProblem.options.maxTrialsStartingValues) potential starting value(s)")
     info("gridType = $(sMMProblem.options.gridType)")
   end
 

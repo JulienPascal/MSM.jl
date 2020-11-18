@@ -28,12 +28,20 @@ function MSMOptions( ;globalOptimizer::Symbol=:dxnes,
 					penaltyValue::Float64 = 999999.0,
 					gridType::Symbol = :latin,
 					saveStartingValues::Bool = true,
-					maxTrialsStartingValues::Int64 = 1000,
-					thresholdStartingValue::Float64 = 99999.0)
+					maxTrialsStartingValues::Int64 = maxFuncEvals,
+					thresholdStartingValue::Float64 = penaltyValue/10.0)
 
 
 	if thresholdStartingValue > penaltyValue
 		error("Please set thresholdStartingValue < penaltyValue.")
+	end
+
+	#Fminbox does not work with all optimizers in Optim
+	if minBox == true
+		listValidLocalOptimizers = [:GradientDescent, :BFGS, :LBFGS, :ConjugateGradient]
+		if in(localOptimizer, listValidLocalOptimizers) == false
+			error("if minBox == true, localOptimizer must be in $(listValidLocalOptimizers)")
+		end
 	end
 
 
