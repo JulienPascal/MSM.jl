@@ -459,7 +459,7 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
   Validx0 = Validx0[p,:]  #re-order rows
 
   if verbose == true
-    info("Found $(nbValidx0Found) valid starting values")
+    info("Found $(nbValidx0Found) valid starting value(s)")
   end
 
   # If requested, save (valid) starting values generated

@@ -5,12 +5,10 @@ module MSM
     #---------------------------------------------------------------------------
     using BlackBoxOptim
     using Optim
-    #using JLD2
     using BSON
     using Plots
     using CSV
     using ProgressMeter
-    #using Calculus
     using FiniteDifferences
     using DataFrames
     using DataStructures
@@ -59,7 +57,7 @@ module MSM
 
     # Functions to do plots
     #---------------------------------------------
-    include("plots.jl")
+    include("analysis.jl")
 
 
     # Exports
@@ -107,10 +105,9 @@ module MSM
     export calculate_D, calculate_Avar!, calculate_se, calculate_t, calculate_pvalue, calculate_CI
     export summary_table
 
-    # Functions in plots.jl
-    #----------------------
+    # Functions in analysis.jl
+    #-------------------------
     export smm_slices
-
 
 
 end

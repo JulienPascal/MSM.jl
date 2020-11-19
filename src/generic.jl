@@ -46,10 +46,9 @@ function construct_objective_function!(sMMProblem::MSMProblem, objectiveType::Sy
           #----------------
           distanceEmpSimMoments = sMMProblem.options.penaltyValue
 
-          #------------------------------------------------------------------------
-          # A.
-          # Generate simulated moments
-          #------------------------------------------------------------------------
+          #---------------------------------------------------------------------
+          # A. Generate simulated moments
+          #---------------------------------------------------------------------
           simulatedMoments, convergence = try
 
           sMMProblem.simulate_empirical_moments(x), 1
@@ -64,8 +63,7 @@ function construct_objective_function!(sMMProblem::MSMProblem, objectiveType::Sy
       end
 
       #------------------------------------------------------------------------
-      # B.
-      # If generating moment was successful, calculate distance between empirical
+      # B. If generating moment was successful, calculate distance between empirical
       # and simulated moments
       # (If no convergence, returns penalty value : sMMProblem.options.penaltyValue)
       #------------------------------------------------------------------------

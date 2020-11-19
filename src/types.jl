@@ -27,7 +27,7 @@ function MSMOptions( ;globalOptimizer::Symbol=:dxnes,
 					populationSize::Int64 = 50,
 					penaltyValue::Float64 = 999999.0,
 					gridType::Symbol = :latin,
-					saveStartingValues::Bool = true,
+					saveStartingValues::Bool = false,
 					maxTrialsStartingValues::Int64 = maxFuncEvals,
 					thresholdStartingValue::Float64 = penaltyValue/10.0)
 

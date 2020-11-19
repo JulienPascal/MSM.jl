@@ -19,9 +19,8 @@ using BlackBoxOptim
 # Uncomment to make sure Travis CI works as expected
 # @test 1 == 2
 
-
 # OPTIONS
-do_plots = false #To create "visual tests"
+do_plots = false #To create "visual tests". Set to false when using Travis CI.
 
 @everywhere function eye(n::Int)
     Diagonal(ones(n))
@@ -46,7 +45,7 @@ end
             @test t.populationSize == 50
             @test t.penaltyValue == 999999.0
             @test t.gridType == :latin
-            @test t.saveStartingValues == true
+            @test t.saveStartingValues == false
             @test t.maxTrialsStartingValues == t.maxFuncEvals
             @test t.thresholdStartingValue == t.penaltyValue/10.0
 
@@ -1118,20 +1117,49 @@ end
       df = summary_table(myProblem, minimizer, T, 0.05)
 
       # first column : point estimates
-      @test df[:Estimate] == minimizer
+      @test df.Estimate == minimizer
 
       # 2nd column : std error
       for i =1:size(df,1)
-        @test df[:StdError][i] > 0.
+        @test df.StdError[i] > 0.
       end
 
       # confidence interval
       for i =1:size(df,1)
-        @test df[:ConfIntervalLower][i] <= df[:ConfIntervalUpper][i]
+        @test df.ConfIntervalLower[i] <= df.ConfIntervalUpper[i]
       end
 
-      #plot_combined, list_plots = smm_slices(myProblem, minimizer, 3)
-      list_plots = smm_slices(myProblem, minimizer, 3)
+      # Slice the objective functions
+      vXGrid, vYGrid = smm_slices(myProblem, minimizer, nbPoints = 7)
+
+      # Plot the results
+      if do_plots == true
+
+          gr()
+          list_plots = []
+          for (keyIndex, keyValue) in enumerate(keys(myProblem.priors))
+
+              p = plot(vXGrid[:,keyIndex], vYGrid[:,keyIndex], title = "$(keyValue)", label = "")
+              plot!([minimizer[keyIndex]], seriestype = :vline, label = "")
+              push!(list_plots, p)
+
+          end
+
+          #Let's combine all the plots in a single plot
+          s0 = ""
+          for i = 1:length(keys(myProblem.priors))
+              if i==1
+                  s0 = string("list_plots[$(i)]" )
+              else
+                  s0 = string(s0, ", ", "list_plots[$(i)]" )
+              end
+          end
+
+          plot_combined = eval(Meta.parse(string("plot(", s0, ")")))
+          display(plot_combined)
+
+      end
+
 
     end
 
