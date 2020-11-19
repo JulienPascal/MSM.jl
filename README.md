@@ -44,6 +44,11 @@ using Pkg
 Pkg.clone("https://github.com/JulienPascal/MSM.jl.git")
 ```
 
+## Usage
+
+See the following notebooks:
+* [`notebooks/LinearModel.ipynb`](notebooks/LinearModel.ipynb)
+
 
 ## Related Packages
 

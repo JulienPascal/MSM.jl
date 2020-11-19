@@ -1,11 +1,11 @@
 """
-  smm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
+  msm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
 
 Function to launch an optimization. To be used after the following functions
 have been called: (i) set_empirical_moments! (ii) set_priors!
 (iii) set_simulate_empirical_moments! (iv) construct_objective_function!
 """
-function smm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
+function msm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
 
   # Initialize a BlackBoxOptim problem
   # this modifies sMMProblem.bbSetup
@@ -45,11 +45,11 @@ function smm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
 end
 
 """
-  function smm_minimizer(sMMProblem::MSMProblem)
+  function msm_minimizer(sMMProblem::MSMProblem)
 
 Function to get the parameter value minimizing the objective function
 """
-function smm_minimizer(sMMProblem::MSMProblem)
+function msm_minimizer(sMMProblem::MSMProblem)
 
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------
@@ -69,17 +69,17 @@ function smm_minimizer(sMMProblem::MSMProblem)
 end
 
 """
-  smm_refine_globalmin!(sMMProblem::MSMProblem; verbose::Bool = true)
+  msm_refine_globalmin!(sMMProblem::MSMProblem; verbose::Bool = true)
 
 Function to refine the global minimum using a local minimization routine.
 To be used after the following functions have been called: (i) set_empirical_moments!
 (ii) set_priors! (iii) set_simulate_empirical_moments! (iv) construct_objective_function!
-(v) smm_optimize!
+(v) msm_optimize!
 """
-function smm_refine_globalmin!(sMMProblem::MSMProblem; verbose::Bool = true)
+function msm_refine_globalmin!(sMMProblem::MSMProblem; verbose::Bool = true)
 
 
-  x0 = smm_minimizer(sMMProblem)
+  x0 = msm_minimizer(sMMProblem)
 
   # Let's use the result from the global maximizer as the starting value
   #---------------------------------------------------------------------
@@ -120,11 +120,11 @@ end
 
 
 """
-  function smm_minimizer(sMMProblem::MSMProblem)
+  function msm_minimizer(sMMProblem::MSMProblem)
 
 Function to get the parameter value minimizing the objective function (local)
 """
-function smm_local_minimizer(sMMProblem::MSMProblem)
+function msm_local_minimizer(sMMProblem::MSMProblem)
 
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------
@@ -148,7 +148,7 @@ end
 
 Function to get the local minimum value of the objetive function
 """
-function smm_local_minimum(sMMProblem::MSMProblem)
+function msm_local_minimum(sMMProblem::MSMProblem)
 
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------
@@ -169,14 +169,14 @@ end
 
 
 """
-  local_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true)
+  msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true)
 
 Function to run several local minimization algorithms in parallel, with different
 starting values. The minimum is calculated as the minimum of the local minima.
 Changes sMMProblem.optimResults. This function also returns
 a list containing Optim results.
 """
-function local_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true)
+function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true)
 
   # Safety checks
   #--------------
@@ -217,7 +217,7 @@ function local_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,
       #---------------------------------------
       @sync for (workerIndex, w) in enumerate(workers())
 
-        @async push!(results, @fetchfrom w wrap_smm_localmin(sMMProblem, myGrid[workerIndex,:], verbose = true))
+        @async push!(results, @fetchfrom w wrap_msm_localmin(sMMProblem, myGrid[workerIndex,:], verbose = true))
 
       end
 
@@ -289,13 +289,13 @@ end
 
 
 """
-  smm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
+  msm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
 
 Function find a local minimum using a local minimization routine, with starting value x0.
 To be used after the following functions have been called: (i) set_empirical_moments!
 (ii) set_priors! (iii) set_simulate_empirical_moments! (iv) construct_objective_function!
 """
-function smm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
+function msm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
 
     # Let's use the result from the global maximizer as the starting value
     #---------------------------------------------------------------------
@@ -337,13 +337,13 @@ end
 """
 
 """
-function wrap_smm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
+function wrap_msm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
 
   try
-    smm_localmin(sMMProblem, x0, verbose = verbose)
+    msm_localmin(sMMProblem, x0, verbose = verbose)
   catch myError
     info("$(myError)")
-    info("Error with smm_localmin")
+    info("Error with msm_localmin")
   end
 
 end

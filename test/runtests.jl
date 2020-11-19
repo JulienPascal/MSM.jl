@@ -436,12 +436,12 @@ end
     # end
 
 
-    @testset "Testing smm_optimize!" begin
+    @testset "Testing msm_optimize!" begin
 
 
         # 1d problem
         #-----------
-        @testset "Testing smm_optimize! with 1d" begin
+        @testset "Testing msm_optimize! with 1d" begin
 
             # Rermark:
             # It is important NOT to use Random.seed!()
@@ -483,15 +483,15 @@ end
             #----------------------------------------------------
             construct_objective_function!(t)
 
-            smm_optimize!(t, verbose = true)
+            msm_optimize!(t, verbose = true)
 
             @test best_candidate(t.bbResults)[1] ≈ 0.05 atol = tol1dMean
 
             # C. Testing refinement of the global max using a local routine
             #--------------------------------------------------------------
-            @test smm_refine_globalmin!(t, verbose = true)[1] ≈ 0.05 atol = tol1dMean
+            @test msm_refine_globalmin!(t, verbose = true)[1] ≈ 0.05 atol = tol1dMean
 
-            @test smm_local_minimizer(t)[1] ≈ 0.05 atol = tol1dMean
+            @test msm_local_minimizer(t)[1] ≈ 0.05 atol = tol1dMean
 
         end
 
@@ -537,11 +537,11 @@ end
           #----------------------------------------------------
           construct_objective_function!(t)
 
-          local_multistart!(t, nums = maxNbWorkers, verbose = true)
+          msm_multistart!(t, nums = maxNbWorkers, verbose = true)
 
-          @test smm_local_minimum(t) ≈ 0.0 atol = tol1dMean
+          @test msm_local_minimum(t) ≈ 0.0 atol = tol1dMean
 
-          @test smm_local_minimizer(t)[1] ≈ 0.05 atol = tol1dMean
+          @test msm_local_minimizer(t)[1] ≈ 0.05 atol = tol1dMean
 
         end
 
@@ -588,11 +588,11 @@ end
           #----------------------------------------------------
           construct_objective_function!(t)
 
-          local_multistart!(t, nums = maxNbWorkers, verbose = true)
+          msm_multistart!(t, nums = maxNbWorkers, verbose = true)
 
-          @test smm_local_minimum(t) ≈ 0.0 atol = tol1dMean
+          @test msm_local_minimum(t) ≈ 0.0 atol = tol1dMean
 
-          @test smm_local_minimizer(t)[1] ≈ 0.05 atol = tol1dMean
+          @test msm_local_minimizer(t)[1] ≈ 0.05 atol = tol1dMean
 
         end
 
@@ -648,7 +648,7 @@ end
             # C. Run the optimization
             # This function first modifies t.bbSetup
             # and then modifies t.bbResults
-            smm_optimize!(t, verbose = true)
+            msm_optimize!(t, verbose = true)
 
             @test best_candidate(t.bbResults)[1] ≈ 1.0 atol = tol2dMean
             @test best_candidate(t.bbResults)[2] ≈ -1.0 atol = tol2dMean
@@ -660,7 +660,7 @@ end
 
         # 2d problem
         #-----------
-        @testset "Testing local_multistart! with 2d and same magnitude" begin
+        @testset "Testing msm_multistart! with 2d and same magnitude" begin
 
             # Rermark:
             # It is important NOT to use Random.seed!()
@@ -710,16 +710,16 @@ end
             # and moments' weights:
             construct_objective_function!(t)
 
-            local_multistart!(t, nums = nworkers(), verbose = true)
+            msm_multistart!(t, nums = nworkers(), verbose = true)
 
-            @test smm_local_minimum(t) ≈ 0.0 atol = tol2dMean
+            @test msm_local_minimum(t) ≈ 0.0 atol = tol2dMean
 
-            @test smm_local_minimizer(t)[1] ≈ 1.0 atol = tol2dMean
-            @test smm_local_minimizer(t)[2] ≈ - 1.0 atol = tol2dMean
+            @test msm_local_minimizer(t)[1] ≈ 1.0 atol = tol2dMean
+            @test msm_local_minimizer(t)[2] ≈ - 1.0 atol = tol2dMean
 
           end
 
-          @testset "Testing local_multistart! with 2d, same magnitude and minBox = true" begin
+          @testset "Testing msm_multistart! with 2d, same magnitude and minBox = true" begin
 
               # Rermark:
               # It is important NOT to use Random.seed!()
@@ -769,12 +769,12 @@ end
               # and moments' weights:
               construct_objective_function!(t)
 
-              local_multistart!(t, nums = nworkers(), verbose = true)
+              msm_multistart!(t, nums = nworkers(), verbose = true)
 
-              @test smm_local_minimum(t) ≈ 0.0 atol = tol2dMean
+              @test msm_local_minimum(t) ≈ 0.0 atol = tol2dMean
 
-              @test smm_local_minimizer(t)[1] ≈ 1.0 atol = tol2dMean
-              @test smm_local_minimizer(t)[2] ≈ - 1.0 atol = tol2dMean
+              @test msm_local_minimizer(t)[1] ≈ 1.0 atol = tol2dMean
+              @test msm_local_minimizer(t)[2] ≈ - 1.0 atol = tol2dMean
 
             end
 
@@ -830,7 +830,7 @@ end
             # C. Run the optimization
             # This function first modifies t.bbSetup
             # and then modifies t.bbResults
-            smm_optimize!(t, verbose = true)
+            msm_optimize!(t, verbose = true)
 
             @test best_candidate(t.bbResults)[1] ≈  1.0 atol = tol2dMean
             @test best_candidate(t.bbResults)[2] ≈ -12.0 atol = tol2dMean
@@ -892,9 +892,9 @@ end
               # and moments' weights:
               construct_objective_function!(t)
 
-              local_multistart!(t, nums = nworkers(), verbose = true)
-              @test smm_local_minimum(t) ≈ 0.0 atol = tol2dMean
-              @test smm_local_minimizer(t)[1] ≈ 1.0 atol = tol2dMean
+              msm_multistart!(t, nums = nworkers(), verbose = true)
+              @test msm_local_minimum(t) ≈ 0.0 atol = tol2dMean
+              @test msm_local_minimizer(t)[1] ≈ 1.0 atol = tol2dMean
 
               #---------------------------------------------------------------------
               # Using BlackBoxOptim
@@ -917,7 +917,7 @@ end
               # and moments' weights:
               construct_objective_function!(t)
 
-              smm_optimize!(t, verbose = true)
+              msm_optimize!(t, verbose = true)
 
               @test best_candidate(t.bbResults)[1] ≈  1.0 atol = tol2dMean
 
@@ -1062,12 +1062,11 @@ end
       # Run the optimization in parallel using n different starting values
       # where n is equal to the number of available workers
       #--------------------------------------------------------------------
-      @time listOptimResults = local_multistart!(myProblem, verbose = true)
+      @time listOptimResults = msm_multistart!(myProblem, verbose = true)
 
       # Remark: it would not be appropriate to use BlackBoxOptim because the
-      # objective function contains Random.seed!(1234)
       # No big deal here, because we use Optim
-      minimizer = smm_local_minimizer(myProblem)
+      minimizer = msm_local_minimizer(myProblem)
 
       # The minimizer should not be too far from the true values
       #---------------------------------------------------------
