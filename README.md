@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/JulienPascal/MSM.jl/workflows/CI/badge.svg)](https://github.com/JulienPascal/MSM.jl/actions)
 [![Build Status](https://travis-ci.com/JulienPascal/MSM.jl.svg?branch=main)](https://travis-ci.com/JulienPascal/MSM.jl)
 
-[![codecov.io](https://codecov.io/gh/JulienPascal/MSM.jl/branch/main/graphs/badge.svg)](https://codecov.io/gh/JulienPascal/MSM.jl/branch/main)
+[![codecov.io](https://codecov.io/gh/JulienPascal/MSM.jl/branch/julia_1.5/graphs/badge.svg)](https://codecov.io/gh/JulienPascal/MSM.jl/branch/julia_1.5/)
 [![Coverage Status](https://coveralls.io/repos/github/JulienPascal/MSM.jl/badge.svg?branch=main)](https://coveralls.io/github/JulienPascal/MSM.jl?branch=main)
 
 
@@ -49,7 +49,7 @@ See the following notebooks:
 
 ## Experiments
 
-See the following notebooks for experiments with [ApproxBayes.jl](https://github.com/marcjwilliams1/ApproxBayes.jl) and [Surrogates.jl](https://github.com/SciML/Surrogates.jl) (not yet supported within the package): 
+See the following notebooks for experiments with [ApproxBayes.jl](https://github.com/marcjwilliams1/ApproxBayes.jl) and [Surrogates.jl](https://github.com/SciML/Surrogates.jl) (not yet supported within the package):
 * [`notebooks/ABC.ipynb`](notebooks/ABC.ipynb)
 * [`notebooks/Surrogates.ipynb`](notebooks/Surrogates.ipynb)
 
