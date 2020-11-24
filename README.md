@@ -37,7 +37,7 @@ the Julia ecosystem. This is why `MSM.jl` relies on [BlackBoxOptim.jl](https://g
 ## Installation
 
 This package is still in its development phase. Yet, if you feel brave enough:
-```
+```julia
 pkg> add https://github.com/JulienPascal/MSM.jl.git
 ```
 
@@ -49,7 +49,7 @@ See the following notebooks:
 
 ## Experiments
 
-See the following notebooks for experiments with [ApproxBayes.jl](https://github.com/marcjwilliams1/ApproxBayes.jl) and [Surrogates.jl](https://github.com/SciML/Surrogates.jl) (not yet supported within the package)
+See the following notebooks for experiments with [ApproxBayes.jl](https://github.com/marcjwilliams1/ApproxBayes.jl) and [Surrogates.jl](https://github.com/SciML/Surrogates.jl) (not yet supported within the package): 
 * [`notebooks/ABC.ipynb`](notebooks/ABC.ipynb)
 * [`notebooks/Surrogates.ipynb`](notebooks/Surrogates.ipynb)
 

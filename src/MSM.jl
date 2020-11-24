@@ -6,9 +6,7 @@ module MSM
     using BlackBoxOptim
     using Optim
     using BSON
-    using Plots
     using CSV
-    using ProgressMeter
     using FiniteDifferences
     using DataFrames
     using DataStructures
