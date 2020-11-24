@@ -25,30 +25,33 @@ However, in many interesting cases the *expected response function* is unknown. 
 ## Philosophy
 
 `MSM.jl` is being developed with the following constraints in mind:
-* the minimizing algorithm should be able to run in **parallel**, as the computational cost of simulating moments, for a given parameter value, is potentially high.
-* Parallelization **within** the function generating simulated moments is difficult
-to achieve. This is generally the case when working with the simulated method of moments,
- as the time series generated are often serially correlated. This is why parallelization is done at the level of the minimization
-algorithm itself.
-* The minimizing algorithm should search for a **global** minimum, as the
+1. Parallelization **within the expected response function** is difficult
+to achieve. This is generally the case when working with the simulated method of moments, as the simulated time series are often serially correlated.
+2. Thus, the **minimizing algorithm** should be able to run in **parallel**
+3. The minimizing algorithm should search for a **global minimum**, as the
 objective function may have multiple local minima.
-* **Do not reinvent the wheel**. Excellent minimization packages already exist in
+4. **Do not reinvent the wheel**. Excellent minimization packages already exist in
 the Julia ecosystem. This is why `MSM.jl` relies on [BlackBoxOptim.jl](https://github.com/robertfeldt/BlackBoxOptim.jl) and [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl) to perform the minimization.
 
 
 ## Installation
 
-This package is still in its development phase. Yet, If you feel brave enough:
+This package is still in its development phase. Yet, if you feel brave enough:
 ```
-using Pkg
-Pkg.clone("https://github.com/JulienPascal/MSM.jl.git")
+pkg> add https://github.com/JulienPascal/MSM.jl.git
 ```
 
 ## Usage
 
 See the following notebooks:
-* [`notebooks/LinearModel.ipynb`](notebooks/LinearModel.ipynb)
+* [`notebooks/LinearModel.ipynb`](notebooks/LinearModel.ipynb) for an **introduction** to the package
+* [`notebooks/LinearModelCluster.ipynb`](notebooks/LinearModelCluster.ipynb) to see how to use the package on a **cluster**
 
+## Experiments
+
+See the following notebooks for experiments with [ApproxBayes.jl](https://github.com/marcjwilliams1/ApproxBayes.jl) and [Surrogates.jl](https://github.com/SciML/Surrogates.jl) (not yet supported within the package)
+* [`notebooks/ABC.ipynb`](notebooks/ABC.ipynb)
+* [`notebooks/Surrogates.ipynb`](notebooks/Surrogates.ipynb)
 
 ## Related Packages
 
