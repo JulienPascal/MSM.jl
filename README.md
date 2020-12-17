@@ -49,9 +49,10 @@ See the following notebooks:
 
 ## Experiments
 
-See the following notebooks for experiments with [ApproxBayes.jl](https://github.com/marcjwilliams1/ApproxBayes.jl) and [Surrogates.jl](https://github.com/SciML/Surrogates.jl) (not yet supported within the package):
+See the following notebooks for experiments with [ApproxBayes.jl](https://github.com/marcjwilliams1/ApproxBayes.jl), [Surrogates.jl](https://github.com/SciML/Surrogates.jl) and [SurrogateModelOptim.jl](https://github.com/MrUrq/SurrogateModelOptim.jl) (not yet supported within the package):
 * [`notebooks/ABC.ipynb`](notebooks/ABC.ipynb)
 * [`notebooks/Surrogates.ipynb`](notebooks/Surrogates.ipynb)
+* [`notebooks/SurrogateModelOptim.ipynb`](notebooks/SurrogateModelOptim.ipynb)
 
 ## Related Packages
 
