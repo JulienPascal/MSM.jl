@@ -1129,7 +1129,7 @@ end
       end
 
       # Slice the objective functions
-      vXGrid, vYGrid = smm_slices(myProblem, minimizer, nbPoints = 7)
+      vXGrid, vYGrid = msm_slices(myProblem, minimizer, nbPoints = 7)
 
       # Plot the results
       if do_plots == true

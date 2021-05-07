@@ -68,6 +68,32 @@ function msm_minimizer(sMMProblem::MSMProblem)
 
 end
 
+
+"""
+  function msm_minimum(sMMProblem::MSMProblem)
+
+Function to get the minimum of the objective function
+"""
+function msm_minimum(sMMProblem::MSMProblem)
+
+  # If the global optimizer is using BlackBoxOptim
+  #-----------------------------------------------
+  if is_bb_optimizer(sMMProblem.options.globalOptimizer) == true
+
+    best_fitness(sMMProblem.bbResults)
+
+  # In the future, we may use other global minimizer
+  # routines. For the moment, let's return an error
+  #-------------------------------------------------
+  else
+
+    error("sMMProblem.options.globalOptimizer = $(sMMProblem.options.globalOptimizer) is not supported.")
+
+  end
+
+end
+
+
 """
   msm_refine_globalmin!(sMMProblem::MSMProblem; verbose::Bool = true)
 
@@ -120,7 +146,7 @@ end
 
 
 """
-  function msm_minimizer(sMMProblem::MSMProblem)
+  function msm_local_minimizer(sMMProblem::MSMProblem)
 
 Function to get the parameter value minimizing the objective function (local)
 """
@@ -137,14 +163,14 @@ function msm_local_minimizer(sMMProblem::MSMProblem)
   #-------------------------------------------------
   else
 
-    error("sMMProblem.options.globalOptimizer = $(sMMProblem.options.globalOptimizer) is not supported.")
+    error("sMMProblem.options.localOptimizer = $(sMMProblem.options.localOptimizer) is not supported.")
 
   end
 
 end
 
 """
-  function smm_minimum(sMMProblem::MSMProblem)
+  function msm_local_minimum(sMMProblem::MSMProblem)
 
 Function to get the local minimum value of the objetive function
 """
@@ -161,9 +187,36 @@ function msm_local_minimum(sMMProblem::MSMProblem)
   #-------------------------------------------------
   else
 
-    error("sMMProblem.options.globalOptimizer = $(sMMProblem.options.globalOptimizer) is not supported.")
+    error("sMMProblem.options.localOptimizer = $(sMMProblem.options.localOptimizer) is not supported.")
 
   end
+
+end
+
+
+"""
+  function msm_multistart_minimizer(sMMProblem::MSMProblem)
+
+Function to get the parameter value minimizing the objective function when
+using the multistart algorithm
+"""
+function msm_multistart_minimizer(sMMProblem::MSMProblem)
+
+  # Result given by msm_local_minimizer.
+  msm_local_minimizer(sMMProblem::MSMProblem)
+
+end
+
+"""
+  function msm_multistart_minimum(sMMProblem::MSMProblem)
+
+Function to get the minimum value of the objetive function when
+using the multistart algorithm
+"""
+function msm_multistart_minimum(sMMProblem::MSMProblem)
+
+  # Result given by msm_local_minimum
+  msm_local_minimum(sMMProblem::MSMProblem)
 
 end
 
