@@ -47,12 +47,20 @@ See the following notebooks:
 * [`notebooks/LinearModel.ipynb`](notebooks/LinearModel.ipynb) for an **introduction** to the package
 * [`notebooks/LinearModelCluster.ipynb`](notebooks/LinearModelCluster.ipynb) to see how to use the package on a **cluster**
 
+![alt text](notebooks/linearmodel.ipynb)
+
+---
+
 ## Experiments
 
 See the following notebooks for experiments with [ApproxBayes.jl](https://github.com/marcjwilliams1/ApproxBayes.jl), [Surrogates.jl](https://github.com/SciML/Surrogates.jl) and [SurrogateModelOptim.jl](https://github.com/MrUrq/SurrogateModelOptim.jl) (not yet supported within the package):
 * [`notebooks/ABC.ipynb`](notebooks/ABC.ipynb)
 * [`notebooks/Surrogates.ipynb`](notebooks/Surrogates.ipynb)
 * [`notebooks/SurrogateModelOptim.ipynb`](notebooks/SurrogateModelOptim.ipynb)
+
+![alt text](notebooks/surrogates.ipynb)
+
+---
 
 ## Related Packages
 
