@@ -92,10 +92,12 @@ module MSM
 
     # Functions and types in optimize.jl
     #-----------------------------------
-    export msm_optimize!, msm_minimizer
-    export msm_refine_globalmin!, msm_local_minimizer
-    export msm_local_minimum
+    export msm_optimize!
+    export msm_minimizer, msm_minimum
+    export msm_refine_globalmin!
+    export msm_local_minimizer, msm_local_minimum
     export msm_localmin, msm_multistart!
+    export msm_multistart_minimizer, msm_multistart_minimum
 
 
     # Functions in econometrics.jl
@@ -105,7 +107,7 @@ module MSM
 
     # Functions in analysis.jl
     #-------------------------
-    export smm_slices
+    export msm_slices
 
 
 end

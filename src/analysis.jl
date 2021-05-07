@@ -1,10 +1,10 @@
 """
-  smm_slices(sMMProblem::MSMProblem, paramValues::Vector; nbPoints::Int64 = 5, offset::Float64 = 0.001)
+  msm_slices(sMMProblem::MSMProblem, paramValues::Vector; nbPoints::Int64 = 5, offset::Float64 = 0.001)
 
 Function to "slice" the objective function. That is, to hold the variables constant,
 except for one dimension.
 """
-function smm_slices(sMMProblem::MSMProblem, paramValues::Vector; nbPoints::Int64 = 5, offset::Float64 = 0.001)
+function msm_slices(sMMProblem::MSMProblem, paramValues::Vector; nbPoints::Int64 = 5, offset::Float64 = 0.001)
 
     # Create a grid in the neighborhood of the minimizer
     lb_slice = paramValues .- abs.(paramValues) .* offset;
