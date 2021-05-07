@@ -47,8 +47,6 @@ See the following notebooks:
 * [`notebooks/LinearModel.ipynb`](notebooks/LinearModel.ipynb) for an **introduction** to the package
 * [`notebooks/LinearModelCluster.ipynb`](notebooks/LinearModelCluster.ipynb) to see how to use the package on a **cluster**
 
-![alt text](notebooks/linearmodel.ipynb)
-
 ---
 
 ## Experiments
@@ -58,7 +56,20 @@ See the following notebooks for experiments with [ApproxBayes.jl](https://github
 * [`notebooks/Surrogates.ipynb`](notebooks/Surrogates.ipynb)
 * [`notebooks/SurrogateModelOptim.ipynb`](notebooks/SurrogateModelOptim.ipynb)
 
-![alt text](notebooks/surrogates.ipynb)
+![alt text](notebooks/surrogates.ipynb=100x)
+
+---
+
+## Notebooks
+
+### Linear Model
+
+<img src="https://github.com/JulienPascal/MSM.jl/blob/julia_1.6/notebooks/linearmodel.gif" width="700">
+
+### Surrogates
+
+<img src="https://github.com/JulienPascal/MSM.jl/blob/julia_1.6/notebooks/surrogates.gif" width="700">
+
 
 ---
 
