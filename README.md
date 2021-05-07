@@ -64,11 +64,11 @@ See the following notebooks for experiments with [ApproxBayes.jl](https://github
 
 ### Linear Model
 
-<img src="https://github.com/JulienPascal/MSM.jl/blob/julia_1.6/notebooks/linearmodel.gif" width="700">
+<img src="https://julienpascal.github.io/img/MSM/linearmodel.gif" width="700">
 
 ### Surrogates
 
-<img src="https://github.com/JulienPascal/MSM.jl/blob/julia_1.6/notebooks/surrogates.gif" width="700">
+<img src="https://julienpascal.github.io/img/MSM/surrogates.gif" width="700">
 
 
 ---
