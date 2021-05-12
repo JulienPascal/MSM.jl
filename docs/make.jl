@@ -11,3 +11,7 @@ makedocs(
         ],
 
 )
+
+deploydocs(
+    repo = "github.com/JulienPascal/MSM.jl.git",
+)
