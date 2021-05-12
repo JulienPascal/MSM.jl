@@ -2,6 +2,10 @@
 	MSMOptions
 
 MSMOptions is a mutable struct that contains options related to the optimization.
+# Examples
+```julia-repl
+julia> options = MSMOptions(maxFuncEvals=1000, globalOptimizer = :dxnes, localOptimizer = :LBFGS)
+```
 """
 mutable struct MSMOptions
 	globalOptimizer::Symbol #algorithm for finding a global maximum
@@ -18,6 +22,16 @@ mutable struct MSMOptions
 	thresholdStartingValue::Float64 #value under which a point is considered as a valid starting value
 end
 
+"""
+	MSMOptions
+
+Constructor for MSMOptions. MSMOptions is a mutable struct that contains options related to the optimization.
+
+# Examples
+```julia-repl
+julia> options = MSMOptions(maxFuncEvals=1000, globalOptimizer = :dxnes, localOptimizer = :LBFGS)
+```
+"""
 function MSMOptions( ;globalOptimizer::Symbol=:dxnes,
 					localOptimizer::Symbol=:LBFGS,
 					maxFuncEvals::Int64=1000,
