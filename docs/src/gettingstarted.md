@@ -1,8 +1,5 @@
 # Getting Started
 
-## Installation
+## Example in serial
 
-```julia
-] add https://github.com/JulienPascal/MSM.jl.git 
-```
-## Example
+## Example in parallel

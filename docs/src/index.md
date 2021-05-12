@@ -11,6 +11,8 @@
 `MSM.jl` is a package designed to facilitate the estimation of economic models
 via the [Method of Simulated Moments](https://en.wikipedia.org/wiki/Method_of_simulated_moments).
 
+---
+
 ## Why
 
 An economic theory can be written as a system of equations that depends on primitive
@@ -23,14 +25,13 @@ When the function mapping the set of parameter values to the theoretical moments
 the [Generalized Method of Moments](https://en.wikipedia.org/wiki/Generalized_method_of_moments).
 However, in many interesting cases the *expected response function* is unknown. This issue may be circumvented by simulating the expected response function, which is often an easy task. In this case, the method is called the [Method of Simulated Moments](https://en.wikipedia.org/wiki/Method_of_simulated_moments).
 
+---
+
 ## Philosophy
 
 `MSM.jl` is being developed with the following constraints in mind:
 
-  1. Parallelization **within the expected response function** is difficult
-to achieve. This is generally the case when working with the simulated method of moments, as the simulated time series are often serially correlated.
-  2. Thus, the **minimizing algorithm** should be able to run in **parallel**
-  3. The minimizing algorithm should search for a **global minimum**, as the
-objective function may have multiple local minima.
-  4. **Do not reinvent the wheel**. Excellent minimization packages already exist in
-the Julia ecosystem. This is why `MSM.jl` relies on [BlackBoxOptim.jl](https://github.com/robertfeldt/BlackBoxOptim.jl) and [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl) to perform the minimization.
+1. Parallelization **within the expected response function** is difficult to achieve. This is generally the case when working with the simulated method of moments, as the simulated time series are often serially correlated.
+2. Thus, the **minimizing algorithm** should be able to run in **parallel**
+3. The minimizing algorithm should search for a **global minimum**, as the objective function may have multiple local minima.
+4. **Do not reinvent the wheel**. Excellent minimization packages already exist in the Julia ecosystem. This is why `MSM.jl` relies on [BlackBoxOptim.jl](https://github.com/robertfeldt/BlackBoxOptim.jl) and [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl) to perform the minimization.
