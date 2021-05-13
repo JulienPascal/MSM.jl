@@ -1,11 +1,11 @@
 # MSM.jl
 
 
-[![Build Status](https://github.com/JulienPascal/MSM.jl/workflows/CI/badge.svg)](https://github.com/JulienPascal/MSM.jl/actions)
-[![Build Status](https://travis-ci.com/JulienPascal/MSM.jl.svg?branch=main)](https://travis-ci.com/JulienPascal/MSM.jl)
+| **Documentation**  | **Build Status** | **Coverage** |
+|:-:|:-:|:-:|
+| [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://JulienPascal.github.io/MSM.jl/dev)|[![Build Status](https://github.com/JulienPascal/MSM.jl/workflows/CI/badge.svg)](https://github.com/JulienPascal/MSM.jl/actions)|[![codecov.io](https://codecov.io/gh/JulienPascal/MSM.jl/branch/julia_1.5/graphs/badge.svg)](https://codecov.io/gh/JulienPascal/MSM.jl/branch/julia_1.5/)|
+||[![Build Status](https://travis-ci.com/JulienPascal/MSM.jl.svg?branch=main)](https://travis-ci.com/JulienPascal/MSM.jl)||
 
-[![codecov.io](https://codecov.io/gh/JulienPascal/MSM.jl/branch/julia_1.5/graphs/badge.svg)](https://codecov.io/gh/JulienPascal/MSM.jl/branch/julia_1.5/)
-[![Coverage Status](https://coveralls.io/repos/github/JulienPascal/MSM.jl/badge.svg?branch=main)](https://coveralls.io/github/JulienPascal/MSM.jl?branch=main)
 
 
 `MSM.jl` is a package designed to facilitate the estimation of economic models
