@@ -115,6 +115,7 @@ dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
 dictEmpiricalMoments["mean"] = [mean(y); mean(y)] #informative on the intercept
 dictEmpiricalMoments["mean^2"] = [mean(y.^2); mean(y.^2)] #informative on the intercept
 dictEmpiricalMoments["mean^3"] = [mean(y.^3); mean(y.^3)] #informative on the intercept
+dictEmpiricalMoments["var"] = [mean(y.^2) - mean(y)^2; mean(y.^2) - mean(y)^2]
 dictEmpiricalMoments["mean_x1y"] = [mean(x[:,1] .* y); mean(x[:,1] .* y)] #informative on betas
 dictEmpiricalMoments["mean_x2y"] = [mean(x[:,2] .* y); mean(x[:,2] .* y)] #informative on betas
 dictEmpiricalMoments["mean_x1y^2"] = [mean((x[:,1] .* y).^2); mean((x[:,1] .* y).^2)] #informative on betas
@@ -164,6 +165,7 @@ sendto(workers(), dictEmpiricalMoments=dictEmpiricalMoments)
     output["mean"] = mean(y[startT:nbDraws])
     output["mean^2"] = mean(y[startT:nbDraws].^2)
     output["mean^3"] = mean(y[startT:nbDraws].^3)
+	output["var"] = mean(y[startT:nbDraws].^2) - mean(y[startT:nbDraws])^2
     output["mean_x1y"] = mean(simX[startT:nbDraws,1] .* y[startT:nbDraws])
     output["mean_x2y"] = mean(simX[startT:nbDraws,2] .* y[startT:nbDraws])
     output["mean_x1y^2"] = mean((simX[startT:nbDraws,1] .* y[startT:nbDraws]).^2)
@@ -229,3 +231,39 @@ println("Minimum objective function = $(minimum_multistart)")
 println("Estimated value for alpha = $(minimizer_multistart[1]). True value for beta1 = $(alpha0[1]) \n")
 println("Estimated value for beta1 = $(minimizer_multistart[2]). True value for beta1 = $(beta0[1]) \n")
 println("Estimated value for beta2 = $(minimizer_multistart[3]). True value for beta2 = $(beta0[2]) \n")
+
+# Empirical Series
+#-----------------
+X = zeros(T, 8)
+
+X[:,1] = y
+X[:,2] = y.^2
+X[:,3] = y.^3
+X[:,4] = (y .- mean(y)).^2
+X[:,5] = (x[:,1] .* y)
+X[:,6] = (x[:,2] .* y)
+X[:,7] = (x[:,1] .* y).^2
+X[:,8] = (x[:,2] .* y).^2
+
+# "Distance Matrix" (see Duffie and Singleton, 1993)
+Sigma0 = cov(X)
+
+# Heatmap to visualize correlation
+xs = [string("x", i) for i = 1:8]
+ys = [string("x", i) for i = 1:8]
+z = cor(X)
+heatmap(xs, ys, z, aspect_ratio = 1)
+
+set_Sigma0!(myProblem, Sigma0)
+# nbDraws = number of draws in the simulated data
+# To decrease standard errors, increase nbDraws
+calculate_Avar!(myProblem, minimizer, T, nbDraws)
+
+df = summary_table(myProblem, minimizer, T, 0.05)
+println(df)
+
+# Compare results with GLM
+using DataFrames, GLM
+data = DataFrame(x1=x[:,1], x2=x[:,2], y= y[:]);
+ols = lm(@formula(y ~ x1 + x2), data)
+println(ols)
