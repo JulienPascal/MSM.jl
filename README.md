@@ -74,5 +74,4 @@ See the following notebooks for experiments with [ApproxBayes.jl](https://github
 
 ## Related Packages
 
-* [SMM.jl](https://github.com/JulienPascal/SMM.jl): the now defunct ancestor of this package
-* [MomentOpt](https://github.com/floswald/SMM.jl): a package to do SMM using MCMC algorithms in parallel
+* [SMM.jl](https://github.com/floswald/SMM.jl): a package to do SMM using MCMC algorithms in parallel
