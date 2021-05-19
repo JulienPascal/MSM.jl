@@ -183,7 +183,10 @@ end
 
 # Let's freeze the randomness during the minimization
 d_Uni = Uniform(0,1)
-nbDraws = 10000 #number of draws in the simulated data
+nbDraws = 10000 #Number of draws in the simulated data
+burnInPerc = 10 #Burn-in phase (10%). Not necessary in the present context.
+startT = div(nbDraws, burnInPerc) #First period used to calculate moments on simulated data
+NMSM = nbDraws - startT + 1; #Number of Draws used when calculated moments on simulated data
 uniform_draws = rand(d_Uni, nbDraws)
 simX = zeros(length(uniform_draws), 2)
 d = Uniform(0, 5)
@@ -192,11 +195,12 @@ for p = 1:2
 end
 
 # Send to workers
+sendto(workers(), burnInPerc=burnInPerc)
 sendto(workers(), simX=simX)
 sendto(workers(), uniform_draws=uniform_draws)
 
 # Construct the objective function everywhere
-@everywhere set_simulate_empirical_moments!(myProblem, x -> functionLinearModel(x, uniform_draws = uniform_draws, simX = simX))
+@everywhere set_simulate_empirical_moments!(myProblem, x -> functionLinearModel(x, uniform_draws = uniform_draws, simX = simX, burnInPerc=burnInPerc))
 @everywhere construct_objective_function!(myProblem)
 
 # Safety check: value on the master node == values on slave nodes?
@@ -212,9 +216,9 @@ end
 
 #------------------------------------------------------------------------------
 # Formulate the problem as a Laplace Type Estimator and use MCMC to find
-# the quasi-posterior mean
+# the quasi-posterior median
 #------------------------------------------------------------------------------
-# Let's assume now that we observe Y_star
+# For tuning parameters, see: See https://github.com/madsjulia/AffineInvariantMCMC.jl
 @everywhere begin
 	numdims = 3
 	numwalkers = 10
@@ -224,63 +228,73 @@ end
 	lb = 0 .* ones(numdims) #lower bound
 	ub = 1 .* ones(numdims) #upper bound
 	# Uniform prior
-	d_prior = Product(Uniform.(lb, ub))
+	# d_prior = Product(Uniform.(lb, ub))
+	# Normal
+	d_prior = MvNormal(zeros(numdims), 0.1 .* I(numdims))
 end
 
 
-# Log-likelihood
-@everywhere function Ln_MSM(x)
-	return -0.5*myProblem.objective_function(x)
+# Pseudo Log-likelihood
+@everywhere function Ln_MSM(x, NMSM)
+	return -0.5*NMSM*myProblem.objective_function(x)
 end
 
-# Log quasi-posterior: Log(likelihood) + log(prior)
-@everywhere function quasi_posterior(x, d_prior)
-	 return Ln_MSM(x) + log(pdf(d_prior, x))
+# Pseudo Log quasi-posterior: Pseudo Log(likelihood) + log(prior)
+@everywhere function quasi_posterior(x, NMSM, d_prior)
+	 return Ln_MSM(x, NMSM) + log(pdf(d_prior, x))
 end
+
 
 # Safety check: value on the master node == values on slave nodes?
 using Test
-val_local = Ln_MSM(ones(3)); #local execution
+val_local = Ln_MSM(ones(3), NMSM); #local execution
 val_workers = [];
 for w in workers() #Execution on workers
-    push!(val_workers, @fetchfrom w Ln_MSM(ones(3)))
+    push!(val_workers, @fetchfrom w Ln_MSM(ones(3), NMSM))
 end
 for (wIndex, w) in enumerate(workers())
     @test abs(val_local - val_workers[wIndex]) < 10e-10
 end
 
 
-# Option 1: slightly perturb the initial draws for the walkers
+# Slightly perturb the initial draws for the walkers
 x0 = [dictPriors[k][1] for k in keys(dictPriors)]
 x0_chains = ones(numdims, numwalkers).*true_vals .+ rand(numdims, numwalkers) .* 1.0
-chain, llhoodvals = AffineInvariantMCMC.sample(x -> Ln_MSM(x), numwalkers, x0_chains, burnin, 1)
-chain, llhoodvals = AffineInvariantMCMC.sample(x -> Ln_MSM(x), numwalkers, chain[:, :, end], numsamples_perwalker, thinning)
+chain, llhoodvals = AffineInvariantMCMC.sample(x -> quasi_posterior(x, nbDraws, d_prior), numwalkers, x0_chains, burnin, 1)
+chain, llhoodvals = AffineInvariantMCMC.sample(x -> quasi_posterior(x, nbDraws, d_prior), numwalkers, chain[:, :, end], numsamples_perwalker, thinning)
 flatchain, flatllhoodvals = AffineInvariantMCMC.flattenmcmcarray(chain, llhoodvals)
 
 #-------------------------------------------------------------------------------
 # Plot Draws
 #-------------------------------------------------------------------------------
-#Use the function "squeeze" to go from Array{Float64,2} to Array{Float64,1}: necessary for plotting
 p1 = plot(flatchain[1,:], ylabel="alpha0", xlabel="T", legend=:none)
 p2 = plot(flatchain[2,:], ylabel="beta1", xlabel="T", legend=:none)
 p3 = plot(flatchain[3,:], ylabel="beta2", xlabel="T", legend=:none)
 p4 = plot(p1, p2, p3)
 savefig(p4, joinpath(pwd(),"chains_MSM_MCMC.png"))
-display(p4)
 
 
 hh1 = histogram(flatchain[1,burnin:end], title="alpha0", legend=:none)
+vline!(hh1, [alpha0[1]], linewidth = 4)
 hh2 = histogram(flatchain[2,burnin:end], title="beta1", legend=:none)
+vline!(hh2, [beta0[1]], linewidth = 4)
 hh3 = histogram(flatchain[3,burnin:end], title="beta2", legend=:none)
+vline!(hh3, [beta0[2]], linewidth = 4)
 hh4 = plot(hh1, hh2, hh3)
 savefig(hh4, joinpath(pwd(),"histograms_MSM_MCMC.png"))
-display(hh4)
 
+# Compare results with GLM
+using DataFrames, GLM
+data = DataFrame(x1=x[:,1], x2=x[:,2], y= y[:]);
+ols = lm(@formula(y ~ x1 + x2), data)
+coef_ols = coef(ols)
+ci_ols = confint(ols)
+stderror_ols = stderror(ols)
 
-result_alpha0 = append!(quantile(flatchain[1,burnin:end],[0.05, 0.10, 0.5, 0.90, 0.95]), std(flatchain[1,burnin:end]), alpha0[1])
-result_beta1 = append!(quantile(flatchain[2,burnin:end],[0.05, 0.10, 0.5, 0.90, 0.95]), std(flatchain[2,burnin:end]), beta0[1])
-result_beta2 = append!(quantile(flatchain[3,burnin:end],[0.05, 0.10, 0.5, 0.90, 0.95]), std(flatchain[3,burnin:end]), beta0[2])
-results = DataFrame(variable = ["P5"; "P10"; "Median"; "P90"; "P95"; "std"; "True value"],
+result_alpha0 = append!(quantile(flatchain[1,burnin:end],[0.05, 0.10, 0.5, 0.90, 0.95]), std(flatchain[1,burnin:end]), NaN, alpha0[1],NaN, coef_ols[1], ci_ols[1,1], ci_ols[1,2], stderror_ols[1])
+result_beta1 = append!(quantile(flatchain[2,burnin:end],[0.05, 0.10, 0.5, 0.90, 0.95]), std(flatchain[2,burnin:end]), NaN,beta0[1], NaN,coef_ols[2], ci_ols[2,1], ci_ols[2,2], stderror_ols[2])
+result_beta2 = append!(quantile(flatchain[3,burnin:end],[0.05, 0.10, 0.5, 0.90, 0.95]), std(flatchain[3,burnin:end]), NaN,beta0[2], NaN,coef_ols[3], ci_ols[3,1], ci_ols[3,2], stderror_ols[3])
+results = DataFrame(variable = ["P5"; "P10"; "Median"; "P90"; "P95"; "std"; "-" ;"True value"; "-" ;"OLS Estimate"; "P5 OLS"; "P95 OLS"; "Std OLS"],
 						alpha0 = result_alpha0, beta1 = result_beta1, beta2 = result_beta2)
 
 CSV.write(joinpath(pwd(),"output_table_MSM_MCMC.csv"), results)
