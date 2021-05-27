@@ -22,7 +22,13 @@ bibliography: paper.bib
 # Statement of need
 
 
-# Mathematics
+# Theory
+
+[GMM objective function]
+
+[Assumptions]
+
+[Results. Sandwich formula]
 
 Single dollars ($) are required for inline mathematics e.g. $f(x) = e^{\pi/x}$
 
