@@ -1,4 +1,4 @@
-maxNbWorkers = 2
+maxNbWorkers = 1
 using Distributed
 while nworkers() < maxNbWorkers
   addprocs(1)
@@ -257,7 +257,7 @@ end
     end
 
 
-    @testset "set_priors!, set_empirical_moments!" begin
+    @testset "set_priors!, set_empirical_moments!, set_weight_matrix!" begin
 
         t = MSMProblem();
 
@@ -278,6 +278,17 @@ end
             set_empirical_moments!(t, dictEmpiricalMoments)
 
             @test t.empiricalMoments == dictEmpiricalMoments
+
+        end
+
+        @testset "set_weight_matrix!" begin
+
+            N = 5
+            W = collect(1:N).*ones(N,N)
+
+            set_weight_matrix!(t, W)
+
+            @test t.W == W
 
         end
     end
@@ -336,6 +347,17 @@ end
             # A. Set the function: parameter -> simulated moments
             set_simulate_empirical_moments!(t, functionTest)
 
+            # A'. Attach weight marix
+            W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+            #Special case: diagonal matrix
+            #(you may choose something else)
+            for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+                W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+            end
+
+            set_weight_matrix!(t, W)
+
+
             # B. Construct the objective function, using the function: parameter -> simulated moments
             # and moments' weights:
             construct_objective_function!(t)
@@ -391,50 +413,6 @@ end
 
     end
 
-    # I am having difficulties with loading and savings
-    #---------------------------------------------------------------------------
-    # @testset "testing loading and saving an optimization" begin
-    #
-    #
-    #     Random.seed!(1234)
-    #     tol1dMean = 0.01
-    #
-    #     function functionTest(x::Vector)
-    #
-    #         output = OrderedDict{String,Float64}()
-    #         d = Normal(x[1])
-    #         output["meanU"] = mean(rand(d, 100000))
-    #
-    #         return output
-    #     end
-    #
-    #     t = MSMProblem()
-    #
-    #     set_simulate_empirical_moments!(t, functionTest)
-    #
-    #     # For the test to make sense, we need to set the field
-    #     # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
-    #     #------------------------------------------------------
-    #     dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
-    #     set_empirical_moments!(t, dictEmpiricalMoments)
-    #
-    #     # A. Set the function: parameter -> simulated moments
-    #     set_simulate_empirical_moments!(t, functionTest)
-    #
-    #     # B. Construct the objective function, using the function: parameter -> simulated moments
-    #     # and moments' weights:
-    #     construct_objective_function!(t)
-    #
-    #     saveMSMOptim(t, saveName = "iamatest")
-    #     t2 = loadMSMOptim("iamatest")
-    #
-    #     # Test the objective function is correctly loaded
-    #     #------------------------------------------------
-    #
-    #     @test t.objective_function([dictEmpiricalMoments["meanU"][1]]) ≈ t2.objective_function([dictEmpiricalMoments["meanU"][1]]) atol = tol1dMean
-    #
-    # end
-
 
     @testset "Testing msm_optimize!" begin
 
@@ -477,6 +455,16 @@ end
             # A. Set the function: parameter -> simulated moments
             #----------------------------------------------------
             set_simulate_empirical_moments!(t, functionTest1d)
+
+            # A'. Attach weight marix
+            W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+            #Special case: diagonal matrix
+            #(you may choose something else)
+            for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+                W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+            end
+
+            set_weight_matrix!(t, W)
 
             # B. Construct the objective function, using the function: parameter -> simulated moments
             # and moments' weights:
@@ -532,6 +520,16 @@ end
           #----------------------------------------------------
           set_simulate_empirical_moments!(t, functionTest1d)
 
+          # A'. Attach weight marix
+          W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+          #Special case: diagonal matrix
+          #(you may choose something else)
+          for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+              W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+          end
+
+          set_weight_matrix!(t, W)
+
           # B. Construct the objective function, using the function: parameter -> simulated moments
           # and moments' weights:
           #----------------------------------------------------
@@ -582,6 +580,16 @@ end
           # A. Set the function: parameter -> simulated moments
           #----------------------------------------------------
           set_simulate_empirical_moments!(t, functionTest1d)
+
+          # A'. Attach weight marix
+          W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+          #Special case: diagonal matrix
+          #(you may choose something else)
+          for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+              W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+          end
+
+          set_weight_matrix!(t, W)
 
           # B. Construct the objective function, using the function: parameter -> simulated moments
           # and moments' weights:
@@ -640,6 +648,16 @@ end
 
             # A. Set the function: parameter -> simulated moments
             set_simulate_empirical_moments!(t, functionTest2d)
+
+            # A'. Attach weight marix
+            W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+            #Special case: diagonal matrix
+            #(you may choose something else)
+            for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+                W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+            end
+
+            set_weight_matrix!(t, W)
 
             # B. Construct the objective function, using the function: parameter -> simulated moments
             # and moments' weights:
@@ -706,6 +724,16 @@ end
             # A. Set the function: parameter -> simulated moments
             set_simulate_empirical_moments!(t, functionTest2d)
 
+            # A'. Attach weight marix
+            W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+            #Special case: diagonal matrix
+            #(you may choose something else)
+            for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+                W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+            end
+
+            set_weight_matrix!(t, W)
+
             # B. Construct the objective function, using the function: parameter -> simulated moments
             # and moments' weights:
             construct_objective_function!(t)
@@ -765,6 +793,16 @@ end
               # A. Set the function: parameter -> simulated moments
               set_simulate_empirical_moments!(t, functionTest2d)
 
+              # A'. Attach weight marix
+              W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+              #Special case: diagonal matrix
+              #(you may choose something else)
+              for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+                  W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+              end
+
+              set_weight_matrix!(t, W)
+
               # B. Construct the objective function, using the function: parameter -> simulated moments
               # and moments' weights:
               construct_objective_function!(t)
@@ -822,6 +860,16 @@ end
 
             # A. Set the function: parameter -> simulated moments
             set_simulate_empirical_moments!(t, functionTest2d)
+
+            # A'. Attach weight marix
+            W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+            #Special case: diagonal matrix
+            #(you may choose something else)
+            for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+                W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+            end
+
+            set_weight_matrix!(t, W)
 
             # B. Construct the objective function, using the function: parameter -> simulated moments
             # and moments' weights:
@@ -888,6 +936,16 @@ end
               # A. Set the function: parameter -> simulated moments
               set_simulate_empirical_moments!(t, x -> functionTest2d(x,uniform_draws))
 
+              # A'. Attach weight marix
+              W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+              #Special case: diagonal matrix
+              #(you may choose something else)
+              for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+                  W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+              end
+
+              set_weight_matrix!(t, W)
+
               # B. Construct the objective function, using the function: parameter -> simulated moments
               # and moments' weights:
               construct_objective_function!(t)
@@ -913,6 +971,16 @@ end
               # A. Set the function: parameter -> simulated moments
               set_simulate_empirical_moments!(t, x -> functionTest2d(x, uniform_draws))
 
+              # A'. Attach weight marix
+              W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+              #Special case: diagonal matrix
+              #(you may choose something else)
+              for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+                  W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+              end
+
+              set_weight_matrix!(t, W)
+
               # B. Construct the objective function, using the function: parameter -> simulated moments
               # and moments' weights:
               construct_objective_function!(t)
@@ -934,8 +1002,8 @@ end
       Random.seed!(1234)         #for replicability reasons
       T = 100000          #number of periods
       P = 2               #number of dependent variables
-      beta0 = rand(P)     #choose true coefficients by drawing from a uniform distribution on [0,1]
-      alpha0 = rand(1)[]  #intercept
+      beta0 = [2.0; 3.0]     #choose true coefficients by drawing from a uniform distribution on [0,1]
+      alpha0 = 1.0  #intercept
       theta0 = 0.0        #coefficient to create serial correlation in the error terms
       println("True intercept = $(alpha0)")
       println("True coefficient beta0 = $(beta0)")
@@ -988,6 +1056,17 @@ end
       dictPriors["beta2"] = [0.5, 0.001, 1.0]
 
       set_priors!(myProblem, dictPriors)
+
+      # A'. Attach weight marix
+      W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+      #Special case: diagonal matrix
+      #(you may choose something else)
+      for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+          W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+      end
+
+      set_weight_matrix!(myProblem, W)
+
 
       # x[1] corresponds to the intercept
       # x[1] corresponds to beta1
@@ -1062,7 +1141,7 @@ end
       # Run the optimization in parallel using n different starting values
       # where n is equal to the number of available workers
       #--------------------------------------------------------------------
-      @time listOptimResults = msm_multistart!(myProblem, verbose = true)
+      listOptimResults = msm_multistart!(myProblem, verbose = true)
 
       # Remark: it would not be appropriate to use BlackBoxOptim because the
       # No big deal here, because we use Optim
@@ -1090,7 +1169,7 @@ end
 
       @test myProblem.Sigma0 == Sigma0
 
-      calculate_Avar!(myProblem, minimizer, T, nbDraws)
+      calculate_Avar!(myProblem, minimizer, tau = T/nbDraws)
 
       # The asymptotic variance should be
       # * symmetric

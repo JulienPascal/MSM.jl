@@ -1,7 +1,7 @@
 using ClusterManagers
 using Distributed
 OnCluster = false #set to false to run locally
-addWorkers = false #set to false to run serially
+addWorkers = true #set to false to run serially
 println("OnCluster = $(OnCluster)")
 
 # Current number of workers
