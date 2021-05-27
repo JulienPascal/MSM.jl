@@ -30,17 +30,15 @@ function set_simulate_empirical_moments!(sMMProblem::MSMProblem, f::Function)
 end
 
 """
-  construct_objective_function!(sMMProblem::MSMProblem, f::Function)
+  construct_objective_function!(sMMProblem::MSMProblem)
 
 Function that construct an objective function, using the function
-MSMProblem.simulate_empirical_moments. For the moment, the objective function
-returns the mean of the percentage deviation of simulated moments from
-their true value.
+MSMProblem.simulate_empirical_moments.
 """
-function construct_objective_function!(sMMProblem::MSMProblem, objectiveType::Symbol = :percent)
+function construct_objective_function!(sMMProblem::MSMProblem)
 
 
-    function objective_function_percent(x)
+    function objective_function_MSM(x)
 
           # Initialization
           #----------------
@@ -77,11 +75,12 @@ function construct_objective_function!(sMMProblem::MSMProblem, objectiveType::Sy
           # * sMMProblem.empiricalMoments[k][1] is the empirical moments
           # * sMMProblem.empiricalMoments[k][2] is the weight associated to this moment
           #---------------------------------------------------------------------
-          arrayDistance[indexMoment] = ((sMMProblem.empiricalMoments[k][1] - simulatedMoments[k]) /sMMProblem.empiricalMoments[k][2])^2
+          arrayDistance[indexMoment] = (sMMProblem.empiricalMoments[k][1] - simulatedMoments[k])
 
         end
 
-        distanceEmpSimMoments = mean(arrayDistance)
+        # formula is (m - m*)'*W*(m - m*)'
+        distanceEmpSimMoments = transpose(arrayDistance)*sMMProblem.W*arrayDistance
 
         if sMMProblem.options.showDistance == true
           println("distance = $(distanceEmpSimMoments)")
@@ -94,12 +93,8 @@ function construct_objective_function!(sMMProblem::MSMProblem, objectiveType::Sy
     end
 
 
-  if objectiveType == :percent
-    sMMProblem.objective_function = objective_function_percent
-  else
-    error("Error in construct_objective_function. objectiveType currently only support :percent.")
-  end
-
+    # Attach the objective function
+    sMMProblem.objective_function = objective_function_MSM
 
 end
 
@@ -111,6 +106,17 @@ Function to change the field sMMProblem.priors
 function set_priors!(sMMProblem::MSMProblem, priors::OrderedDict{String,Array{Float64,1}})
 
   sMMProblem.priors = priors
+
+end
+
+"""
+   set_weight_matrix!(sMMProblem::MSMProblem, W::Matrix{Float64})
+
+Function to change the field sMMProblem.empiricalMoments
+"""
+function set_weight_matrix!(sMMProblem::MSMProblem, W::Matrix{Float64})
+
+  sMMProblem.W = W
 
 end
 

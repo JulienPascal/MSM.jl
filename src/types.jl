@@ -32,7 +32,8 @@ Constructor for MSMOptions. MSMOptions is a mutable struct that contains options
 julia> options = MSMOptions(maxFuncEvals=1000, globalOptimizer = :dxnes, localOptimizer = :LBFGS)
 ```
 """
-function MSMOptions( ;globalOptimizer::Symbol=:dxnes,
+function MSMOptions( ;
+					globalOptimizer::Symbol=:dxnes,
 					localOptimizer::Symbol=:LBFGS,
 					maxFuncEvals::Int64=1000,
 					saveName::String = get_now(),
@@ -83,6 +84,7 @@ perform the optimization and display the results.
 mutable struct MSMProblem
 	iter::Int64
 	priors::OrderedDict{String,Array{Float64,1}}
+	W::Matrix{Float64} #Weight matrix in MSM objective function
 	empiricalMoments::OrderedDict{String,Array{Float64,1}}
 	simulatedMoments::OrderedDict{String, Float64}
 	distanceEmpSimMoments::Float64
@@ -101,6 +103,7 @@ end
 #------------------------------------------------------------------------------
 function MSMProblem(  ;iter::Int64 = 0,
 						priors::OrderedDict{String,Array{Float64,1}} = OrderedDict{String,Array{Float64,1}}(),
+						W::Matrix{Float64}=Matrix(1.0 .* I(1)),
 						empiricalMoments::OrderedDict{String,Array{Float64,1}} = OrderedDict{String,Array{Float64,1}}(),
 						simulatedMoments::OrderedDict{String, Float64} = OrderedDict{String,Float64}(),
 						distanceEmpSimMoments::Float64 = 0.,
@@ -116,6 +119,7 @@ function MSMProblem(  ;iter::Int64 = 0,
 
 	MSMProblem(iter,
 				priors,
+				W,
 				empiricalMoments,
 				simulatedMoments,
 				distanceEmpSimMoments,
