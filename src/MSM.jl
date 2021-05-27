@@ -75,7 +75,7 @@ module MSM
     # Functions and types in generic.jl
     #----------------------------------
     export set_simulate_empirical_moments!, construct_objective_function!
-    export set_priors!, set_empirical_moments!, set_Sigma0!
+    export set_priors!, set_weight_matrix!, set_empirical_moments!, set_Sigma0!
     export set_bbSetup!, generate_bbSearchRange
     export create_lower_bound, create_upper_bound
     export set_global_optimizer!
@@ -103,7 +103,7 @@ module MSM
     # Functions in econometrics.jl
     #-----------------------------
     export calculate_D, calculate_Avar!, calculate_se, calculate_t, calculate_pvalue, calculate_CI
-    export summary_table
+    export summary_table, cov_NW
 
     # Functions in analysis.jl
     #-------------------------

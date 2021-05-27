@@ -14,32 +14,27 @@ function calculate_D(sMMProblem::MSMProblem, theta0::Array{Float64,1})
 end
 
 """
-  calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}; method::Symbol = :central)
+  calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}; tau::Float64 = 1.0)
 
 Calculate the asymptotic variance of the SMM estimator using the sandwich formula.
 This function assume that your model is simulating time series.
 As a result, the asymptotic variance of the SMM estimator is (1+tau) times
-the asymptotic variance of the GMM one, where tau is the ratio of the sample size
+the asymptotic variance for the GMM estimator, where tau is the ratio of the sample size
 to the size of the simulated sample. See Duffie and Singleton (1993) and Gouriéroux and Monfort (1996).
 """
-function calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, tSimulation::Int64)
+function calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}; tau::Float64 = 1.0)
 
   # Safety Checks
   if isempty(sMMProblem.Sigma0) == true
     error("Please initialize sMMProblem.Sigma0 using the function set_Sigma0!.")
   end
 
-  tau = tData/tSimulation
-
   # Jacobian matrix
   D = calculate_D(sMMProblem, theta0)
 
-  # Weigthing matrix (only diagonal matrix for the moment)
-  W = diagm([1/sMMProblem.empiricalMoments[k][2] for k in keys(sMMProblem.empiricalMoments)])
+  Sigma1 = transpose(D)*sMMProblem.W*D
 
-  Sigma1 = transpose(D)*W*D
-
-  Sigma2 = transpose(D)*W*sMMProblem.Sigma0*W*D
+  Sigma2 = transpose(D)*sMMProblem.W*sMMProblem.Sigma0*sMMProblem.W*D
 
   inv_Sigma1 = inv(Sigma1)
 
@@ -165,4 +160,41 @@ function summary_table(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::
 
   return df
 
+end
+
+"""
+  cov_NW(data::Matrix; l::Int64 = -1)
+
+Function to calculate Newey–West (1987) variance-covariance matrix. `data` is the
+data matrix with each row representing a time period and each column representing
+a variable. `l` is the nummber of lags to include.
+"""
+function cov_NW(data::Matrix; l::Int64 = -1)
+    # See: Newey, Whitney K; West, Kenneth D (1987)
+    # data: rows = time; columns = dimension
+    # l: number of lags to include
+    #number of periods
+    T=size(data,1);
+    nlag=l;
+    #Default value if user does not provide l
+    if nlag == -1
+        nlag=Int(min(floor(1.2*T^(1/3)),T));
+    end
+
+    #Demean each column
+    data = data .- repeat(mean(data, dims=1), outer = [T, 1]);
+
+    # Newey West weights:
+    w=(nlag+1 .- collect(0:nlag))./(nlag+1);
+
+    # Variance-covariance matrix when no serial correlation
+    V=transpose(data)*data./(T-1);
+
+    # Additional terms (non-zeros if serial correlation)
+    for i=1:nlag
+        Gammai=(transpose(data[(i+1):T,:])*data[1:T-i,:])./(T-1);
+        V = V + w[i+1].*(Gammai + transpose(Gammai));
+    end
+
+    return V
 end

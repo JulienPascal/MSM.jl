@@ -51,11 +51,11 @@ See the following notebooks:
 
 ## Experiments
 
-See the following notebooks for experiments with [ApproxBayes.jl](https://github.com/marcjwilliams1/ApproxBayes.jl), [Surrogates.jl](https://github.com/SciML/Surrogates.jl) and [SurrogateModelOptim.jl](https://github.com/MrUrq/SurrogateModelOptim.jl) (not yet supported within the package):
+See the following notebooks for experiments with [ApproxBayes.jl](https://github.com/marcjwilliams1/ApproxBayes.jl), [Surrogates.jl](https://github.com/SciML/Surrogates.jl), [SurrogateModelOptim.jl](https://github.com/MrUrq/SurrogateModelOptim.jl) and **MSM-MCMC** using [AffineInvariantMCMC.jl](https://github.com/madsjulia/AffineInvariantMCMC.jl) (not yet supported within the package):
 * [`notebooks/ABC.ipynb`](notebooks/ABC.ipynb)
 * [`notebooks/Surrogates.ipynb`](notebooks/Surrogates.ipynb)
 * [`notebooks/SurrogateModelOptim.ipynb`](notebooks/SurrogateModelOptim.ipynb)
-
+* [`notebooks/MSM-MCMC`](notebooks/MSM-MCMC.ipynb)
 
 ---
 
@@ -74,5 +74,4 @@ See the following notebooks for experiments with [ApproxBayes.jl](https://github
 
 ## Related Packages
 
-* [SMM.jl](https://github.com/JulienPascal/SMM.jl): the now defunct ancestor of this package
-* [MomentOpt](https://github.com/floswald/SMM.jl): a package to do SMM using MCMC algorithms in parallel
+* [SMM.jl](https://github.com/floswald/SMM.jl): a package to do SMM using MCMC algorithms in parallel
