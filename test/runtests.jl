@@ -426,7 +426,7 @@ end
             # within the function simulate_empirical_moments!
             # Otherwise, BlackBoxOptim does not find the solution
             #----------------------------------------------------
-            tol1dMean = 0.1
+            tol1dMean = 0.2
 
             @everywhere function functionTest1d(x)
 
@@ -439,7 +439,7 @@ end
             end
 
 
-            t = MSMProblem(options = MSMOptions(maxFuncEvals=200))
+            t = MSMProblem(options = MSMOptions(maxFuncEvals=1000))
 
             # For the test to make sense, we need to set the field
             # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
@@ -503,7 +503,7 @@ end
           end
 
 
-          t = MSMProblem(options = MSMOptions(maxFuncEvals=200))
+          t = MSMProblem(options = MSMOptions(maxFuncEvals=1000))
 
           # For the test to make sense, we need to set the field
           # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
@@ -564,7 +564,7 @@ end
 
           # Let's try with the optim minBox on
           #-----------------------------------
-          t = MSMProblem(options = MSMOptions(maxFuncEvals=200, localOptimizer = :LBFGS, minBox = true))
+          t = MSMProblem(options = MSMOptions(maxFuncEvals=1000, localOptimizer = :LBFGS, minBox = true))
 
           # For the test to make sense, we need to set the field
           # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
@@ -915,7 +915,7 @@ end
               end
 
 
-              t = MSMProblem(options = MSMOptions(maxFuncEvals=200, globalOptimizer = :dxnes,
+              t = MSMProblem(options = MSMOptions(maxFuncEvals=1000, globalOptimizer = :dxnes,
                             localOptimizer = :NelderMead, penaltyValue = 100.0, showDistance=true))
 
               #---------------------------------------------------------------------
@@ -992,6 +992,24 @@ end
 
     end
 
+    @testset "Testing Var-Covariance estimation" begin
+
+        d = Normal(0, 0.2)
+        T=10000
+        y1 = rand(d, T);
+        y2 = rand(d, T);
+        y3 = rand(d, T);
+        data = hcat(y1, y2, y3);
+
+        #When l=0, cov_NW(data) should be cov(data)
+        @test maximum(abs.(cov_NW(data, l=0) .- cov(data))) < 1.0e-10
+
+        # Even when including lags, with no serial correlation the difference should
+        # be small
+        @test maximum(abs.(cov_NW(data, l=1) .- cov(data))) < 1.0e-2
+
+
+    end
 
     @testset "Testing Inference" begin
 
@@ -1037,7 +1055,7 @@ end
           y[t] = alpha0 + x[t,1]*beta0[1] + x[t,2]*beta0[2] + U[t]
       end
 
-      myProblem = MSMProblem(options = MSMOptions(maxFuncEvals=500, globalOptimizer = :dxnes, localOptimizer = :LBFGS));
+      myProblem = MSMProblem(options = MSMOptions(maxFuncEvals=1000, globalOptimizer = :dxnes, localOptimizer = :LBFGS));
 
       # Empirical moments
       #------------------

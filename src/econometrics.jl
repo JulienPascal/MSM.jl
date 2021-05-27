@@ -161,3 +161,40 @@ function summary_table(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::
   return df
 
 end
+
+"""
+  cov_NW(data::Matrix; l::Int64 = -1)
+
+Function to calculate Newey–West (1987) variance-covariance matrix. `data` is the
+data matrix with each row representing a time period and each column representing
+a variable. `l` is the nummber of lags to include.
+"""
+function cov_NW(data::Matrix; l::Int64 = -1)
+    # See: Newey, Whitney K; West, Kenneth D (1987)
+    # data: rows = time; columns = dimension
+    # l: number of lags to include
+    #number of periods
+    T=size(data,1);
+    nlag=l;
+    #Default value if user does not provide l
+    if nlag == -1
+        nlag=Int(min(floor(1.2*T^(1/3)),T));
+    end
+
+    #Demean each column
+    data = data .- repeat(mean(data, dims=1), outer = [T, 1]);
+
+    # Newey West weights:
+    w=(nlag+1 .- collect(0:nlag))./(nlag+1);
+
+    # Variance-covariance matrix when no serial correlation
+    V=transpose(data)*data./(T-1);
+
+    # Additional terms (non-zeros if serial correlation)
+    for i=1:nlag
+        Gammai=(transpose(data[(i+1):T,:])*data[1:T-i,:])./(T-1);
+        V = V + w[i+1].*(Gammai + transpose(Gammai));
+    end
+
+    return V
+end
