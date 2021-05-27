@@ -61,17 +61,22 @@ set_priors!(myProblem, dictPriors)
 
 # Empirical moments
 dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
-dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
-dictEmpiricalMoments["mean"] = [mean(y); mean(y)] #informative on the intercept
-dictEmpiricalMoments["mean^2"] = [mean(y.^2); mean(y.^2)] #informative on the intercept
-dictEmpiricalMoments["mean^3"] = [mean(y.^3); mean(y.^3)] #informative on the intercept
-dictEmpiricalMoments["var"] = [mean(y.^2) - mean(y)^2; mean(y.^2) - mean(y)^2]
-dictEmpiricalMoments["mean_x1y"] = [mean(x[:,1] .* y); mean(x[:,1] .* y)] #informative on betas
-dictEmpiricalMoments["mean_x2y"] = [mean(x[:,2] .* y); mean(x[:,2] .* y)] #informative on betas
-dictEmpiricalMoments["mean_x1y^2"] = [mean((x[:,1] .* y).^2); mean((x[:,1] .* y).^2)] #informative on betas
-dictEmpiricalMoments["mean_x2y^2"] = [mean((x[:,2] .* y).^2); mean((x[:,2] .* y).^2)] #informative on betas
+dictEmpiricalMoments["mean"] = [mean(y)] #informative on the intercept
+dictEmpiricalMoments["mean^2"] = [mean(y.^2)] #informative on the intercept
+dictEmpiricalMoments["mean^3"] = [mean(y.^3)] #informative on the intercept
+dictEmpiricalMoments["mean_x1y"] = [mean(x[:,1] .* y)] #informative on betas
+dictEmpiricalMoments["mean_x2y"] = [mean(x[:,2] .* y)] #informative on betas
+dictEmpiricalMoments["mean_x1y^2"] = [mean((x[:,1] .* y).^2)] #informative on betas
+dictEmpiricalMoments["mean_x2y^2"] = [mean((x[:,2] .* y).^2)] #informative on betas
 set_empirical_moments!(myProblem, dictEmpiricalMoments)
 
+W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+#Special case: diagonal matrix
+#(you may choose something else)
+for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+    W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+end
+set_weight_matrix!(myProblem, W)
 
 # x[1] corresponds to the intercept, x[2] corresponds to beta1, x[3] corresponds to beta2
 function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 10)
@@ -137,6 +142,9 @@ construct_objective_function!(myProblem)
 
 targetdata = collect(values(dictEmpiricalMoments))
 
+initial_guess = myProblem.objective_function([dictPriors[k][1] for k in keys(dictPriors)])
+ϵ = initial_guess/1000
+
 #Use dictPriors to create a prior for ApproxBayes
 priors = ""
 for (i, k) in enumerate(keys(myProblem.priors))
@@ -152,7 +160,7 @@ priors = eval(Meta.parse(string("Prior([", priors, "])")))
 # Approximate Bayesian Computation Sequential Monte Carlo
 setup = ABCSMC((params, constants, targetdata) -> (myProblem.objective_function(params), 1), #simulation function
   length(dictPriors), # number of parameters
-  1e-4, #target ϵ
+  ϵ, #target ϵ
   priors; # Prior for each of the parameters
   maxiterations = 10^6, #Maximum number of iterations before the algorithm terminates
   )

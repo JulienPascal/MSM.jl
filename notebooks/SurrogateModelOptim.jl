@@ -1,7 +1,7 @@
 using ClusterManagers
 using Distributed
 OnCluster = false #set to false to run locally
-addWorkers = true #set to false to run serially
+addWorkers = false #set to false to run serially
 println("OnCluster = $(OnCluster)")
 
 # Current number of workers
@@ -122,8 +122,17 @@ dictEmpiricalMoments["mean_x1y^2"] = [mean((x[:,1] .* y).^2); mean((x[:,1] .* y)
 dictEmpiricalMoments["mean_x2y^2"] = [mean((x[:,2] .* y).^2); mean((x[:,2] .* y).^2)] #informative on betas
 sendto(workers(), dictEmpiricalMoments=dictEmpiricalMoments)
 
+W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+#Special case: diagonal matrix
+#(you may choose something else)
+for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+    W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+end
+
+
 @everywhere set_priors!(myProblem, dictPriors)
 @everywhere set_empirical_moments!(myProblem, dictEmpiricalMoments)
+@everywhere set_weight_matrix!(myProblem, W)
 
 # x[1] corresponds to the intercept, x[2] corresponds to beta1, x[3] corresponds to beta2
 @everywhere function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 10)

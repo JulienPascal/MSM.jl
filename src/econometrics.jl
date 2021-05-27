@@ -14,32 +14,27 @@ function calculate_D(sMMProblem::MSMProblem, theta0::Array{Float64,1})
 end
 
 """
-  calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}; method::Symbol = :central)
+  calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}; tau::Float64 = 1.0)
 
 Calculate the asymptotic variance of the SMM estimator using the sandwich formula.
 This function assume that your model is simulating time series.
 As a result, the asymptotic variance of the SMM estimator is (1+tau) times
-the asymptotic variance of the GMM one, where tau is the ratio of the sample size
+the asymptotic variance for the GMM estimator, where tau is the ratio of the sample size
 to the size of the simulated sample. See Duffie and Singleton (1993) and Gouriéroux and Monfort (1996).
 """
-function calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, tSimulation::Int64)
+function calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}; tau::Float64 = 1.0)
 
   # Safety Checks
   if isempty(sMMProblem.Sigma0) == true
     error("Please initialize sMMProblem.Sigma0 using the function set_Sigma0!.")
   end
 
-  tau = tData/tSimulation
-
   # Jacobian matrix
   D = calculate_D(sMMProblem, theta0)
 
-  # Weigthing matrix (only diagonal matrix for the moment)
-  W = diagm([1/sMMProblem.empiricalMoments[k][2] for k in keys(sMMProblem.empiricalMoments)])
+  Sigma1 = transpose(D)*sMMProblem.W*D
 
-  Sigma1 = transpose(D)*W*D
-
-  Sigma2 = transpose(D)*W*sMMProblem.Sigma0*W*D
+  Sigma2 = transpose(D)*sMMProblem.W*sMMProblem.Sigma0*sMMProblem.W*D
 
   inv_Sigma1 = inv(Sigma1)
 
