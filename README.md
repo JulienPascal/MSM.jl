@@ -3,7 +3,7 @@
 
 | **Documentation**  | **Build Status** | **Coverage** |
 |:-:|:-:|:-:|
-| [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://JulienPascal.github.io/MSM.jl/dev)|[![Build Status](https://github.com/JulienPascal/MSM.jl/workflows/CI/badge.svg)](https://github.com/JulienPascal/MSM.jl/actions)|[![codecov.io](https://codecov.io/gh/JulienPascal/MSM.jl/branch/julia_1.5/graphs/badge.svg)](https://codecov.io/gh/JulienPascal/MSM.jl/branch/julia_1.5/)|
+| [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://JulienPascal.github.io/MSM.jl/dev)|[![Build Status](https://github.com/JulienPascal/MSM.jl/workflows/CI/badge.svg)](https://github.com/JulienPascal/MSM.jl/actions)|[![codecov.io](https://codecov.io/gh/JulienPascal/MSM.jl/branch/main/graphs/badge.svg)](https://codecov.io/gh/JulienPascal/MSM.jl/branch/main/)|
 ||[![Build Status](https://travis-ci.com/JulienPascal/MSM.jl.svg?branch=main)](https://travis-ci.com/JulienPascal/MSM.jl)||
 
 
