@@ -264,7 +264,7 @@ Sigma0 = cov(X)
 xs = [string("x", i) for i = 1:8]
 ys = [string("x", i) for i = 1:8]
 z = cor(X)
-heatmap(xs, ys, z, aspect_ratio = 1)
+hh = heatmap(xs, ys, z, aspect_ratio = 1)
 
 set_Sigma0!(myProblem, Sigma0)
 # nbDraws = number of draws in the simulated data

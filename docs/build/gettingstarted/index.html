@@ -1,206 +1,145 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Getting started · MSM.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">MSM.jl</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../installation/">Installation</a></li><li class="is-active"><a class="tocitem" href>Getting started</a><ul class="internal"><li><a class="tocitem" href="#Example-in-serial"><span>Example in serial</span></a></li><li><a class="tocitem" href="#Example-in-parallel"><span>Example in parallel</span></a></li></ul></li><li><a class="tocitem" href="../functions/">Functions and Types</a></li><li><a class="tocitem" href="../references/">References</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Getting started</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Getting started</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JulienPascal/MSM.jl/blob/master/docs/src/gettingstarted.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Getting-Started"><a class="docs-heading-anchor" href="#Getting-Started">Getting Started</a><a id="Getting-Started-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Started" title="Permalink"></a></h1><p>Let&#39;s follow a learning-by-doing approach. As a warm-up, let&#39;s first estimate parameters in serial. In a second step, we use several workers on a cluster.</p><h2 id="Example-in-serial"><a class="docs-heading-anchor" href="#Example-in-serial">Example in serial</a><a id="Example-in-serial-1"></a><a class="docs-heading-anchor-permalink" href="#Example-in-serial" title="Permalink"></a></h2><pre><code class="language-julia">using MSM
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Getting started · MSM.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">MSM.jl</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../installation/">Installation</a></li><li class="is-active"><a class="tocitem" href>Getting started</a><ul class="internal"><li><a class="tocitem" href="#Example-in-serial"><span>Example in serial</span></a></li><li><a class="tocitem" href="#Example-in-parallel"><span>Example in parallel</span></a></li></ul></li><li><a class="tocitem" href="../functions/">Functions and Types</a></li><li><a class="tocitem" href="../references/">References</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Getting started</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Getting started</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JulienPascal/MSM.jl/blob/master/docs/src/gettingstarted.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Getting-Started"><a class="docs-heading-anchor" href="#Getting-Started">Getting Started</a><a id="Getting-Started-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Started" title="Permalink"></a></h1><p>Our overarching goal is to find the parameter values <span>$\theta_{MSM}$</span> minimizing the following function:</p><p class="math-container">\[g(\theta; m*, W) = (m(\theta) - m*)&#39; W (m(\theta) - m*)\]</p><p>where <span>$m*$</span> is a vector of empirical moments, <span>$m(\theta)$</span> is a vector of moments calculated using simulated data, and <span>$W$</span> is carefully chosen weighting matrix. We also want to build confidence intervals for <span>$\theta_{MSM}$</span>.</p><p>While simple in theory (it is just a function minimization, right?), in practice many bad things can happen. The function <span>$g$</span> may fail in some areas of the parameter space; <span>$g$</span> may be stuck in some local minima; <span>$g$</span> is really slow and you do not have a strong prior regarding good starting values. <a href="https://github.com/JulienPascal/MSM.jl">MSM.jl</a> uses minimization algorithms that are robust to the problems mentioned above. You may choose between two options:</p><ol><li>Global minimization algorithms from <a href="https://github.com/robertfeldt/BlackBoxOptim.jl">BlackBoxOptim</a></li><li>A multistart algorithm using several local optimization routines from <a href="https://github.com/JuliaNLSolvers/Optim.jl">Optim.jl</a></li></ol><p>Let&#39;s follow a learning-by-doing approach. As a warm-up, let&#39;s first estimate parameters in serial. In a second step, we use several workers on a cluster.</p><h2 id="Example-in-serial"><a class="docs-heading-anchor" href="#Example-in-serial">Example in serial</a><a id="Example-in-serial-1"></a><a class="docs-heading-anchor-permalink" href="#Example-in-serial" title="Permalink"></a></h2><p>In a real-world scenario, you would probably use empirical data. Here, let&#39;s simulate a fake dataset.</p><pre><code class="language-julia">using MSM
+using DataStructures
+using OrderedCollections
+using Random
+using Distributions
+using Statistics
+using LinearAlgebra
 using Plots
+Random.seed!(1234)  #for replicability reasons
+T = 100000          #number of periods
+P = 2               #number of dependent variables
+beta0 = rand(P)     #choose true coefficients by drawing from a uniform distribution on [0,1]
+alpha0 = rand(1)[]  #intercept
+theta0 = 0.0 #coefficient to create serial correlation in the error terms
 
-x = collect(range(-3.14, 4.0, length = 10))
-y = sin.(x)
-p = plot(x, y)</code></pre><?xml version="1.0" encoding="utf-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="600" height="400" viewBox="0 0 2400 1600">
-<defs>
-  <clipPath id="clip010">
-    <rect x="0" y="0" width="2400" height="1600"/>
-  </clipPath>
-</defs>
-<path clip-path="url(#clip010)" d="
-M0 1600 L2400 1600 L2400 0 L0 0  Z
-  " fill="#ffffff" fill-rule="evenodd" fill-opacity="1"/>
-<defs>
-  <clipPath id="clip011">
-    <rect x="480" y="0" width="1681" height="1600"/>
-  </clipPath>
-</defs>
-<path clip-path="url(#clip010)" d="
-M193.936 1486.45 L2352.76 1486.45 L2352.76 47.2441 L193.936 47.2441  Z
-  " fill="#ffffff" fill-rule="evenodd" fill-opacity="1"/>
-<defs>
-  <clipPath id="clip012">
-    <rect x="193" y="47" width="2160" height="1440"/>
-  </clipPath>
-</defs>
-<polyline clip-path="url(#clip012)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  580.21,1486.45 580.21,47.2441 
-  "/>
-<polyline clip-path="url(#clip012)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  1150.69,1486.45 1150.69,47.2441 
-  "/>
-<polyline clip-path="url(#clip012)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  1721.17,1486.45 1721.17,47.2441 
-  "/>
-<polyline clip-path="url(#clip012)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  2291.66,1486.45 2291.66,47.2441 
-  "/>
-<polyline clip-path="url(#clip010)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,1486.45 2352.76,1486.45 
-  "/>
-<polyline clip-path="url(#clip010)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  580.21,1486.45 580.21,1469.18 
-  "/>
-<polyline clip-path="url(#clip010)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  1150.69,1486.45 1150.69,1469.18 
-  "/>
-<polyline clip-path="url(#clip010)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  1721.17,1486.45 1721.17,1469.18 
-  "/>
-<polyline clip-path="url(#clip010)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  2291.66,1486.45 2291.66,1469.18 
-  "/>
-<path clip-path="url(#clip010)" d="M 0 0 M550.152 1530.29 L579.828 1530.29 L579.828 1534.23 L550.152 1534.23 L550.152 1530.29 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M593.948 1543.18 L610.267 1543.18 L610.267 1547.12 L588.323 1547.12 L588.323 1543.18 Q590.985 1540.43 595.568 1535.8 Q600.175 1531.15 601.355 1529.81 Q603.601 1527.28 604.48 1525.55 Q605.383 1523.79 605.383 1522.1 Q605.383 1519.34 603.439 1517.61 Q601.517 1515.87 598.416 1515.87 Q596.217 1515.87 593.763 1516.63 Q591.332 1517.4 588.555 1518.95 L588.555 1514.23 Q591.379 1513.09 593.832 1512.51 Q596.286 1511.93 598.323 1511.93 Q603.693 1511.93 606.888 1514.62 Q610.082 1517.31 610.082 1521.8 Q610.082 1523.93 609.272 1525.85 Q608.485 1527.74 606.379 1530.34 Q605.8 1531.01 602.698 1534.23 Q599.596 1537.42 593.948 1543.18 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M1150.69 1515.64 Q1147.08 1515.64 1145.25 1519.2 Q1143.45 1522.75 1143.45 1529.87 Q1143.45 1536.98 1145.25 1540.55 Q1147.08 1544.09 1150.69 1544.09 Q1154.33 1544.09 1156.13 1540.55 Q1157.96 1536.98 1157.96 1529.87 Q1157.96 1522.75 1156.13 1519.2 Q1154.33 1515.64 1150.69 1515.64 M1150.69 1511.93 Q1156.5 1511.93 1159.56 1516.54 Q1162.64 1521.12 1162.64 1529.87 Q1162.64 1538.6 1159.56 1543.21 Q1156.5 1547.79 1150.69 1547.79 Q1144.88 1547.79 1141.8 1543.21 Q1138.75 1538.6 1138.75 1529.87 Q1138.75 1521.12 1141.8 1516.54 Q1144.88 1511.93 1150.69 1511.93 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M1715.83 1543.18 L1732.15 1543.18 L1732.15 1547.12 L1710.2 1547.12 L1710.2 1543.18 Q1712.86 1540.43 1717.45 1535.8 Q1722.05 1531.15 1723.23 1529.81 Q1725.48 1527.28 1726.36 1525.55 Q1727.26 1523.79 1727.26 1522.1 Q1727.26 1519.34 1725.32 1517.61 Q1723.4 1515.87 1720.3 1515.87 Q1718.1 1515.87 1715.64 1516.63 Q1713.21 1517.4 1710.43 1518.95 L1710.43 1514.23 Q1713.26 1513.09 1715.71 1512.51 Q1718.17 1511.93 1720.2 1511.93 Q1725.57 1511.93 1728.77 1514.62 Q1731.96 1517.31 1731.96 1521.8 Q1731.96 1523.93 1731.15 1525.85 Q1730.36 1527.74 1728.26 1530.34 Q1727.68 1531.01 1724.58 1534.23 Q1721.48 1537.42 1715.83 1543.18 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M2294.67 1516.63 L2282.86 1535.08 L2294.67 1535.08 L2294.67 1516.63 M2293.44 1512.56 L2299.32 1512.56 L2299.32 1535.08 L2304.25 1535.08 L2304.25 1538.97 L2299.32 1538.97 L2299.32 1547.12 L2294.67 1547.12 L2294.67 1538.97 L2279.06 1538.97 L2279.06 1534.46 L2293.44 1512.56 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><polyline clip-path="url(#clip012)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  193.936,1445.82 2352.76,1445.82 
-  "/>
-<polyline clip-path="url(#clip012)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  193.936,1106.15 2352.76,1106.15 
-  "/>
-<polyline clip-path="url(#clip012)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  193.936,766.487 2352.76,766.487 
-  "/>
-<polyline clip-path="url(#clip012)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  193.936,426.82 2352.76,426.82 
-  "/>
-<polyline clip-path="url(#clip012)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  193.936,87.1541 2352.76,87.1541 
-  "/>
-<polyline clip-path="url(#clip010)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,1486.45 193.936,47.2441 
-  "/>
-<polyline clip-path="url(#clip010)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,1445.82 219.842,1445.82 
-  "/>
-<polyline clip-path="url(#clip010)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,1106.15 219.842,1106.15 
-  "/>
-<polyline clip-path="url(#clip010)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,766.487 219.842,766.487 
-  "/>
-<polyline clip-path="url(#clip010)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,426.82 219.842,426.82 
-  "/>
-<polyline clip-path="url(#clip010)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,87.1541 219.842,87.1541 
-  "/>
-<path clip-path="url(#clip010)" d="M 0 0 M50.9921 1446.27 L80.6679 1446.27 L80.6679 1450.21 L50.9921 1450.21 L50.9921 1446.27 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M91.5706 1459.16 L99.2095 1459.16 L99.2095 1432.8 L90.8993 1434.47 L90.8993 1430.21 L99.1632 1428.54 L103.839 1428.54 L103.839 1459.16 L111.478 1459.16 L111.478 1463.1 L91.5706 1463.1 L91.5706 1459.16 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M120.922 1457.22 L125.807 1457.22 L125.807 1463.1 L120.922 1463.1 L120.922 1457.22 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M145.992 1431.62 Q142.381 1431.62 140.552 1435.18 Q138.746 1438.72 138.746 1445.85 Q138.746 1452.96 140.552 1456.53 Q142.381 1460.07 145.992 1460.07 Q149.626 1460.07 151.431 1456.53 Q153.26 1452.96 153.26 1445.85 Q153.26 1438.72 151.431 1435.18 Q149.626 1431.62 145.992 1431.62 M145.992 1427.91 Q151.802 1427.91 154.857 1432.52 Q157.936 1437.1 157.936 1445.85 Q157.936 1454.58 154.857 1459.19 Q151.802 1463.77 145.992 1463.77 Q140.181 1463.77 137.103 1459.19 Q134.047 1454.58 134.047 1445.85 Q134.047 1437.1 137.103 1432.52 Q140.181 1427.91 145.992 1427.91 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M51.9875 1106.6 L81.6633 1106.6 L81.6633 1110.54 L51.9875 1110.54 L51.9875 1106.6 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M101.756 1091.95 Q98.1447 1091.95 96.316 1095.52 Q94.5104 1099.06 94.5104 1106.19 Q94.5104 1113.29 96.316 1116.86 Q98.1447 1120.4 101.756 1120.4 Q105.39 1120.4 107.196 1116.86 Q109.024 1113.29 109.024 1106.19 Q109.024 1099.06 107.196 1095.52 Q105.39 1091.95 101.756 1091.95 M101.756 1088.25 Q107.566 1088.25 110.621 1092.85 Q113.7 1097.44 113.7 1106.19 Q113.7 1114.91 110.621 1119.52 Q107.566 1124.1 101.756 1124.1 Q95.9456 1124.1 92.8669 1119.52 Q89.8114 1114.91 89.8114 1106.19 Q89.8114 1097.44 92.8669 1092.85 Q95.9456 1088.25 101.756 1088.25 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M121.918 1117.55 L126.802 1117.55 L126.802 1123.43 L121.918 1123.43 L121.918 1117.55 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M137.033 1088.87 L155.39 1088.87 L155.39 1092.81 L141.316 1092.81 L141.316 1101.28 Q142.334 1100.93 143.353 1100.77 Q144.371 1100.59 145.39 1100.59 Q151.177 1100.59 154.556 1103.76 Q157.936 1106.93 157.936 1112.35 Q157.936 1117.92 154.464 1121.03 Q150.992 1124.1 144.672 1124.1 Q142.496 1124.1 140.228 1123.73 Q137.982 1123.36 135.575 1122.62 L135.575 1117.92 Q137.658 1119.06 139.881 1119.61 Q142.103 1120.17 144.58 1120.17 Q148.584 1120.17 150.922 1118.06 Q153.26 1115.96 153.26 1112.35 Q153.26 1108.73 150.922 1106.63 Q148.584 1104.52 144.58 1104.52 Q142.705 1104.52 140.83 1104.94 Q138.978 1105.35 137.033 1106.23 L137.033 1088.87 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M100.76 752.285 Q97.1493 752.285 95.3206 755.85 Q93.515 759.392 93.515 766.521 Q93.515 773.628 95.3206 777.193 Q97.1493 780.734 100.76 780.734 Q104.395 780.734 106.2 777.193 Q108.029 773.628 108.029 766.521 Q108.029 759.392 106.2 755.85 Q104.395 752.285 100.76 752.285 M100.76 748.582 Q106.571 748.582 109.626 753.188 Q112.705 757.771 112.705 766.521 Q112.705 775.248 109.626 779.855 Q106.571 784.438 100.76 784.438 Q94.9502 784.438 91.8715 779.855 Q88.816 775.248 88.816 766.521 Q88.816 757.771 91.8715 753.188 Q94.9502 748.582 100.76 748.582 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M120.922 777.887 L125.807 777.887 L125.807 783.767 L120.922 783.767 L120.922 777.887 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M145.992 752.285 Q142.381 752.285 140.552 755.85 Q138.746 759.392 138.746 766.521 Q138.746 773.628 140.552 777.193 Q142.381 780.734 145.992 780.734 Q149.626 780.734 151.431 777.193 Q153.26 773.628 153.26 766.521 Q153.26 759.392 151.431 755.85 Q149.626 752.285 145.992 752.285 M145.992 748.582 Q151.802 748.582 154.857 753.188 Q157.936 757.771 157.936 766.521 Q157.936 775.248 154.857 779.855 Q151.802 784.438 145.992 784.438 Q140.181 784.438 137.103 779.855 Q134.047 775.248 134.047 766.521 Q134.047 757.771 137.103 753.188 Q140.181 748.582 145.992 748.582 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M101.756 412.619 Q98.1447 412.619 96.316 416.184 Q94.5104 419.726 94.5104 426.855 Q94.5104 433.962 96.316 437.526 Q98.1447 441.068 101.756 441.068 Q105.39 441.068 107.196 437.526 Q109.024 433.962 109.024 426.855 Q109.024 419.726 107.196 416.184 Q105.39 412.619 101.756 412.619 M101.756 408.915 Q107.566 408.915 110.621 413.522 Q113.7 418.105 113.7 426.855 Q113.7 435.582 110.621 440.188 Q107.566 444.772 101.756 444.772 Q95.9456 444.772 92.8669 440.188 Q89.8114 435.582 89.8114 426.855 Q89.8114 418.105 92.8669 413.522 Q95.9456 408.915 101.756 408.915 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M121.918 438.221 L126.802 438.221 L126.802 444.1 L121.918 444.1 L121.918 438.221 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M137.033 409.54 L155.39 409.54 L155.39 413.476 L141.316 413.476 L141.316 421.948 Q142.334 421.601 143.353 421.438 Q144.371 421.253 145.39 421.253 Q151.177 421.253 154.556 424.425 Q157.936 427.596 157.936 433.012 Q157.936 438.591 154.464 441.693 Q150.992 444.772 144.672 444.772 Q142.496 444.772 140.228 444.401 Q137.982 444.031 135.575 443.29 L135.575 438.591 Q137.658 439.725 139.881 440.281 Q142.103 440.837 144.58 440.837 Q148.584 440.837 150.922 438.73 Q153.26 436.624 153.26 433.012 Q153.26 429.401 150.922 427.295 Q148.584 425.188 144.58 425.188 Q142.705 425.188 140.83 425.605 Q138.978 426.022 137.033 426.901 L137.033 409.54 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M91.5706 100.499 L99.2095 100.499 L99.2095 74.1333 L90.8993 75.8 L90.8993 71.5408 L99.1632 69.8741 L103.839 69.8741 L103.839 100.499 L111.478 100.499 L111.478 104.434 L91.5706 104.434 L91.5706 100.499 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M120.922 98.5545 L125.807 98.5545 L125.807 104.434 L120.922 104.434 L120.922 98.5545 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M145.992 72.9528 Q142.381 72.9528 140.552 76.5176 Q138.746 80.0592 138.746 87.1888 Q138.746 94.2953 140.552 97.8601 Q142.381 101.402 145.992 101.402 Q149.626 101.402 151.431 97.8601 Q153.26 94.2953 153.26 87.1888 Q153.26 80.0592 151.431 76.5176 Q149.626 72.9528 145.992 72.9528 M145.992 69.2491 Q151.802 69.2491 154.857 73.8556 Q157.936 78.4389 157.936 87.1888 Q157.936 95.9156 154.857 100.522 Q151.802 105.105 145.992 105.105 Q140.181 105.105 137.103 100.522 Q134.047 95.9156 134.047 87.1888 Q134.047 78.4389 137.103 73.8556 Q140.181 69.2491 145.992 69.2491 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><polyline clip-path="url(#clip012)" style="stroke:#009af9; stroke-width:4; stroke-opacity:1; fill:none" points="
-  255.035,767.569 481.326,1251.4 707.617,1445.72 933.909,1234.49 1160.2,743.846 1386.49,266.717 1612.78,87.9763 1839.07,314.342 2065.37,810.662 2291.66,1280.61 
-  
-  "/>
-<path clip-path="url(#clip010)" d="
-M1988.5 216.178 L2280.8 216.178 L2280.8 95.2176 L1988.5 95.2176  Z
-  " fill="#ffffff" fill-rule="evenodd" fill-opacity="1"/>
-<polyline clip-path="url(#clip010)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  1988.5,216.178 2280.8,216.178 2280.8,95.2176 1988.5,95.2176 1988.5,216.178 
-  "/>
-<polyline clip-path="url(#clip010)" style="stroke:#009af9; stroke-width:4; stroke-opacity:1; fill:none" points="
-  2012.48,155.698 2156.4,155.698 
-  "/>
-<path clip-path="url(#clip010)" d="M 0 0 M2194.23 175.385 Q2192.43 180.015 2190.72 181.427 Q2189 182.839 2186.13 182.839 L2182.73 182.839 L2182.73 179.274 L2185.23 179.274 Q2186.99 179.274 2187.96 178.44 Q2188.93 177.607 2190.11 174.505 L2190.88 172.561 L2180.39 147.052 L2184.91 147.052 L2193.01 167.329 L2201.11 147.052 L2205.62 147.052 L2194.23 175.385 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip010)" d="M 0 0 M2212.91 169.042 L2220.55 169.042 L2220.55 142.677 L2212.24 144.343 L2212.24 140.084 L2220.51 138.418 L2225.18 138.418 L2225.18 169.042 L2232.82 169.042 L2232.82 172.978 L2212.91 172.978 L2212.91 169.042 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /></svg>
-<h2 id="Example-in-parallel"><a class="docs-heading-anchor" href="#Example-in-parallel">Example in parallel</a><a id="Example-in-parallel-1"></a><a class="docs-heading-anchor-permalink" href="#Example-in-parallel" title="Permalink"></a></h2><pre><code class="language-julia">using MSM
-using Plots
+# Generation of error terms
+# row = individual dimension
+# column = time dimension
+U = zeros(T)
+d = Normal()
+U[1] = rand(d, 1)[] #first error term
+for t = 2:T
+    U[t] = rand(d, 1)[] + theta0*U[t-1]
+end
 
-x = collect(range(-3.14, 4.0, length = 10))
-y = cos.(x)
-p = plot(x, y)</code></pre><?xml version="1.0" encoding="utf-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="600" height="400" viewBox="0 0 2400 1600">
-<defs>
-  <clipPath id="clip070">
-    <rect x="0" y="0" width="2400" height="1600"/>
-  </clipPath>
-</defs>
-<path clip-path="url(#clip070)" d="
-M0 1600 L2400 1600 L2400 0 L0 0  Z
-  " fill="#ffffff" fill-rule="evenodd" fill-opacity="1"/>
-<defs>
-  <clipPath id="clip071">
-    <rect x="480" y="0" width="1681" height="1600"/>
-  </clipPath>
-</defs>
-<path clip-path="url(#clip070)" d="
-M193.936 1486.45 L2352.76 1486.45 L2352.76 47.2441 L193.936 47.2441  Z
-  " fill="#ffffff" fill-rule="evenodd" fill-opacity="1"/>
-<defs>
-  <clipPath id="clip072">
-    <rect x="193" y="47" width="2160" height="1440"/>
-  </clipPath>
-</defs>
-<polyline clip-path="url(#clip072)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  580.21,1486.45 580.21,47.2441 
-  "/>
-<polyline clip-path="url(#clip072)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  1150.69,1486.45 1150.69,47.2441 
-  "/>
-<polyline clip-path="url(#clip072)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  1721.17,1486.45 1721.17,47.2441 
-  "/>
-<polyline clip-path="url(#clip072)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  2291.66,1486.45 2291.66,47.2441 
-  "/>
-<polyline clip-path="url(#clip070)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,1486.45 2352.76,1486.45 
-  "/>
-<polyline clip-path="url(#clip070)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  580.21,1486.45 580.21,1469.18 
-  "/>
-<polyline clip-path="url(#clip070)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  1150.69,1486.45 1150.69,1469.18 
-  "/>
-<polyline clip-path="url(#clip070)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  1721.17,1486.45 1721.17,1469.18 
-  "/>
-<polyline clip-path="url(#clip070)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  2291.66,1486.45 2291.66,1469.18 
-  "/>
-<path clip-path="url(#clip070)" d="M 0 0 M550.152 1530.29 L579.828 1530.29 L579.828 1534.23 L550.152 1534.23 L550.152 1530.29 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M593.948 1543.18 L610.267 1543.18 L610.267 1547.12 L588.323 1547.12 L588.323 1543.18 Q590.985 1540.43 595.568 1535.8 Q600.175 1531.15 601.355 1529.81 Q603.601 1527.28 604.48 1525.55 Q605.383 1523.79 605.383 1522.1 Q605.383 1519.34 603.439 1517.61 Q601.517 1515.87 598.416 1515.87 Q596.217 1515.87 593.763 1516.63 Q591.332 1517.4 588.555 1518.95 L588.555 1514.23 Q591.379 1513.09 593.832 1512.51 Q596.286 1511.93 598.323 1511.93 Q603.693 1511.93 606.888 1514.62 Q610.082 1517.31 610.082 1521.8 Q610.082 1523.93 609.272 1525.85 Q608.485 1527.74 606.379 1530.34 Q605.8 1531.01 602.698 1534.23 Q599.596 1537.42 593.948 1543.18 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M1150.69 1515.64 Q1147.08 1515.64 1145.25 1519.2 Q1143.45 1522.75 1143.45 1529.87 Q1143.45 1536.98 1145.25 1540.55 Q1147.08 1544.09 1150.69 1544.09 Q1154.33 1544.09 1156.13 1540.55 Q1157.96 1536.98 1157.96 1529.87 Q1157.96 1522.75 1156.13 1519.2 Q1154.33 1515.64 1150.69 1515.64 M1150.69 1511.93 Q1156.5 1511.93 1159.56 1516.54 Q1162.64 1521.12 1162.64 1529.87 Q1162.64 1538.6 1159.56 1543.21 Q1156.5 1547.79 1150.69 1547.79 Q1144.88 1547.79 1141.8 1543.21 Q1138.75 1538.6 1138.75 1529.87 Q1138.75 1521.12 1141.8 1516.54 Q1144.88 1511.93 1150.69 1511.93 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M1715.83 1543.18 L1732.15 1543.18 L1732.15 1547.12 L1710.2 1547.12 L1710.2 1543.18 Q1712.86 1540.43 1717.45 1535.8 Q1722.05 1531.15 1723.23 1529.81 Q1725.48 1527.28 1726.36 1525.55 Q1727.26 1523.79 1727.26 1522.1 Q1727.26 1519.34 1725.32 1517.61 Q1723.4 1515.87 1720.3 1515.87 Q1718.1 1515.87 1715.64 1516.63 Q1713.21 1517.4 1710.43 1518.95 L1710.43 1514.23 Q1713.26 1513.09 1715.71 1512.51 Q1718.17 1511.93 1720.2 1511.93 Q1725.57 1511.93 1728.77 1514.62 Q1731.96 1517.31 1731.96 1521.8 Q1731.96 1523.93 1731.15 1525.85 Q1730.36 1527.74 1728.26 1530.34 Q1727.68 1531.01 1724.58 1534.23 Q1721.48 1537.42 1715.83 1543.18 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M2294.67 1516.63 L2282.86 1535.08 L2294.67 1535.08 L2294.67 1516.63 M2293.44 1512.56 L2299.32 1512.56 L2299.32 1535.08 L2304.25 1535.08 L2304.25 1538.97 L2299.32 1538.97 L2299.32 1547.12 L2294.67 1547.12 L2294.67 1538.97 L2279.06 1538.97 L2279.06 1534.46 L2293.44 1512.56 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><polyline clip-path="url(#clip072)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  193.936,1445.72 2352.76,1445.72 
-  "/>
-<polyline clip-path="url(#clip072)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  193.936,1106.19 2352.76,1106.19 
-  "/>
-<polyline clip-path="url(#clip072)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  193.936,766.658 2352.76,766.658 
-  "/>
-<polyline clip-path="url(#clip072)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  193.936,427.128 2352.76,427.128 
-  "/>
-<polyline clip-path="url(#clip072)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
-  193.936,87.5991 2352.76,87.5991 
-  "/>
-<polyline clip-path="url(#clip070)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,1486.45 193.936,47.2441 
-  "/>
-<polyline clip-path="url(#clip070)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,1445.72 219.842,1445.72 
-  "/>
-<polyline clip-path="url(#clip070)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,1106.19 219.842,1106.19 
-  "/>
-<polyline clip-path="url(#clip070)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,766.658 219.842,766.658 
-  "/>
-<polyline clip-path="url(#clip070)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,427.128 219.842,427.128 
-  "/>
-<polyline clip-path="url(#clip070)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  193.936,87.5991 219.842,87.5991 
-  "/>
-<path clip-path="url(#clip070)" d="M 0 0 M50.9921 1446.17 L80.6679 1446.17 L80.6679 1450.1 L50.9921 1450.1 L50.9921 1446.17 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M91.5706 1459.06 L99.2095 1459.06 L99.2095 1432.7 L90.8993 1434.36 L90.8993 1430.1 L99.1632 1428.44 L103.839 1428.44 L103.839 1459.06 L111.478 1459.06 L111.478 1463 L91.5706 1463 L91.5706 1459.06 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M120.922 1457.12 L125.807 1457.12 L125.807 1463 L120.922 1463 L120.922 1457.12 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M145.992 1431.52 Q142.381 1431.52 140.552 1435.08 Q138.746 1438.62 138.746 1445.75 Q138.746 1452.86 140.552 1456.42 Q142.381 1459.96 145.992 1459.96 Q149.626 1459.96 151.431 1456.42 Q153.26 1452.86 153.26 1445.75 Q153.26 1438.62 151.431 1435.08 Q149.626 1431.52 145.992 1431.52 M145.992 1427.81 Q151.802 1427.81 154.857 1432.42 Q157.936 1437 157.936 1445.75 Q157.936 1454.48 154.857 1459.08 Q151.802 1463.67 145.992 1463.67 Q140.181 1463.67 137.103 1459.08 Q134.047 1454.48 134.047 1445.75 Q134.047 1437 137.103 1432.42 Q140.181 1427.81 145.992 1427.81 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M51.9875 1106.64 L81.6633 1106.64 L81.6633 1110.57 L51.9875 1110.57 L51.9875 1106.64 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M101.756 1091.99 Q98.1447 1091.99 96.316 1095.55 Q94.5104 1099.09 94.5104 1106.22 Q94.5104 1113.33 96.316 1116.89 Q98.1447 1120.43 101.756 1120.43 Q105.39 1120.43 107.196 1116.89 Q109.024 1113.33 109.024 1106.22 Q109.024 1099.09 107.196 1095.55 Q105.39 1091.99 101.756 1091.99 M101.756 1088.28 Q107.566 1088.28 110.621 1092.89 Q113.7 1097.47 113.7 1106.22 Q113.7 1114.95 110.621 1119.56 Q107.566 1124.14 101.756 1124.14 Q95.9456 1124.14 92.8669 1119.56 Q89.8114 1114.95 89.8114 1106.22 Q89.8114 1097.47 92.8669 1092.89 Q95.9456 1088.28 101.756 1088.28 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M121.918 1117.59 L126.802 1117.59 L126.802 1123.47 L121.918 1123.47 L121.918 1117.59 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M137.033 1088.91 L155.39 1088.91 L155.39 1092.84 L141.316 1092.84 L141.316 1101.31 Q142.334 1100.97 143.353 1100.81 Q144.371 1100.62 145.39 1100.62 Q151.177 1100.62 154.556 1103.79 Q157.936 1106.96 157.936 1112.38 Q157.936 1117.96 154.464 1121.06 Q150.992 1124.14 144.672 1124.14 Q142.496 1124.14 140.228 1123.77 Q137.982 1123.4 135.575 1122.66 L135.575 1117.96 Q137.658 1119.09 139.881 1119.65 Q142.103 1120.2 144.58 1120.2 Q148.584 1120.2 150.922 1118.1 Q153.26 1115.99 153.26 1112.38 Q153.26 1108.77 150.922 1106.66 Q148.584 1104.56 144.58 1104.56 Q142.705 1104.56 140.83 1104.97 Q138.978 1105.39 137.033 1106.27 L137.033 1088.91 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M100.76 752.456 Q97.1493 752.456 95.3206 756.021 Q93.515 759.563 93.515 766.693 Q93.515 773.799 95.3206 777.364 Q97.1493 780.905 100.76 780.905 Q104.395 780.905 106.2 777.364 Q108.029 773.799 108.029 766.693 Q108.029 759.563 106.2 756.021 Q104.395 752.456 100.76 752.456 M100.76 748.753 Q106.571 748.753 109.626 753.359 Q112.705 757.943 112.705 766.693 Q112.705 775.419 109.626 780.026 Q106.571 784.609 100.76 784.609 Q94.9502 784.609 91.8715 780.026 Q88.816 775.419 88.816 766.693 Q88.816 757.943 91.8715 753.359 Q94.9502 748.753 100.76 748.753 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M120.922 778.058 L125.807 778.058 L125.807 783.938 L120.922 783.938 L120.922 778.058 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M145.992 752.456 Q142.381 752.456 140.552 756.021 Q138.746 759.563 138.746 766.693 Q138.746 773.799 140.552 777.364 Q142.381 780.905 145.992 780.905 Q149.626 780.905 151.431 777.364 Q153.26 773.799 153.26 766.693 Q153.26 759.563 151.431 756.021 Q149.626 752.456 145.992 752.456 M145.992 748.753 Q151.802 748.753 154.857 753.359 Q157.936 757.943 157.936 766.693 Q157.936 775.419 154.857 780.026 Q151.802 784.609 145.992 784.609 Q140.181 784.609 137.103 780.026 Q134.047 775.419 134.047 766.693 Q134.047 757.943 137.103 753.359 Q140.181 748.753 145.992 748.753 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M101.756 412.927 Q98.1447 412.927 96.316 416.492 Q94.5104 420.034 94.5104 427.163 Q94.5104 434.27 96.316 437.834 Q98.1447 441.376 101.756 441.376 Q105.39 441.376 107.196 437.834 Q109.024 434.27 109.024 427.163 Q109.024 420.034 107.196 416.492 Q105.39 412.927 101.756 412.927 M101.756 409.223 Q107.566 409.223 110.621 413.83 Q113.7 418.413 113.7 427.163 Q113.7 435.89 110.621 440.496 Q107.566 445.08 101.756 445.08 Q95.9456 445.08 92.8669 440.496 Q89.8114 435.89 89.8114 427.163 Q89.8114 418.413 92.8669 413.83 Q95.9456 409.223 101.756 409.223 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M121.918 438.529 L126.802 438.529 L126.802 444.408 L121.918 444.408 L121.918 438.529 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M137.033 409.848 L155.39 409.848 L155.39 413.784 L141.316 413.784 L141.316 422.256 Q142.334 421.909 143.353 421.747 Q144.371 421.561 145.39 421.561 Q151.177 421.561 154.556 424.733 Q157.936 427.904 157.936 433.321 Q157.936 438.899 154.464 442.001 Q150.992 445.08 144.672 445.08 Q142.496 445.08 140.228 444.709 Q137.982 444.339 135.575 443.598 L135.575 438.899 Q137.658 440.033 139.881 440.589 Q142.103 441.145 144.58 441.145 Q148.584 441.145 150.922 439.038 Q153.26 436.932 153.26 433.321 Q153.26 429.709 150.922 427.603 Q148.584 425.496 144.58 425.496 Q142.705 425.496 140.83 425.913 Q138.978 426.33 137.033 427.209 L137.033 409.848 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M91.5706 100.944 L99.2095 100.944 L99.2095 74.5783 L90.8993 76.245 L90.8993 71.9857 L99.1632 70.3191 L103.839 70.3191 L103.839 100.944 L111.478 100.944 L111.478 104.879 L91.5706 104.879 L91.5706 100.944 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M120.922 98.9995 L125.807 98.9995 L125.807 104.879 L120.922 104.879 L120.922 98.9995 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M145.992 73.3977 Q142.381 73.3977 140.552 76.9625 Q138.746 80.5042 138.746 87.6338 Q138.746 94.7402 140.552 98.305 Q142.381 101.847 145.992 101.847 Q149.626 101.847 151.431 98.305 Q153.26 94.7402 153.26 87.6338 Q153.26 80.5042 151.431 76.9625 Q149.626 73.3977 145.992 73.3977 M145.992 69.6941 Q151.802 69.6941 154.857 74.3005 Q157.936 78.8838 157.936 87.6338 Q157.936 96.3606 154.857 100.967 Q151.802 105.55 145.992 105.55 Q140.181 105.55 137.103 100.967 Q134.047 96.3606 134.047 87.6338 Q134.047 78.8838 137.103 74.3005 Q140.181 69.6941 145.992 69.6941 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><polyline clip-path="url(#clip072)" style="stroke:#009af9; stroke-width:4; stroke-opacity:1; fill:none" points="
-  255.035,1445.72 481.326,1242.23 707.617,754.8 933.909,274.452 1160.2,87.9763 1386.49,306.71 1612.78,800.057 1839.07,1273.46 2065.37,1444.28 2291.66,1210.52 
-  
-  "/>
-<path clip-path="url(#clip070)" d="
-M1988.5 216.178 L2280.8 216.178 L2280.8 95.2176 L1988.5 95.2176  Z
-  " fill="#ffffff" fill-rule="evenodd" fill-opacity="1"/>
-<polyline clip-path="url(#clip070)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  1988.5,216.178 2280.8,216.178 2280.8,95.2176 1988.5,95.2176 1988.5,216.178 
-  "/>
-<polyline clip-path="url(#clip070)" style="stroke:#009af9; stroke-width:4; stroke-opacity:1; fill:none" points="
-  2012.48,155.698 2156.4,155.698 
-  "/>
-<path clip-path="url(#clip070)" d="M 0 0 M2194.23 175.385 Q2192.43 180.015 2190.72 181.427 Q2189 182.839 2186.13 182.839 L2182.73 182.839 L2182.73 179.274 L2185.23 179.274 Q2186.99 179.274 2187.96 178.44 Q2188.93 177.607 2190.11 174.505 L2190.88 172.561 L2180.39 147.052 L2184.91 147.052 L2193.01 167.329 L2201.11 147.052 L2205.62 147.052 L2194.23 175.385 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /><path clip-path="url(#clip070)" d="M 0 0 M2212.91 169.042 L2220.55 169.042 L2220.55 142.677 L2212.24 144.343 L2212.24 140.084 L2220.51 138.418 L2225.18 138.418 L2225.18 169.042 L2232.82 169.042 L2232.82 172.978 L2212.91 172.978 L2212.91 169.042 Z" fill="#000000" fill-rule="evenodd" fill-opacity="1" /></svg>
-</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../installation/">« Installation</a><a class="docs-footer-nextpage" href="../functions/">Functions and Types »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 27 May 2021 17:28">Thursday 27 May 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+# Let&#39;s simulate the dependent variables x_t
+x = zeros(T, P)
+d = Uniform(0, 5)
+for p = 1:P
+    x[:,p] = rand(d, T)
+end
+
+# Let&#39;s calculate the resulting y_t
+y = zeros(T)
+for t=1:T
+    y[t] = alpha0 + x[t,1]*beta0[1] + x[t,2]*beta0[2] + U[t]
+end
+
+# Visualize data
+p1 = scatter(x[1:100,1], y[1:100], xlabel = &quot;x1&quot;, ylabel = &quot;y&quot;, legend=:none, smooth=true)
+p2 = scatter(x[1:100,2], y[1:100], xlabel = &quot;x2&quot;, ylabel = &quot;y&quot;, legend=:none, smooth=true)
+p = plot(p1, p2);</code></pre><p><img src="../f-fake-data.svg" alt/></p><h3 id="Step-1:-Initializing-a-MSMProblem"><a class="docs-heading-anchor" href="#Step-1:-Initializing-a-MSMProblem">Step 1: Initializing a MSMProblem</a><a id="Step-1:-Initializing-a-MSMProblem-1"></a><a class="docs-heading-anchor-permalink" href="#Step-1:-Initializing-a-MSMProblem" title="Permalink"></a></h3><pre><code class="language-"># Select a global optimizer (see BlackBoxOptim.jl) and a local minimizer (see Optim.jl):
+myProblem = MSMProblem(options = MSMOptions(maxFuncEvals=10000, globalOptimizer = :dxnes, localOptimizer = :LBFGS));</code></pre><h3 id="Step-2.-Set-empirical-moments-and-weight-matrix"><a class="docs-heading-anchor" href="#Step-2.-Set-empirical-moments-and-weight-matrix">Step 2. Set empirical moments and weight matrix</a><a id="Step-2.-Set-empirical-moments-and-weight-matrix-1"></a><a class="docs-heading-anchor-permalink" href="#Step-2.-Set-empirical-moments-and-weight-matrix" title="Permalink"></a></h3><p>Choose the set of empirical moments to match and the weight matrix <span>$W$</span> using the functions <code>set_empirical_moments!</code> and <code>set_weight_matrix!</code></p><pre><code class="language-">dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
+dictEmpiricalMoments[&quot;mean&quot;] = [mean(y)] #informative on the intercept
+dictEmpiricalMoments[&quot;mean_x1y&quot;] = [mean(x[:,1] .* y)] #informative on betas
+dictEmpiricalMoments[&quot;mean_x2y&quot;] = [mean(x[:,2] .* y)] #informative on betas
+dictEmpiricalMoments[&quot;mean_x1y^2&quot;] = [mean((x[:,1] .* y).^2)] #informative on betas
+dictEmpiricalMoments[&quot;mean_x2y^2&quot;] = [mean((x[:,2] .* y).^2)] #informative on betas
+
+W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+#Special case: diagonal matrix
+#Sum of square percentage deviations from empirical moments
+#(you may choose something else)
+for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+    W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+end
+
+set_empirical_moments!(myProblem, dictEmpiricalMoments)
+set_weight_matrix!(myProblem, W)</code></pre><h3 id="Step-3.-Set-priors"><a class="docs-heading-anchor" href="#Step-3.-Set-priors">Step 3. Set priors</a><a id="Step-3.-Set-priors-1"></a><a class="docs-heading-anchor-permalink" href="#Step-3.-Set-priors" title="Permalink"></a></h3><p>Our &quot;prior&quot; belief regarding the parameter values is to be specified using <code>set_priors!()</code>. It is not fully a full-fledged prior probability distribution, but simply an initial guess for each parameter, as well as lower and upper bounds:</p><pre><code class="language-">dictPriors = OrderedDict{String,Array{Float64,1}}()
+# Of the form: [initial_guess, lower_bound, upper_bound]
+dictPriors[&quot;alpha&quot;] = [0.5, 0.001, 1.0]
+dictPriors[&quot;beta1&quot;] = [0.5, 0.001, 1.0]
+dictPriors[&quot;beta2&quot;] = [0.5, 0.001, 1.0]
+set_priors!(myProblem, dictPriors)</code></pre><h3 id="Step-4:-Specifying-the-function-generating-simulated-moments"><a class="docs-heading-anchor" href="#Step-4:-Specifying-the-function-generating-simulated-moments">Step 4: Specifying the function generating simulated moments</a><a id="Step-4:-Specifying-the-function-generating-simulated-moments-1"></a><a class="docs-heading-anchor-permalink" href="#Step-4:-Specifying-the-function-generating-simulated-moments" title="Permalink"></a></h3><p>The objective function must generate an <strong>ordered dictionary</strong> containing the <strong>keys of dictEmpiricalMoments</strong>. Use <code>set_simulate_empirical_moments!</code> and <code>construct_objective_function!</code></p><p><strong>Remark:</strong> we &quot;freeze&quot; randomness during the minimization step. One way to do that is to generate draws from a Uniform([0,1]) outside of the objective function and to use <a href="https://en.wikipedia.org/wiki/Inverse_transform_sampling">inverse transform sampling</a> to generate draws from a normal distribution. Otherwise the objective function would be &quot;noisy&quot; and the minimization algorithms would have a hard time finding the global minimum.</p><pre><code class="language-"># x[1] corresponds to the intercept; x[2] corresponds to beta1; x[3] corresponds to beta2
+function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 10)
+    T = nbDraws
+    P = 2       #number of dependent variables
+    alpha = x[1]
+    beta = x[2:end]
+    theta = 0.0     #coefficient to create serial correlation in the error terms
+
+    # Creation of error terms
+    # row = individual dimension
+    # column = time dimension
+    U = zeros(T)
+    d = Normal()
+    # Inverse cdf (i.e. quantile)
+    gaussian_draws = quantile.(d, uniform_draws)
+    U[1] = gaussian_draws[1] #first error term
+    for t = 2:T
+        U[t] = gaussian_draws[t] + theta*U[t-1]
+    end
+
+    # Let&#39;s calculate the resulting y_t
+    y = zeros(T)
+    for t=1:T
+        y[t] = alpha + simX[t,1]*beta[1] + simX[t,2]*beta[2] + U[t]
+    end
+
+    # Get rid of the burn-in phase:
+    #------------------------------
+    startT = div(nbDraws, burnInPerc)
+
+    # Moments:
+    #---------
+    output = OrderedDict{String,Float64}()
+    output[&quot;mean&quot;] = mean(y[startT:nbDraws])
+    output[&quot;mean_x1y&quot;] = mean(simX[startT:nbDraws,1] .* y[startT:nbDraws])
+    output[&quot;mean_x2y&quot;] = mean(simX[startT:nbDraws,2] .* y[startT:nbDraws])
+    output[&quot;mean_x1y^2&quot;] = mean((simX[startT:nbDraws,1] .* y[startT:nbDraws]).^2)
+    output[&quot;mean_x2y^2&quot;] = mean((simX[startT:nbDraws,2] .* y[startT:nbDraws]).^2)
+
+    return output
+end
+
+# Let&#39;s freeze the randomness during the minimization
+d_Uni = Uniform(0,1)
+nbDraws = 100000 #number of draws in the simulated data
+uniform_draws = rand(d_Uni, nbDraws)
+simX = zeros(length(uniform_draws), 2)
+d = Uniform(0, 5)
+for p = 1:2
+  simX[:,p] = rand(d, length(uniform_draws))
+end
+
+# Attach the function parameters -&gt; simulated moments:
+set_simulate_empirical_moments!(myProblem, x -&gt; functionLinearModel(x, uniform_draws = uniform_draws, simX = simX))
+
+# Construct the objective (m-m*)&#39;W(m-m*):
+construct_objective_function!(myProblem)</code></pre><h3 id="Step-5.-Running-the-optimization"><a class="docs-heading-anchor" href="#Step-5.-Running-the-optimization">Step 5. Running the optimization</a><a id="Step-5.-Running-the-optimization-1"></a><a class="docs-heading-anchor-permalink" href="#Step-5.-Running-the-optimization" title="Permalink"></a></h3><p>Use the global optimization algorithm specified in <code>globalOptimizer</code>:</p><pre><code class="language-"># Global optimization:
+msm_optimize!(myProblem, verbose = false)</code></pre><h3 id="Step-6.-Analysing-Results"><a class="docs-heading-anchor" href="#Step-6.-Analysing-Results">Step 6. Analysing Results</a><a id="Step-6.-Analysing-Results-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6.-Analysing-Results" title="Permalink"></a></h3><h4 id="Step-6.A.-Point-estimates"><a class="docs-heading-anchor" href="#Step-6.A.-Point-estimates">Step 6.A. Point estimates</a><a id="Step-6.A.-Point-estimates-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6.A.-Point-estimates" title="Permalink"></a></h4><pre><code class="language-">minimizer = msm_minimizer(myProblem)
+minimum_val = msm_minimum(myProblem)
+println(&quot;Minimum objective function = $(minimum_val)&quot;)
+println(&quot;Estimated value for alpha = $(minimizer[1]). True value for beta1 = $(alpha0[1])&quot;)
+println(&quot;Estimated value for beta1 = $(minimizer[2]). True value for beta1 = $(beta0[1])&quot;)
+println(&quot;Estimated value for beta2 = $(minimizer[3]). True value for beta2 = $(beta0[2])&quot;)</code></pre><pre><code class="language-julia">Minimum objective function = 3.364713342376503e-6
+Estimated value for alpha = 0.5725856664135125. True value for beta1 = 0.5662374165061859
+Estimated value for beta1 = 0.5832878335694766. True value for beta1 = 0.5908446386657102
+Estimated value for beta2 = 0.7664889629032697. True value for beta2 = 0.7667970365022592</code></pre><h4 id="Step-6.B.-Inference"><a class="docs-heading-anchor" href="#Step-6.B.-Inference">Step 6.B. Inference</a><a id="Step-6.B.-Inference-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6.B.-Inference" title="Permalink"></a></h4><h5 id="Estimation-of-the-distance-matrix-\\Sigma_0"><a class="docs-heading-anchor" href="#Estimation-of-the-distance-matrix-\\Sigma_0">Estimation of the distance matrix <span>$\Sigma_0$</span></a><a id="Estimation-of-the-distance-matrix-\\Sigma_0-1"></a><a class="docs-heading-anchor-permalink" href="#Estimation-of-the-distance-matrix-\\Sigma_0" title="Permalink"></a></h5><p>Let&#39;s calculate the variance-covariance matrix of the <strong>&quot;distance matrix&quot;</strong> (using the terminolgy of <a href="https://www.jstor.org/stable/2951768?seq=1">Duffie and Singleton (1993)</a>). Here we know that errors are not correlated (the serial correlation coefficient is set to 0 in the code above). in the presence of serial correlation, an HAC estimation would be needed.</p><pre><code class="language-"># Empirical Series
+#-----------------
+X = zeros(T, 5)
+X[:,1] = y
+X[:,2] = (x[:,1] .* y)
+X[:,3] = (x[:,2] .* y)
+X[:,4] = (x[:,1] .* y).^2
+X[:,5] = (x[:,2] .* y).^2
+Sigma0 = cov(X)</code></pre><h5 id="Asymptotic-variance"><a class="docs-heading-anchor" href="#Asymptotic-variance">Asymptotic variance</a><a id="Asymptotic-variance-1"></a><a class="docs-heading-anchor-permalink" href="#Asymptotic-variance" title="Permalink"></a></h5><h6 id="Theory"><a class="docs-heading-anchor" href="#Theory">Theory</a><a id="Theory-1"></a><a class="docs-heading-anchor-permalink" href="#Theory" title="Permalink"></a></h6><p>The asymptotic variance of the MSM estimate is calculated using the usual <strong>GMM sandwich formula</strong>, corrected to take into account simulation noise.</p><p class="math-container">\[AsymptoticVarianceMSM = (1 + \tau)*AsymptoticVarianceGMM\]</p><p>Here we are trying to match unconditional moments from time series. In this case, <span>$\tau = \frac{tData}{tSimulation}$</span>, where <span>$tData$</span> is the number of periods in the empirical data and <span>$tSimulation$</span> is the number of time periods in the simulated data.</p><p>See <a href="https://www.jstor.org/stable/2951768?seq=1">Duffie and Singleton (1993)</a> and <a href="https://www.jstor.org/stable/3533164?seq=1">Gouriéroux and Montfort (1996)</a> for details on how to choose <span>$\tau$</span>.</p><h6 id="Practice"><a class="docs-heading-anchor" href="#Practice">Practice</a><a id="Practice-1"></a><a class="docs-heading-anchor-permalink" href="#Practice" title="Permalink"></a></h6><p>Calculating the asymptotic variance using MSM.jl is done in two steps:</p><ul><li>setting the value of the <strong>&quot;distance matrix&quot;</strong> using the function <code>set_Sigma0!</code></li><li>calculating the asymptotic variance using the function <code>calculate_Avar!</code></li></ul><pre><code class="language-">set_Sigma0!(myProblem, Sigma0)
+calculate_Avar!(myProblem, minimizer, tau = T/nbDraws) # nbDraws = number of draws in the simulated data</code></pre><h4 id="Step-6.C.-Summarizing-the-results"><a class="docs-heading-anchor" href="#Step-6.C.-Summarizing-the-results">Step 6.C. Summarizing the results</a><a id="Step-6.C.-Summarizing-the-results-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6.C.-Summarizing-the-results" title="Permalink"></a></h4><p>Once the asymptotic variance has been calculated, a summary table can be obtained using the function <code>summary_table</code>. This function has four inputs:</p><ol><li>a MSMProblem</li><li>the minimizer of the objective function</li><li>the length of the empirical sample</li><li>the confidence level associated to the test <strong>H0:</strong> <span>$\theta_i = 0$</span>,  <strong>H1:</strong> <span>$\theta_i != 0$</span></li></ol><pre><code class="language-">df = summary_table(myProblem, minimizer, T, 0.05)</code></pre><table><tr><th style="text-align: right">Estimate</th><th style="text-align: right">StdError</th><th style="text-align: right">tValue</th><th style="text-align: right">pValue</th><th style="text-align: right">ConfIntervalLower</th><th style="text-align: right">ConfIntervalUpper</th></tr><tr><td style="text-align: right">Float64</td><td style="text-align: right">Float64</td><td style="text-align: right">Float64</td><td style="text-align: right">Float64</td><td style="text-align: right">Float64</td><td style="text-align: right">Float64</td></tr><tr><td style="text-align: right">0.572586</td><td style="text-align: right">0.0228065</td><td style="text-align: right">25.1062</td><td style="text-align: right">0.0</td><td style="text-align: right">0.535072</td><td style="text-align: right">0.610099</td></tr><tr><td style="text-align: right">0.583288</td><td style="text-align: right">0.00868862</td><td style="text-align: right">67.1324</td><td style="text-align: right">0.0</td><td style="text-align: right">0.568996</td><td style="text-align: right">0.597579</td></tr><tr><td style="text-align: right">0.766489</td><td style="text-align: right">0.0081483</td><td style="text-align: right">94.0674</td><td style="text-align: right">0.0</td><td style="text-align: right">0.753086</td><td style="text-align: right">0.779892</td></tr></table><h2 id="Example-in-parallel"><a class="docs-heading-anchor" href="#Example-in-parallel">Example in parallel</a><a id="Example-in-parallel-1"></a><a class="docs-heading-anchor-permalink" href="#Example-in-parallel" title="Permalink"></a></h2><p>To use the package on a cluster, one must make sure that empirical moments, priors and the weight matrix are defined for each worker. This can be done using <code>@everywhere begin end</code> blocks, or by using <a href="https://github.com/ChrisRackauckas/ParallelDataTransfer.jl">ParallelDataTransfer.jl</a>. The function returning simulated moments must also be defined <code>@everywhere</code>. See the file <a href="https://github.com/JulienPascal/MSM.jl/blob/main/notebooks/LinearModelCluster.jl">LinearModelCluster.jl</a> for details.</p><h3 id="Option-1:-Global-parallel-optimization"><a class="docs-heading-anchor" href="#Option-1:-Global-parallel-optimization">Option 1: Global parallel optimization</a><a id="Option-1:-Global-parallel-optimization-1"></a><a class="docs-heading-anchor-permalink" href="#Option-1:-Global-parallel-optimization" title="Permalink"></a></h3><p>Choose a global optimizer that <strong>supports parallel evaluations</strong> (e.g. xnes or dxnes). See the <a href="https://github.com/robertfeldt/BlackBoxOptim.jl">documentation</a> for BlackBoxOptim.jl.</p><pre><code class="language-">msm_optimize!(myProblem, verbose = false)
+
+# Access the results using best_candidate
+minimizer = msm_minimizer(myProblem)
+minimum_val = msm_minimum(myProblem)</code></pre><h3 id="Option-2:-Multistart-algorithm"><a class="docs-heading-anchor" href="#Option-2:-Multistart-algorithm">Option 2: Multistart algorithm</a><a id="Option-2:-Multistart-algorithm-1"></a><a class="docs-heading-anchor-permalink" href="#Option-2:-Multistart-algorithm" title="Permalink"></a></h3><p>The function <code>msm_multistart!</code> searches for starting values for which the model converges. Then, several local optimization algorithms (specified with <code>localOptimizer</code>) are started in parallel. The &quot;global&quot; minimum is the minimum of the local minima:</p><pre><code class="language-">msm_multistart!(myProblem, nums = nworkers(), verbose = false)
+minimizer_multistart = msm_multistart_minimizer(myProblem)
+minimum_multistart = msm_multistart_minimum(myProblem)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../installation/">« Installation</a><a class="docs-footer-nextpage" href="../functions/">Functions and Types »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 28 May 2021 11:55">Friday 28 May 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
