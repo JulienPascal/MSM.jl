@@ -403,7 +403,7 @@ end
 
 
 """
-  search_starting_values(sMMProblem::MSMProblem; verbose::Bool = true, a::Array{Float64,1}, b::Array{Float64,1}, nums::Int64)
+  search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbose::Bool = true)
 
 Search for nums valid starting values. To be used after the following functions have been called:
 (i) set_empirical_moments! (ii) set_priors! (iii) set_simulate_empirical_moments!
@@ -467,8 +467,8 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
 
   listGridsIndex = 0
 
-  # Looping until all the points have been found
-  #---------------------------------------------
+  # Looping until numPoints valid points have been found
+  #----------------------------------------------------------------------------
   while nbValidx0Found < numPoints
 
     results = []
@@ -531,12 +531,6 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
     if verbose == true
       info("Saving starting values to disk.")
     end
-
-    # tempfilename = "starting_values_"* sMMProblem.options.saveName * ".jld2"
-    # JLD2.@save tempfilename Validx0
-    #
-    # tempfilename = "starting_distances_"* sMMProblem.options.saveName * ".jld2"
-    # JLD2.@save tempfilename distanceValue
 
     tempfilename = "starting_values_"* sMMProblem.options.saveName * ".bson"
     bson(tempfilename, Dict(:Validx0=>Validx0))
