@@ -12,7 +12,7 @@ println("Initial number of workers = $(currentWorkers)")
 
 # Increase the number of workers available
 #-----------------------------------------
-maxNumberWorkers = 3
+maxNumberWorkers = 10
 if addWorkers == true
 	if OnCluster == true
 	  addprocs(SlurmManager(maxNumberWorkers))
@@ -96,7 +96,7 @@ plot(p1, p2)
 
 
 # Define locally
-optionsSMM = MSMOptions(maxFuncEvals=1000, globalOptimizer = :dxnes, localOptimizer = :NelderMead)
+optionsSMM = MSMOptions(maxFuncEvals=2000, globalOptimizer = :dxnes, localOptimizer = :NelderMead)
 myProblem = MSMProblem(options = optionsSMM);
 
 # Send to workers
@@ -269,9 +269,9 @@ hh = heatmap(xs, ys, z, aspect_ratio = 1)
 set_Sigma0!(myProblem, Sigma0)
 # nbDraws = number of draws in the simulated data
 # To decrease standard errors, increase nbDraws
-calculate_Avar!(myProblem, minimizer, tau = T/nbDraws)
+calculate_Avar!(myProblem, minimizer_multistart, tau = T/nbDraws)
 
-df = summary_table(myProblem, minimizer, T, 0.05)
+df = summary_table(myProblem, minimizer_multistart, T, 0.05)
 println(df)
 
 # Compare results with GLM
