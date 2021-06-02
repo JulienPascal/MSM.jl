@@ -41,9 +41,9 @@ function MSMOptions( ;
 					minBox::Bool = false,
 					populationSize::Int64 = 50,
 					penaltyValue::Float64 = 999999.0,
-					gridType::Symbol = :latin,
+					gridType::Symbol = :LHC,
 					saveStartingValues::Bool = false,
-					maxTrialsStartingValues::Int64 = maxFuncEvals,
+					maxTrialsStartingValues::Int64 = 20,
 					thresholdStartingValue::Float64 = penaltyValue/10.0)
 
 
@@ -57,6 +57,12 @@ function MSMOptions( ;
 		if in(localOptimizer, listValidLocalOptimizers) == false
 			error("if minBox == true, localOptimizer must be in $(listValidLocalOptimizers)")
 		end
+	end
+
+	#Check valid grid types
+	listValidGridTypes = [:LHC]
+	if in(gridType, listValidGridTypes) == false
+		error("gridType must be in $(listValidGridTypes)")
 	end
 
 

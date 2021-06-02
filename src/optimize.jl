@@ -444,14 +444,25 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
     info("gridType = $(sMMProblem.options.gridType)")
   end
 
-  listGrids = []
-  for i=1:sMMProblem.options.maxTrialsStartingValues
-    if sMMProblem.options.gridType == :latin
-      push!(listGrids, latin_hypercube_sampling(lower_bound, upper_bound, numPoints))
-    else
-      err("sMMProblem.options.gridType = $(sMMProblem.options.gridType) is not a valid sampling procedure.")
-    end
+  # Generate many points for the grid
+  #-----------------------------------------------------------------------------
+  if sMMProblem.options.gridType == :LHC
+    candidates_starting_values = latin_hypercube_sampling(generate_bbSearchRange(sMMProblem), Int(sMMProblem.options.maxTrialsStartingValues*numPoints))
+  elseif sMMProblem.options.gridType == :Sobol
+    candidates_starting_values = sobol_sampling(lower_bound, upper_bound, Int(sMMProblem.options.maxTrialsStartingValues*numPoints))
+  else
+    err("sMMProblem.options.gridType = $(sMMProblem.options.gridType) is not a valid sampling procedure.")
+  end
 
+  # Split the grid into chunks
+  #-----------------------------------------------------------------------------
+  listGrids = []
+  i = 1;
+  j = i + numPoints - 1;
+  for k=1:sMMProblem.options.maxTrialsStartingValues
+      push!(listGrids, candidates_starting_values[i:j,:])
+      i = i + numPoints;
+      j = i + numPoints - 1;
   end
 
   listGridsIndex = 0
