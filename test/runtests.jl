@@ -1,8 +1,9 @@
 maxNbWorkers = 1
 using Distributed
 while nworkers() < maxNbWorkers
-  addprocs(1)
+  addprocs(maxNbWorkers - nworkers())
 end
+println(nworkers())
 
 @everywhere using MSM
 @everywhere using DataStructures
@@ -44,9 +45,9 @@ end
             @test t.minBox == false
             @test t.populationSize == 50
             @test t.penaltyValue == 999999.0
-            @test t.gridType == :latin
+            @test t.gridType == :LHC
             @test t.saveStartingValues == false
-            @test t.maxTrialsStartingValues == t.maxFuncEvals
+            @test t.maxTrialsStartingValues == 20
             @test t.thresholdStartingValue == t.penaltyValue/10.0
 
         end
@@ -76,9 +77,11 @@ end
 
     @testset "Latin hypercube sampling" begin
 
+        # Test the home-made function
         a = zeros(3)
         b = ones(3)
-        nums = 20
+        nums = 100
+        nums = 10
         points = latin_hypercube_sampling(a, b, nums)
 
         @test size(points, 1) == nums
@@ -91,15 +94,67 @@ end
             end
         end
 
+
+        # Test the function using the package LatinHypercubeSampling.jl
+        myProblem = MSMProblem(options = MSMOptions());
+        dictPriors = OrderedDict{String,Array{Float64,1}}()
+        # Of the form: [initial_guess, lower_bound, upper_bound]
+        dictPriors["alpha"] = [0.5, 0.0, 1.0]
+        dictPriors["beta1"] = [0.5, 0.0, 1.0]
+        dictPriors["beta2"] = [0.5, 0.0, 1.0]
+        set_priors!(myProblem, dictPriors)
+        points_2 = latin_hypercube_sampling(generate_bbSearchRange(myProblem), nums)
+
+        @test size(points_2, 1) == nums
+        @test size(points_2, 2) == length(a)
+
+        for i=1:size(points_2, 1)
+            for j=1:size(points_2, 2)
+                @test points_2[i,j] >= a[j]
+                @test points_2[i,j] <= b[j]
+            end
+        end
+
         if do_plots == true
             using Plots
-            plotlyjs()
-            scatter(points[:,1], points[:,2], points[:,3])
+            gr()
+            p1 = scatter(points[:,1], points[:,2], points[:,3], title="Home made")
+            p2 = scatter(points_2[:,1], points_2[:,2], points_2[:,3], title="LatinHypercubeSampling.jl")
+            plot(p1,p2 )
         end
 
     end
 
+    @testset "Sobol sampling" begin
 
+        # Test the home-made function
+        a = zeros(3)
+        b = ones(3)
+        nums = 100
+        points = sobol_sampling(a, b, nums)
+
+        @test size(points, 1) == nums
+        @test size(points, 2) == length(a)
+
+        for i=1:size(points, 1)
+            for j=1:size(points, 2)
+                @test points[i,j] >= a[j]
+                @test points[i,j] <= b[j]
+            end
+        end
+
+        # For fun, let's compare to random sampling
+        points_2 = rand(nums, length(a))
+
+        if do_plots == true
+            using Plots
+            gr()
+            p1 = scatter(points_2[:,1], points_2[:,2], points_2[:,3], title="Random")
+            p2 = scatter(points[:,1], points[:,2], points[:,3], title="Sobol")
+            plot(p1,p2 )
+        end
+
+    end
 
 
     @testset "testing checks on global algo" begin
@@ -483,7 +538,7 @@ end
 
         end
 
-        @testset "Testing mutli 1d" begin
+        @testset "Testing mutlistart 1d" begin
 
 
           tol1dMean = 0.1

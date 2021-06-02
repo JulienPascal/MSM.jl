@@ -258,6 +258,7 @@ end
 # source: https://github.com/robertfeldt/BlackBoxOptim.jl/blob/master/src/utilities/latin_hypercube_sampling.jl
 """
     latin_hypercube_sampling(mins, maxs, n)
+
 Randomly sample `n` vectors from the parallelogram defined
 by `mins` and `maxs` using the Latin hypercube algorithm.
 Returns `dims`×`n` matrix.
@@ -287,6 +288,48 @@ function latin_hypercube_sampling(mins::AbstractVector{T},
     end
     return transpose(result)
 end
+
+"""
+    latin_hypercube_sampling(mySearchRange::Vector{Tuple{Float64, Float64}}, n::Integer; gens::Integer = 100)
+
+Function to create an optimised Latin Hypercube Sampling Plan
+## Input
+* mySearchRange: a vector of tuple of the form (xj_min, xj_max)
+* n: number of points to draw
+* gens: (optional) optimization is run for gens generations. See LatinHypercubeSampling.jl
+
+## Output
+* Matrix{Float64}: row = observation; column = dimension
+"""
+function latin_hypercube_sampling(mySearchRange::Vector{Tuple{Float64, Float64}}, n::Integer; gens::Integer = 100)
+
+        d = length(mySearchRange) #dimension
+        # See: https://mrurq.github.io/LatinHypercubeSampling.jl/stable/man/lhcoptim/
+        plan, _ = LHCoptim(n,d,gens)
+        # Rescale plan:
+        scaled_plan = scaleLHC(plan, mySearchRange)
+
+        return scaled_plan
+end
+
+
+function sobol_sampling(lb::Vector{Float64},
+                        ub::Vector{Float64},
+                        n::Integer)
+    s = SobolSeq(lb,ub)
+    # "If you know in advance the number n of points that you plan to generate,
+    # some authors suggest that better uniformity can be attained by first skipping
+    # the initial portion of the LDS.". See: https://github.com/stevengj/Sobol.jl
+    skip(s,n)
+    d = length(lb) #dimension
+    if d == 1
+        result = transpose(reduce(hcat, next!(s)[1] for i = 1:n))
+    else
+        result = transpose(reduce(hcat, next!(s) for i = 1:n))
+    end
+    return result
+end
+
 
 """
   get_now()

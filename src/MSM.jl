@@ -19,6 +19,8 @@ module MSM
     using Distributions
     using LinearAlgebra
     using SharedArrays
+    using LatinHypercubeSampling
+    using Sobol
 
     # Exports from BlackBoxOptim
     #---------------------------
@@ -79,7 +81,7 @@ module MSM
     export set_bbSetup!, generate_bbSearchRange
     export create_lower_bound, create_upper_bound
     export set_global_optimizer!
-    export latin_hypercube_sampling
+    export latin_hypercube_sampling, sobol_sampling
     export get_now, info, linspace
 
 
