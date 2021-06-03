@@ -73,7 +73,6 @@ function construct_objective_function!(sMMProblem::MSMProblem)
         for (indexMoment, k) in enumerate(keys(sMMProblem.empiricalMoments))
 
           # * sMMProblem.empiricalMoments[k][1] is the empirical moments
-          # * sMMProblem.empiricalMoments[k][2] is the weight associated to this moment
           #---------------------------------------------------------------------
           arrayDistance[indexMoment] = (sMMProblem.empiricalMoments[k][1] - simulatedMoments[k])
 

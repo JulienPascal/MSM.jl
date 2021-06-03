@@ -2,7 +2,7 @@ using ClusterManagers
 using Distributed
 
 OnCluster = false #set to false to run locally
-addWorkers = true #set to false to run serially
+addWorkers = false #set to false to run serially
 println("OnCluster = $(OnCluster)")
 
 # Current number of workers
@@ -12,13 +12,13 @@ println("Initial number of workers = $(currentWorkers)")
 
 # Increase the number of workers available
 #-----------------------------------------
-maxNumberWorkers = 10
+maxNumberWorkers = 1
 if addWorkers == true
-	if OnCluster == true
-	  addprocs(SlurmManager(maxNumberWorkers))
-	else
-	  addprocs(maxNumberWorkers)
-	end
+    if OnCluster == true
+        addprocs(SlurmManager(maxNumberWorkers))
+    else
+        addprocs(maxNumberWorkers)
+    end
 end
 
 
@@ -27,10 +27,10 @@ end
 hosts = []
 pids = []
 for i in workers()
-	host, pid = fetch(@spawnat i (gethostname(), getpid()))
-	println("Hello I am worker $(i), my host is $(host)")
-	push!(hosts, host)
-	push!(pids, pid)
+    host, pid = fetch(@spawnat i (gethostname(), getpid()))
+    println("Hello I am worker $(i), my host is $(host)")
+    push!(hosts, host)
+    push!(pids, pid)
 end
 
 currentWorkers = nworkers()
@@ -39,18 +39,18 @@ println("Number of workers = $(currentWorkers)")
 using Plots
 using ParallelDataTransfer
 
-@everywhere using MSM
-@everywhere using DataStructures
-@everywhere using OrderedCollections
-@everywhere using Distributions
-@everywhere using Random
-@everywhere using DataStructures
-@everywhere using Statistics
-@everywhere using LinearAlgebra
+using MSM
+using DataStructures
+using OrderedCollections
+using Distributions
+using Random
+using DataStructures
+using Statistics
+using LinearAlgebra
 
 # Generate simulated data
 Random.seed!(1234)  #for replicability reasons
-T = 100000          #number of periods
+T = 1000         #number of periods
 P = 2               #number of dependent variables
 beta0 = rand(P)     #choose true coefficients by drawing from a uniform distribution on [0,1]
 alpha0 = rand(1)[]  #intercept
@@ -67,7 +67,7 @@ d = Normal()
 U[1] = rand(d, 1)[] #first error term
 # loop over time periods
 for t = 2:T
-    U[t] = rand(d, 1)[] + theta0*U[t-1]
+    U[t] = rand(d, 1)[] + theta0 * U[t-1]
 end
 
 # Let's simulate the dependent variables x_t
@@ -75,70 +75,78 @@ x = zeros(T, P)
 
 d = Uniform(0, 5)
 for p = 1:P
-    x[:,p] = rand(d, T)
+    x[:, p] = rand(d, T)
 end
 
 # Let's calculate the resulting y_t
 y = zeros(T)
 
-for t=1:T
-    y[t] = alpha0 + x[t,1]*beta0[1] + x[t,2]*beta0[2] + U[t]
+for t = 1:T
+    y[t] = alpha0 + x[t, 1] * beta0[1] + x[t, 2] * beta0[2] + U[t]
 end
 
-# Send simulated data to workers
-sendto(workers(), y=y)
-sendto(workers(), x=x)
 
 # Visualize data
-p1 = scatter(x[1:100,1], y[1:100], xlabel = "x1", ylabel = "y", legend=:none, smooth=true)
-p2 = scatter(x[1:100,2], y[1:100], xlabel = "x2", ylabel = "y", legend=:none, smooth=true)
+p1 = scatter(
+    x[1:100, 1],
+    y[1:100],
+    xlabel = "x1",
+    ylabel = "y",
+    legend = :none,
+    smooth = true,
+)
+p2 = scatter(
+    x[1:100, 2],
+    y[1:100],
+    xlabel = "x2",
+    ylabel = "y",
+    legend = :none,
+    smooth = true,
+)
 plot(p1, p2)
 
 
 # Define locally
-optionsSMM = MSMOptions(maxFuncEvals=2000, globalOptimizer = :dxnes, localOptimizer = :NelderMead)
+optionsSMM = MSMOptions(
+    maxFuncEvals = 2000,
+    globalOptimizer = :dxnes,
+    localOptimizer = :NelderMead,
+)
 myProblem = MSMProblem(options = optionsSMM);
-
-# Send to workers
-sendto(workers(), optionsSMM=optionsSMM)
-sendto(workers(), myProblem=myProblem)
 
 # Priors
 dictPriors = OrderedDict{String,Array{Float64,1}}()
 dictPriors["alpha"] = [0.5, 0.001, 1.0]
 dictPriors["beta1"] = [0.5, 0.001, 1.0]
 dictPriors["beta2"] = [0.5, 0.001, 1.0]
-sendto(workers(), dictPriors=dictPriors)
 
 # Empirical moments
 dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
 dictEmpiricalMoments["mean"] = [mean(y)] #informative on the intercept
-dictEmpiricalMoments["mean^2"] = [mean(y.^2)] #informative on the intercept
-dictEmpiricalMoments["mean^3"] = [mean(y.^3)] #informative on the intercept
-dictEmpiricalMoments["var"] = [mean(y.^2) - mean(y)^2]
-dictEmpiricalMoments["mean_x1y"] = [mean(x[:,1] .* y)] #informative on betas
-dictEmpiricalMoments["mean_x2y"] = [mean(x[:,2] .* y)] #informative on betas
-dictEmpiricalMoments["mean_x1y^2"] = [mean((x[:,1] .* y).^2)] #informative on betas
-dictEmpiricalMoments["mean_x2y^2"] = [mean((x[:,2] .* y).^2)] #informative on betas
+dictEmpiricalMoments["mean_x1y"] = [mean(x[:, 1] .* y)] #informative on betas
+dictEmpiricalMoments["mean_x2y"] = [mean(x[:, 2] .* y)] #informative on betas
+dictEmpiricalMoments["mean_x1y^2"] = [mean((x[:, 1] .* y) .^ 2)] #informative on betas
+dictEmpiricalMoments["mean_x2y^2"] = [mean((x[:, 2] .* y) .^ 2)] #informative on betas
 
 W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
 #Special case: diagonal matrix
 #(you may choose something else)
 for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
-    W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+    W[indexMoment, indexMoment] = 1.0 / (dictEmpiricalMoments[k][1])^2
 end
 
-# Send to workers
-sendto(workers(), dictPriors=dictPriors)
-sendto(workers(), dictEmpiricalMoments=dictEmpiricalMoments)
-sendto(workers(), W=W)
-
-@everywhere set_priors!(myProblem, dictPriors)
-@everywhere set_empirical_moments!(myProblem, dictEmpiricalMoments)
-@everywhere set_weight_matrix!(myProblem, W)
+set_priors!(myProblem, dictPriors)
+set_empirical_moments!(myProblem, dictEmpiricalMoments)
+set_weight_matrix!(myProblem, W)
 
 # x[1] corresponds to the intercept, x[2] corresponds to beta1, x[3] corresponds to beta2
-@everywhere function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 10)
+function functionLinearModel(
+    x;
+    uniform_draws::Array{Float64,1},
+    simX::Array{Float64,2},
+    nbDraws::Int64 = length(uniform_draws),
+    burnInPerc::Int64 = 1,
+)
     T = nbDraws
     P = 2       #number of dependent variables
 
@@ -157,63 +165,50 @@ sendto(workers(), W=W)
 
     # loop over time periods
     for t = 2:T
-        U[t] = gaussian_draws[t] + theta*U[t-1]
+        U[t] = gaussian_draws[t] + theta * U[t-1]
     end
 
     # Let's calculate the resulting y_t
     y = zeros(T)
 
-    for t=1:T
-        y[t] = alpha + simX[t,1]*beta[1] + simX[t,2]*beta[2] + U[t]
+    for t = 1:T
+        y[t] = alpha + simX[t, 1] * beta[1] + simX[t, 2] * beta[2] + U[t]
     end
 
     # Get rid of the burn-in phase:
     #------------------------------
-    startT = div(nbDraws, burnInPerc)
+    startT = Int(nbDraws * (burnInPerc / 100))
 
     # Moments:
     #---------
     output = OrderedDict{String,Float64}()
     output["mean"] = mean(y[startT:nbDraws])
-    output["mean^2"] = mean(y[startT:nbDraws].^2)
-    output["mean^3"] = mean(y[startT:nbDraws].^3)
-	output["var"] = mean(y[startT:nbDraws].^2) - mean(y[startT:nbDraws])^2
-    output["mean_x1y"] = mean(simX[startT:nbDraws,1] .* y[startT:nbDraws])
-    output["mean_x2y"] = mean(simX[startT:nbDraws,2] .* y[startT:nbDraws])
-    output["mean_x1y^2"] = mean((simX[startT:nbDraws,1] .* y[startT:nbDraws]).^2)
-    output["mean_x2y^2"] = mean((simX[startT:nbDraws,2] .* y[startT:nbDraws]).^2)
+    output["mean_x1y"] = mean(simX[startT:nbDraws, 1] .* y[startT:nbDraws])
+    output["mean_x2y"] = mean(simX[startT:nbDraws, 2] .* y[startT:nbDraws])
+    output["mean_x1y^2"] =
+        mean((simX[startT:nbDraws, 1] .* y[startT:nbDraws]) .^ 2)
+    output["mean_x2y^2"] =
+        mean((simX[startT:nbDraws, 2] .* y[startT:nbDraws]) .^ 2)
 
     return output
 end
 
 # Let's freeze the randomness during the minimization
-d_Uni = Uniform(0,1)
-nbDraws = 100000 #number of draws in the simulated data
+d_Uni = Uniform(0, 1)
+nbDraws = T #number of draws in the simulated data
 uniform_draws = rand(d_Uni, nbDraws)
 simX = zeros(length(uniform_draws), 2)
 d = Uniform(0, 5)
 for p = 1:2
-  simX[:,p] = rand(d, length(uniform_draws))
+    simX[:, p] = rand(d, length(uniform_draws))
 end
-
-# Send to workers
-sendto(workers(), simX=simX)
-sendto(workers(), uniform_draws=uniform_draws)
 
 # Construct the objective function everywhere
-@everywhere set_simulate_empirical_moments!(myProblem, x -> functionLinearModel(x, uniform_draws = uniform_draws, simX = simX))
-@everywhere construct_objective_function!(myProblem)
-
-# Safety check: value on the master node == values on slave nodes?
-using Test
-val_local = myProblem.objective_function(ones(3)); #local execution
-val_workers = [];
-for w in workers() #Execution on workers
-    push!(val_workers, @fetchfrom w myProblem.objective_function(ones(3)))
-end
-for (wIndex, w) in enumerate(workers())
-    @test abs(val_local - val_workers[wIndex]) < 10e-10
-end
+set_simulate_empirical_moments!(
+    myProblem,
+    x -> functionLinearModel(x, uniform_draws = uniform_draws, simX = simX),
+)
+construct_objective_function!(myProblem)
 
 println("Global Algorithm")
 # Choose a global optimizer that supports parallel evaluations (e.g. xnes or dxnes)
@@ -235,7 +230,6 @@ println("Multistart Algorithm")
 # Choose algorithms from the package Optim.jl (https://github.com/JuliaNLSolvers/Optim.jl)
 # The "global" mininimum is the minimum of the local minima.
 msm_multistart!(myProblem, nums = nworkers(), verbose = false)
-
 minimizer_multistart = msm_multistart_minimizer(myProblem)
 minimum_multistart = msm_multistart_minimum(myProblem)
 
@@ -246,35 +240,78 @@ println("Estimated value for beta2 = $(minimizer_multistart[3]). True value for 
 
 # Empirical Series
 #-----------------
-X = zeros(T, 8)
-X[:,1] = y
-X[:,2] = y.^2
-X[:,3] = y.^3
-X[:,4] = (y .- mean(y)).^2
-X[:,5] = (x[:,1] .* y)
-X[:,6] = (x[:,2] .* y)
-X[:,7] = (x[:,1] .* y).^2
-X[:,8] = (x[:,2] .* y).^2
+X = zeros(T, length(dictEmpiricalMoments))
+X[:, 1] = y
+X[:, 2] = (x[:, 1] .* y)
+X[:, 3] = (x[:, 2] .* y)
+X[:, 4] = (x[:, 1] .* y) .^ 2
+X[:, 5] = (x[:, 2] .* y) .^ 2
 
 # "Distance Matrix" (see Duffie and Singleton, 1993)
 Sigma0 = cov(X)
 
 # Heatmap to visualize correlation
-xs = [string("x", i) for i = 1:8]
-ys = [string("x", i) for i = 1:8]
+xs = [string("x", i) for i = 1:length(dictEmpiricalMoments)]
+ys = [string("x", i) for i = 1:length(dictEmpiricalMoments)]
 z = cor(X)
 hh = heatmap(xs, ys, z, aspect_ratio = 1)
 
 set_Sigma0!(myProblem, Sigma0)
 # nbDraws = number of draws in the simulated data
 # To decrease standard errors, increase nbDraws
-calculate_Avar!(myProblem, minimizer_multistart, tau = T/nbDraws)
+calculate_Avar!(myProblem, minimizer_multistart, tau = T / nbDraws)
 
 df = summary_table(myProblem, minimizer_multistart, T, 0.05)
 println(df)
 
+# Check the rank condition
+# Local identification requires D to be full column rank (in a neighborhood of the solution)
+D = calculate_D(myProblem, minimizer_multistart)
+println("number of parameters: $(size(D,2))")
+println("rank of D is: $(rank(D))")
+
+# Slices
+vXGrid, vYGrid = msm_slices(myProblem, minimizer_multistart, nbPoints = 7);
+#Hacky way to combine all the plots in a single plot
+list_plots = []
+for (keyIndex, keyValue) in enumerate(keys(myProblem.priors))
+    p = plot(
+        vXGrid[:, keyIndex],
+        vYGrid[:, keyIndex],
+        title = "$(keyValue)",
+        label = "",
+    )
+    plot!([minimizer_multistart[keyIndex]], seriestype = :vline, label = "")
+    push!(list_plots, p)
+end
+
+s0 = ""
+for i = 1:length(keys(myProblem.priors))
+    if i == 1
+        s0 = string("list_plots[$(i)]")
+    else
+        s0 = string(s0, ", ", "list_plots[$(i)]")
+    end
+end
+
+plot_combined = eval(Meta.parse(string("plot(", s0, ")")))
+display(plot_combined)
+
+
+# Efficient GMM
+#---------------
+myProblem.W = inv(Sigma0)
+msm_multistart!(myProblem, nums = nworkers(), verbose = false)
+minimizer_multistart = msm_multistart_minimizer(myProblem)
+minimum_multistart = msm_multistart_minimum(myProblem)
+
+# J-test
+J, c = J_test(myProblem, minimizer_multistart, T, 0.05)
+println("J-statistic: $(J)")
+println("Critical value: $(c)")
+
 # Compare results with GLM
 using DataFrames, GLM
-data = DataFrame(x1=x[:,1], x2=x[:,2], y= y[:]);
+data = DataFrame(x1 = x[:, 1], x2 = x[:, 2], y = y[:]);
 ols = lm(@formula(y ~ x1 + x2), data)
 println(ols)

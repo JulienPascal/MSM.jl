@@ -198,3 +198,38 @@ function cov_NW(data::Matrix; l::Int64 = -1)
 
     return V
 end
+
+
+"""
+  J_test(sMMProblem::MSMProblem, theta0::Array{Float64,1})
+
+Run a J-test, also called a test for over-identifying restrictions. The null hypothesis that the model is “valid”.
+The alternative hypothesis that model is “invalid”. For the test to be valid,
+the weigth matrix must converge in probability to the efficient weighting matrix
+(Sigma0^-1).
+
+#Ouput:
+* J: value of the J-statistic
+* c: critical value associated to the J-test
+"""
+function J_test(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, alpha::Float64)
+
+  df=length(keys(sMMProblem.empiricalMoments)) - length(theta0)
+  #Chi² distribution with k-l degrees of freedom, where
+  d_chi=Chi(df)
+  #Calculate J
+  simulatedMoments=sMMProblem.simulate_empirical_moments(theta0)
+  # to store the distance between empirical and simulated moments
+  arrayDistance = zeros(length(keys(sMMProblem.empiricalMoments)))
+  for (indexMoment, k) in enumerate(keys(sMMProblem.empiricalMoments))
+    arrayDistance[indexMoment] = (sMMProblem.empiricalMoments[k][1] - simulatedMoments[k])
+  end
+
+  J = tData*transpose(arrayDistance)*sMMProblem.W*arrayDistance
+  #Critical value above which the null hypothesis is rejected
+  #Look at the 1.0 - alpha percentile of Chi²(df)
+  c = quantile(d_chi, 1.0 - alpha)
+
+  return J, c
+
+end
