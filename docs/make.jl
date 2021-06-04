@@ -7,6 +7,7 @@ using Distributions
 using Statistics
 using LinearAlgebra
 using Plots
+using LaTeXStrings
 Random.seed!(1234)  #for replicability reasons
 
 makedocs(

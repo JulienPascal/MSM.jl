@@ -201,7 +201,7 @@ end
 
 
 """
-  J_test(sMMProblem::MSMProblem, theta0::Array{Float64,1})
+  J_test(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, tSimData::Int64, alpha::Float64)
 
 Run a J-test, also called a test for over-identifying restrictions. The null hypothesis that the model is “valid”.
 The alternative hypothesis that model is “invalid”. For the test to be valid,
@@ -212,7 +212,7 @@ the weigth matrix must converge in probability to the efficient weighting matrix
 * J: value of the J-statistic
 * c: critical value associated to the J-test
 """
-function J_test(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, alpha::Float64)
+function J_test(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, tSimData::Int64, alpha::Float64)
 
   df=length(keys(sMMProblem.empiricalMoments)) - length(theta0)
   #Chi² distribution with k-l degrees of freedom, where
@@ -225,7 +225,9 @@ function J_test(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, 
     arrayDistance[indexMoment] = (sMMProblem.empiricalMoments[k][1] - simulatedMoments[k])
   end
 
-  J = tData*transpose(arrayDistance)*sMMProblem.W*arrayDistance
+  # See Lee and Ingram (1991) and Ruge-Murcia (2012)
+  tau = tData/tSimData
+  J = tData*(1.0 + tau)*transpose(arrayDistance)*sMMProblem.W*arrayDistance
   #Critical value above which the null hypothesis is rejected
   #Look at the 1.0 - alpha percentile of Chi²(df)
   c = quantile(d_chi, 1.0 - alpha)

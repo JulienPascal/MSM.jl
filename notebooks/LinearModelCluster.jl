@@ -37,6 +37,7 @@ currentWorkers = nworkers()
 println("Number of workers = $(currentWorkers)")
 
 using Plots
+using LaTeXStrings
 using ParallelDataTransfer
 
 @everywhere using MSM
@@ -114,8 +115,6 @@ sendto(workers(), dictPriors=dictPriors)
 dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
 dictEmpiricalMoments["mean"] = [mean(y)] #informative on the intercept
 dictEmpiricalMoments["mean^2"] = [mean(y.^2)] #informative on the intercept
-dictEmpiricalMoments["mean^3"] = [mean(y.^3)] #informative on the intercept
-dictEmpiricalMoments["var"] = [mean(y.^2) - mean(y)^2]
 dictEmpiricalMoments["mean_x1y"] = [mean(x[:,1] .* y)] #informative on betas
 dictEmpiricalMoments["mean_x2y"] = [mean(x[:,2] .* y)] #informative on betas
 dictEmpiricalMoments["mean_x1y^2"] = [mean((x[:,1] .* y).^2)] #informative on betas
@@ -138,7 +137,7 @@ sendto(workers(), W=W)
 @everywhere set_weight_matrix!(myProblem, W)
 
 # x[1] corresponds to the intercept, x[2] corresponds to beta1, x[3] corresponds to beta2
-@everywhere function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 10)
+@everywhere function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 0)
     T = nbDraws
     P = 2       #number of dependent variables
 
@@ -167,17 +166,15 @@ sendto(workers(), W=W)
         y[t] = alpha + simX[t,1]*beta[1] + simX[t,2]*beta[2] + U[t]
     end
 
-    # Get rid of the burn-in phase:
+	# Get rid of the burn-in phase:
     #------------------------------
-    startT = div(nbDraws, burnInPerc)
+    startT = max(1, Int(nbDraws * (burnInPerc / 100)))
 
     # Moments:
     #---------
     output = OrderedDict{String,Float64}()
     output["mean"] = mean(y[startT:nbDraws])
     output["mean^2"] = mean(y[startT:nbDraws].^2)
-    output["mean^3"] = mean(y[startT:nbDraws].^3)
-	output["var"] = mean(y[startT:nbDraws].^2) - mean(y[startT:nbDraws])^2
     output["mean_x1y"] = mean(simX[startT:nbDraws,1] .* y[startT:nbDraws])
     output["mean_x2y"] = mean(simX[startT:nbDraws,2] .* y[startT:nbDraws])
     output["mean_x1y^2"] = mean((simX[startT:nbDraws,1] .* y[startT:nbDraws]).^2)
@@ -188,7 +185,7 @@ end
 
 # Let's freeze the randomness during the minimization
 d_Uni = Uniform(0,1)
-nbDraws = 100000 #number of draws in the simulated data
+nbDraws = 2*T #number of draws in the simulated data
 uniform_draws = rand(d_Uni, nbDraws)
 simX = zeros(length(uniform_draws), 2)
 d = Uniform(0, 5)
@@ -246,22 +243,20 @@ println("Estimated value for beta2 = $(minimizer_multistart[3]). True value for 
 
 # Empirical Series
 #-----------------
-X = zeros(T, 8)
+X = zeros(T, length(dictEmpiricalMoments))
 X[:,1] = y
 X[:,2] = y.^2
-X[:,3] = y.^3
-X[:,4] = (y .- mean(y)).^2
-X[:,5] = (x[:,1] .* y)
-X[:,6] = (x[:,2] .* y)
-X[:,7] = (x[:,1] .* y).^2
-X[:,8] = (x[:,2] .* y).^2
+X[:,3] = (x[:,1] .* y)
+X[:,4] = (x[:,2] .* y)
+X[:,5] = (x[:,1] .* y).^2
+X[:,6] = (x[:,2] .* y).^2
 
 # "Distance Matrix" (see Duffie and Singleton, 1993)
 Sigma0 = cov(X)
 
 # Heatmap to visualize correlation
-xs = [string("x", i) for i = 1:8]
-ys = [string("x", i) for i = 1:8]
+xs = [string("x", i) for i = 1:length(dictEmpiricalMoments)]
+ys = [string("x", i) for i = 1:length(dictEmpiricalMoments)]
 z = cor(X)
 hh = heatmap(xs, ys, z, aspect_ratio = 1)
 
@@ -272,6 +267,24 @@ calculate_Avar!(myProblem, minimizer_multistart, tau = T/nbDraws)
 
 df = summary_table(myProblem, minimizer_multistart, T, 0.05)
 println(df)
+
+# Check the rank condition
+# Local identification requires D to be full column rank (in a neighborhood of the solution)
+D = calculate_D(myProblem, minimizer_multistart)
+println("number of parameters: $(size(D,2))")
+println("rank of D is: $(rank(D))")
+
+# Slices
+vXGrid, vYGrid = msm_slices(myProblem, minimizer_multistart, nbPoints = 7);
+
+p1 = plot(vXGrid[:, 1],vYGrid[:, 1],title = L"\alpha", label = "",linewidth = 3, xrotation = 45)
+plot!(p1, [minimizer_multistart[1]], seriestype = :vline, label = "",linewidth = 1)
+p2 = plot(vXGrid[:, 2],vYGrid[:, 2],title = L"\beta_1", label = "",linewidth = 3, xrotation = 45)
+plot!(p2, [minimizer_multistart[2]], seriestype = :vline, label = "",linewidth = 1)
+p3 = plot(vXGrid[:, 3],vYGrid[:, 3],title = L"\beta_2", label = "",linewidth = 3, xrotation = 45)
+plot!(p3, [minimizer_multistart[3]], seriestype = :vline, label = "",linewidth = 1)
+plot_combined = plot(p1, p2, p3)
+display(plot_combined)
 
 # Compare results with GLM
 using DataFrames, GLM

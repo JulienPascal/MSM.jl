@@ -25,7 +25,7 @@ parameters in serial. In a second step, we use several workers on a cluster.
 In a real-world scenario, you would probably use empirical data. Here, let's
 simulate a fake dataset.
 
-```@example
+```@example 1
 using MSM
 using DataStructures
 using OrderedCollections
@@ -33,7 +33,11 @@ using Random
 using Distributions
 using Statistics
 using LinearAlgebra
+using Distributed
 using Plots
+hh = 750; nothing # hide
+ww = round(Int, (16/9)*hh); nothing # hide
+gr(size = (ww,hh)); nothing # hide
 Random.seed!(1234)  #for replicability reasons
 T = 100000          #number of periods
 P = 2               #number of dependent variables
@@ -68,14 +72,15 @@ end
 p1 = scatter(x[1:100,1], y[1:100], xlabel = "x1", ylabel = "y", legend=:none, smooth=true)
 p2 = scatter(x[1:100,2], y[1:100], xlabel = "x2", ylabel = "y", legend=:none, smooth=true)
 p = plot(p1, p2);
-savefig(p, "f-fake-data.svg"); nothing # hide
+plot!(p, size = (ww,hh)); nothing # hide
+savefig(p, "f-fake-data.png"); nothing # hide
 ```
 
-![](f-fake-data.svg)
+![](f-fake-data.png)
 
 ### Step 1: Initializing a MSMProblem
 
-```@example
+```@example 1
 # Select a global optimizer (see BlackBoxOptim.jl) and a local minimizer (see Optim.jl):
 myProblem = MSMProblem(options = MSMOptions(maxFuncEvals=10000, globalOptimizer = :dxnes, localOptimizer = :LBFGS));
 ```
@@ -84,7 +89,7 @@ myProblem = MSMProblem(options = MSMOptions(maxFuncEvals=10000, globalOptimizer 
 
 Choose the set of empirical moments to match and the weight matrix $W$ using the functions `set_empirical_moments!` and `set_weight_matrix!`
 
-```@example
+```@example 1
 dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
 dictEmpiricalMoments["mean"] = [mean(y)] #informative on the intercept
 dictEmpiricalMoments["mean_x1y"] = [mean(x[:,1] .* y)] #informative on betas
@@ -110,7 +115,7 @@ Our "prior" belief regarding the parameter values is to be specified using `set_
 It is not fully a full-fledged prior probability distribution, but simply an
 initial guess for each parameter, as well as lower and upper bounds:
 
-```@example
+```@example 1
 dictPriors = OrderedDict{String,Array{Float64,1}}()
 # Of the form: [initial_guess, lower_bound, upper_bound]
 dictPriors["alpha"] = [0.5, 0.001, 1.0]
@@ -127,9 +132,9 @@ The objective function must generate an **ordered dictionary** containing the **
 that is to generate draws from a Uniform([0,1]) outside of the objective function and to use [inverse transform sampling](https://en.wikipedia.org/wiki/Inverse_transform_sampling) to generate draws from a normal distribution. Otherwise the objective function would be "noisy" and the minimization algorithms would have a hard time finding
 the global minimum.
 
-```@example
+```@example 1
 # x[1] corresponds to the intercept; x[2] corresponds to beta1; x[3] corresponds to beta2
-function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 10)
+function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 0)
     T = nbDraws
     P = 2       #number of dependent variables
     alpha = x[1]
@@ -156,7 +161,7 @@ function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Flo
 
     # Get rid of the burn-in phase:
     #------------------------------
-    startT = div(nbDraws, burnInPerc)
+    startT = max(1, Int(nbDraws * (burnInPerc / 100)))
 
     # Moments:
     #---------
@@ -190,7 +195,7 @@ construct_objective_function!(myProblem)
 ### Step 5. Running the optimization
 Use the global optimization algorithm specified in `globalOptimizer`:
 
-```@example
+```@example 1
 # Global optimization:
 msm_optimize!(myProblem, verbose = false)
 ```
@@ -199,19 +204,13 @@ msm_optimize!(myProblem, verbose = false)
 
 ####  Step 6.A. Point estimates
 
-```@example
+```@example 1
 minimizer = msm_minimizer(myProblem)
 minimum_val = msm_minimum(myProblem)
 println("Minimum objective function = $(minimum_val)")
 println("Estimated value for alpha = $(minimizer[1]). True value for beta1 = $(alpha0[1])")
 println("Estimated value for beta1 = $(minimizer[2]). True value for beta1 = $(beta0[1])")
 println("Estimated value for beta2 = $(minimizer[3]). True value for beta2 = $(beta0[2])")
-```
-```julia
-Minimum objective function = 3.364713342376503e-6
-Estimated value for alpha = 0.5725856664135125. True value for beta1 = 0.5662374165061859
-Estimated value for beta1 = 0.5832878335694766. True value for beta1 = 0.5908446386657102
-Estimated value for beta2 = 0.7664889629032697. True value for beta2 = 0.7667970365022592
 ```
 
 ####  Step 6.B. Inference
@@ -220,7 +219,7 @@ Estimated value for beta2 = 0.7664889629032697. True value for beta2 = 0.7667970
 
 Let's calculate the variance-covariance matrix of the **"distance matrix"** (using the terminolgy of [Duffie and Singleton (1993)](https://www.jstor.org/stable/2951768?seq=1)). Here we know that errors are not correlated (the serial correlation coefficient is set to 0 in the code above). in the presence of serial correlation, an HAC estimation would be needed.
 
-```@example
+```@example 1
 # Empirical Series
 #-----------------
 X = zeros(T, 5)
@@ -250,7 +249,7 @@ Calculating the asymptotic variance using MSM.jl is done in two steps:
 * setting the value of the **"distance matrix"** using the function `set_Sigma0!`
 * calculating the asymptotic variance using the function `calculate_Avar!`
 
-```@example
+```@example 1
 set_Sigma0!(myProblem, Sigma0)
 calculate_Avar!(myProblem, minimizer, tau = T/nbDraws) # nbDraws = number of draws in the simulated data
 ```
@@ -264,16 +263,39 @@ function `summary_table`. This function has four inputs:
 3. the length of the empirical sample
 4. the confidence level associated to the test **H0:** $\theta_i = 0$,  **H1:** $\theta_i != 0$
 
-```@example
+```@example 1
 df = summary_table(myProblem, minimizer, T, 0.05)
 ```
 
-| Estimate | StdError   | tValue  | pValue  | ConfIntervalLower | ConfIntervalUpper |
-|----------|------------|---------|---------|-------------------|-------------------|
-| Float64  | Float64    | Float64 | Float64 | Float64           | Float64           |
-| 0.572586 | 0.0228065  | 25.1062 | 0.0     | 0.535072          | 0.610099          |
-| 0.583288 | 0.00868862 | 67.1324 | 0.0     | 0.568996          | 0.597579          |
-| 0.766489 | 0.0081483  | 94.0674 | 0.0     | 0.753086          | 0.779892          |
+### Step 7. Identification checks
+
+**Local** identification requires that the Jacobian matrix of the function
+$$f(\theta) -> m(\theta)$$ to be **full column rank** in a neighborhood of the solution:
+
+```@example 1
+D = calculate_D(myProblem, minimizer)
+println("number of parameters: $(size(D,2))")
+println("rank of D is: $(rank(D))")
+```
+
+Local identification can also be visually checked by inspecting slices of the
+objective function in a neighborhood of the estimated value:
+```@example 1
+vXGrid, vYGrid = msm_slices(myProblem, minimizer, nbPoints = 7);
+
+using LaTeXStrings;
+p1 = plot(vXGrid[:, 1],vYGrid[:, 1],title = L"\alpha", label = "",linewidth = 3, xrotation = 45);
+plot!(p1, [minimizer[1]], seriestype = :vline, label = "",linewidth = 1);
+p2 = plot(vXGrid[:, 2],vYGrid[:, 2],title = L"\beta_1", label = "",linewidth = 3, xrotation = 45);
+plot!(p2, [minimizer[2]], seriestype = :vline, label = "",linewidth = 1);
+p3 = plot(vXGrid[:, 3],vYGrid[:, 3],title = L"\beta_2", label = "",linewidth = 3, xrotation = 45);
+plot!(p3, [minimizer[3]], seriestype = :vline, label = "",linewidth = 1);
+plot_combined = plot(p1, p2, p3);
+plot!(plot_combined, size = (ww,hh)); nothing # hide
+savefig(plot_combined, "slices.png"); nothing # hide
+```
+
+![](slices.png)
 
 
 ## Example in parallel
@@ -287,19 +309,21 @@ defined `@everywhere`. See the file [LinearModelCluster.jl](https://github.com/J
 
 Choose a global optimizer that **supports parallel evaluations** (e.g. xnes or dxnes). See the [documentation](https://github.com/robertfeldt/BlackBoxOptim.jl) for BlackBoxOptim.jl.
 
-```@example
+```@example 1
 msm_optimize!(myProblem, verbose = false)
-
-# Access the results using best_candidate
 minimizer = msm_minimizer(myProblem)
 minimum_val = msm_minimum(myProblem)
 ```
 
 ### Option 2: Multistart algorithm
 
-The function `msm_multistart!` searches for starting values for which the model converges. Then, several local optimization algorithms (specified with `localOptimizer`) are started in parallel. The "global" minimum is the minimum of the local minima:
+The function `msm_multistart!` proceeds in two steps:
+1. It searches for starting values for which the model converges.
+2. Several local optimization algorithms (specified with `localOptimizer`) are started in parallel using promising starting values from step 1
 
-```@example
+The "global" minimum is the minimum of the local minima:
+
+```@example 1
 msm_multistart!(myProblem, nums = nworkers(), verbose = false)
 minimizer_multistart = msm_multistart_minimizer(myProblem)
 minimum_multistart = msm_multistart_minimum(myProblem)

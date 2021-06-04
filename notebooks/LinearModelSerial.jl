@@ -37,6 +37,7 @@ currentWorkers = nworkers()
 println("Number of workers = $(currentWorkers)")
 
 using Plots
+using LaTeXStrings
 using ParallelDataTransfer
 
 using MSM
@@ -50,7 +51,7 @@ using LinearAlgebra
 
 # Generate simulated data
 Random.seed!(1234)  #for replicability reasons
-T = 1000         #number of periods
+T = 10000         #number of periods
 P = 2               #number of dependent variables
 beta0 = rand(P)     #choose true coefficients by drawing from a uniform distribution on [0,1]
 alpha0 = rand(1)[]  #intercept
@@ -145,7 +146,7 @@ function functionLinearModel(
     uniform_draws::Array{Float64,1},
     simX::Array{Float64,2},
     nbDraws::Int64 = length(uniform_draws),
-    burnInPerc::Int64 = 1,
+    burnInPerc::Int64 = 0,
 )
     T = nbDraws
     P = 2       #number of dependent variables
@@ -177,7 +178,7 @@ function functionLinearModel(
 
     # Get rid of the burn-in phase:
     #------------------------------
-    startT = Int(nbDraws * (burnInPerc / 100))
+    startT = max(1, Int(nbDraws * (burnInPerc / 100)))
 
     # Moments:
     #---------
@@ -185,11 +186,8 @@ function functionLinearModel(
     output["mean"] = mean(y[startT:nbDraws])
     output["mean_x1y"] = mean(simX[startT:nbDraws, 1] .* y[startT:nbDraws])
     output["mean_x2y"] = mean(simX[startT:nbDraws, 2] .* y[startT:nbDraws])
-    output["mean_x1y^2"] =
-        mean((simX[startT:nbDraws, 1] .* y[startT:nbDraws]) .^ 2)
-    output["mean_x2y^2"] =
-        mean((simX[startT:nbDraws, 2] .* y[startT:nbDraws]) .^ 2)
-
+    output["mean_x1y^2"] = mean((simX[startT:nbDraws, 1] .* y[startT:nbDraws]) .^ 2)
+    output["mean_x2y^2"] = mean((simX[startT:nbDraws, 2] .* y[startT:nbDraws]) .^ 2)
     return output
 end
 
@@ -272,31 +270,15 @@ println("rank of D is: $(rank(D))")
 
 # Slices
 vXGrid, vYGrid = msm_slices(myProblem, minimizer_multistart, nbPoints = 7);
-#Hacky way to combine all the plots in a single plot
-list_plots = []
-for (keyIndex, keyValue) in enumerate(keys(myProblem.priors))
-    p = plot(
-        vXGrid[:, keyIndex],
-        vYGrid[:, keyIndex],
-        title = "$(keyValue)",
-        label = "",
-    )
-    plot!([minimizer_multistart[keyIndex]], seriestype = :vline, label = "")
-    push!(list_plots, p)
-end
-
-s0 = ""
-for i = 1:length(keys(myProblem.priors))
-    if i == 1
-        s0 = string("list_plots[$(i)]")
-    else
-        s0 = string(s0, ", ", "list_plots[$(i)]")
-    end
-end
-
-plot_combined = eval(Meta.parse(string("plot(", s0, ")")))
+p1 = plot(vXGrid[:, 1],vYGrid[:, 1],title = L"\alpha", label = "",linewidth = 3, xrotation = 45)
+plot!(p1, [minimizer_multistart[1]], seriestype = :vline, label = "",linewidth = 1)
+p2 = plot(vXGrid[:, 2],vYGrid[:, 2],title = L"\beta_1", label = "",linewidth = 3, xrotation = 45)
+plot!(p2, [minimizer_multistart[2]], seriestype = :vline, label = "",linewidth = 1)
+p3 = plot(vXGrid[:, 3],vYGrid[:, 3],title = L"\beta_2", label = "",linewidth = 3, xrotation = 45)
+plot!(p3, [minimizer_multistart[3]], seriestype = :vline, label = "",linewidth = 1)
+plot_combined = plot(p1, p2, p3)
+savefig(plot_combined, "slices.png")
 display(plot_combined)
-
 
 # Efficient GMM
 #---------------
@@ -306,7 +288,7 @@ minimizer_multistart = msm_multistart_minimizer(myProblem)
 minimum_multistart = msm_multistart_minimum(myProblem)
 
 # J-test
-J, c = J_test(myProblem, minimizer_multistart, T, 0.05)
+J, c = J_test(myProblem, minimizer_multistart, T, nbDraws, 0.05)
 println("J-statistic: $(J)")
 println("Critical value: $(c)")
 

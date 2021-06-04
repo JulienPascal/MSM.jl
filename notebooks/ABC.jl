@@ -63,7 +63,6 @@ set_priors!(myProblem, dictPriors)
 dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
 dictEmpiricalMoments["mean"] = [mean(y)] #informative on the intercept
 dictEmpiricalMoments["mean^2"] = [mean(y.^2)] #informative on the intercept
-dictEmpiricalMoments["mean^3"] = [mean(y.^3)] #informative on the intercept
 dictEmpiricalMoments["mean_x1y"] = [mean(x[:,1] .* y)] #informative on betas
 dictEmpiricalMoments["mean_x2y"] = [mean(x[:,2] .* y)] #informative on betas
 dictEmpiricalMoments["mean_x1y^2"] = [mean((x[:,1] .* y).^2)] #informative on betas
@@ -79,7 +78,7 @@ end
 set_weight_matrix!(myProblem, W)
 
 # x[1] corresponds to the intercept, x[2] corresponds to beta1, x[3] corresponds to beta2
-function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 10)
+function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 0)
     T = nbDraws
     P = 2       #number of dependent variables
 
@@ -110,15 +109,13 @@ function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Flo
 
     # Get rid of the burn-in phase:
     #------------------------------
-    startT = div(nbDraws, burnInPerc)
+    startT = max(1, Int(nbDraws * (burnInPerc / 100)))
 
     # Moments:
     #---------
     output = OrderedDict{String,Float64}()
     output["mean"] = mean(y[startT:nbDraws])
     output["mean^2"] = mean(y[startT:nbDraws].^2)
-    output["mean^3"] = mean(y[startT:nbDraws].^3)
-    output["var"] = mean(y[startT:nbDraws].^2) - mean(y[startT:nbDraws])^2
     output["mean_x1y"] = mean(simX[startT:nbDraws,1] .* y[startT:nbDraws])
     output["mean_x2y"] = mean(simX[startT:nbDraws,2] .* y[startT:nbDraws])
     output["mean_x1y^2"] = mean((simX[startT:nbDraws,1] .* y[startT:nbDraws]).^2)
@@ -129,7 +126,7 @@ end
 
 # Let's freeze the randomness during the minimization
 d_Uni = Uniform(0,1)
-nbDraws = 100000 #number of draws in the simulated data
+nbDraws = T #number of draws in the simulated data
 uniform_draws = rand(d_Uni, nbDraws)
 simX = zeros(length(uniform_draws), 2)
 d = Uniform(0, 5)
