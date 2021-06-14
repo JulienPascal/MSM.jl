@@ -19,6 +19,8 @@ makedocs(
         "Getting started" => "gettingstarted.md",
         "Functions and Types" => "functions.md",
         "References" => "references.md",
+        "Contributing" => "contributing.md",
+        "License" => "license.md"
         ],
 
 )
