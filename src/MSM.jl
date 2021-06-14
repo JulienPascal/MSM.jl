@@ -105,7 +105,7 @@ module MSM
     # Functions in econometrics.jl
     #-----------------------------
     export calculate_D, calculate_Avar!, calculate_se, calculate_t, calculate_pvalue, calculate_CI
-    export summary_table, cov_NW
+    export summary_table, cov_NW, J_test
 
     # Functions in analysis.jl
     #-------------------------
