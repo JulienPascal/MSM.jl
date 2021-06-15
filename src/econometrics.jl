@@ -138,6 +138,7 @@ function calculate_CI(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::I
 end
 
 
+#=
 function summary_table(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, alpha::Float64)
 
   # Safety Checks
@@ -157,6 +158,43 @@ function summary_table(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::
     push!(df, [theta0[i], se, t, p, CI_lower, CI_upper])
 
   end
+
+  return df
+
+end
+=#
+
+"""
+  summary_table(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, alpha::Float64)
+
+Returns a table with estimates and related statistics of the model.
+`alpha` is the significance level.
+"""
+function summary_table(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, alpha::Float64)
+
+  # Safety Checks
+  if isempty(sMMProblem.Avar) == true
+    error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
+  end
+
+  se = zeros(length(theta0))
+  t = zeros(length(theta0))
+  p = zeros(length(theta0))
+  CI_lower = zeros(length(theta0))
+  CI_upper = zeros(length(theta0))
+
+  for i = 1:length(theta0)
+
+    se[i] = calculate_se(sMMProblem, tData, i)
+    t[i] = calculate_t(sMMProblem, theta0, tData, i)
+    p[i] = calculate_pvalue(sMMProblem, theta0, tData, i)
+    CI_lower[i], CI_upper[i] = calculate_CI(sMMProblem, theta0, tData, i, alpha)
+
+  end
+
+  df = CoefTable(hcat(theta0,se,t,p,CI_lower,CI_upper),
+              ["Coef.","Std. Error","t","Pr(>|t|)","CI Lower","CI Upper"],
+              ["x$i" for i = 1:length(theta0)], 4, 3)
 
   return df
 

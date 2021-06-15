@@ -21,6 +21,7 @@ module MSM
     using SharedArrays
     using LatinHypercubeSampling
     using Sobol
+    using StatsBase
 
     # Exports from BlackBoxOptim
     #---------------------------
