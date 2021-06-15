@@ -60,7 +60,7 @@ function MSMOptions( ;
 	end
 
 	#Check valid grid types
-	listValidGridTypes = [:LHC]
+	listValidGridTypes = [:LHC, :Sobol]
 	if in(gridType, listValidGridTypes) == false
 		error("gridType must be in $(listValidGridTypes)")
 	end
@@ -88,7 +88,6 @@ MSMProblem is a mutable struct that caries all the information needed to
 perform the optimization and display the results.
 """
 mutable struct MSMProblem
-	iter::Int64
 	priors::OrderedDict{String,Array{Float64,1}}
 	W::Matrix{Float64} #Weight matrix in MSM objective function
 	empiricalMoments::OrderedDict{String,Array{Float64,1}}
@@ -107,8 +106,7 @@ end
 
 # Constructor for MSMProblem
 #------------------------------------------------------------------------------
-function MSMProblem(  ;iter::Int64 = 0,
-						priors::OrderedDict{String,Array{Float64,1}} = OrderedDict{String,Array{Float64,1}}(),
+function MSMProblem(  ; priors::OrderedDict{String,Array{Float64,1}} = OrderedDict{String,Array{Float64,1}}(),
 						W::Matrix{Float64}=Matrix(1.0 .* I(1)),
 						empiricalMoments::OrderedDict{String,Array{Float64,1}} = OrderedDict{String,Array{Float64,1}}(),
 						simulatedMoments::OrderedDict{String, Float64} = OrderedDict{String,Float64}(),
@@ -123,8 +121,7 @@ function MSMProblem(  ;iter::Int64 = 0,
 						Sigma0::Array{Float64,2} = Array{Float64}(undef,0,0),
 						Avar::Array{Float64,2} = Array{Float64}(undef,0,0))
 
-	MSMProblem(iter,
-				priors,
+	MSMProblem(priors,
 				W,
 				empiricalMoments,
 				simulatedMoments,

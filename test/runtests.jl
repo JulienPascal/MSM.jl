@@ -16,6 +16,8 @@ using Test
 using Pkg
 using Optim
 using BlackBoxOptim
+using DataFrames
+using StatsBase
 
 # Uncomment to make sure Travis CI works as expected
 # @test 1 == 2
@@ -58,7 +60,6 @@ end
             t = MSMProblem()
 
             # When initialized, iter is equal to 0
-            @test t.iter == 0
             @test typeof(t.priors) == OrderedDict{String,Array{Float64,1}}
             @test typeof(t.empiricalMoments) == OrderedDict{String,Array{Float64,1}}
             @test typeof(t.simulatedMoments) == OrderedDict{String, Float64}
@@ -1266,22 +1267,36 @@ end
       # summary table:
       #---------------
       df = summary_table(myProblem, minimizer, T, 0.05)
+      @test typeof(df) == CoefTable
+
+      # Convert coeftable to a DataFrame
+      df = DataFrame(df)
 
       # first column : point estimates
-      @test df.Estimate == minimizer
+      @test df[:, "Coef."] == minimizer
 
       # 2nd column : std error
       for i =1:size(df,1)
-        @test df.StdError[i] > 0.
+        @test df[i, "Std. Error"] > 0.
       end
 
       # confidence interval
       for i =1:size(df,1)
-        @test df.ConfIntervalLower[i] <= df.ConfIntervalUpper[i]
+        @test df[i, "CI Lower"] <= df[i, "CI Upper"]
       end
 
+      D = calculate_D(myProblem, minimizer)
+      @test rank(D) == size(df,1)
+
       # Slice the objective functions
-      vXGrid, vYGrid = msm_slices(myProblem, minimizer, nbPoints = 7)
+      nb_p = 7
+      vXGrid, vYGrid = msm_slices(myProblem, minimizer, nbPoints = nb_p)
+
+      @test size(vXGrid,1) == nb_p
+      @test size(vXGrid,2) == size(df,1)
+
+      @test size(vYGrid,1) == nb_p
+      @test size(vYGrid,2) == size(df,1)
 
       # Plot the results
       if do_plots == true
