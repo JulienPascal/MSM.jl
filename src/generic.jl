@@ -174,13 +174,14 @@ function set_bbSetup!(sMMProblem::MSMProblem)
   mySearchRange = generate_bbSearchRange(sMMProblem)
 
   info("$(nworkers()) worker(s) detected")
+  info("$(Threads.nthreads()) threads(s) detected")
    # Debug:
    #-------
    @sync for (idx, pid) in enumerate(workers())
      @async @spawnat(pid, println("hello"))
    end
 
-  if nworkers() == 1
+  if nworkers() == 1 && Threads.nthreads() == 1
     info("Starting optimization in serial")
     sMMProblem.bbSetup = bbsetup(sMMProblem.objective_function;
                               Method = sMMProblem.options.globalOptimizer,
@@ -189,13 +190,23 @@ function set_bbSetup!(sMMProblem::MSMProblem)
                               TraceMode = :verbose,
                               PopulationSize = sMMProblem.options.populationSize,
                               NumDimensions = length(keys(sMMProblem.priors)))
-  else
-    info("Starting optimization in parallel")
+  elseif nworkers() != 1 && Threads.nthreads() == 1
+    info("Starting optimization in parallel (cluster)")
     sMMProblem.bbSetup = bbsetup(sMMProblem.objective_function;
                                 Method = sMMProblem.options.globalOptimizer,
                                 SearchRange = mySearchRange,
                                 MaxFuncEvals = sMMProblem.options.maxFuncEvals,
                                 Workers = workers(),
+                                PopulationSize = sMMProblem.options.populationSize,
+                                TraceMode = :verbose,
+                                NumDimensions = length(keys(sMMProblem.priors)))
+  elseif nworkers() == 1 && Threads.nthreads() != 1
+    info("Starting optimization in parallel (multi-threading)")
+    sMMProblem.bbSetup = bbsetup(sMMProblem.objective_function;
+                                Method = sMMProblem.options.globalOptimizer,
+                                SearchRange = mySearchRange,
+                                MaxFuncEvals = sMMProblem.options.maxFuncEvals,
+                                NThreads=Threads.nthreads()-1,
                                 PopulationSize = sMMProblem.options.populationSize,
                                 TraceMode = :verbose,
                                 NumDimensions = length(keys(sMMProblem.priors)))
