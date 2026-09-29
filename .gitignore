@@ -1,3 +1,15 @@
 *.jld2
 *.bson
-paper/paper_local.pdf
+paper/paper_local.pdf*
+
+# Local Claude Code files (keep out of the public repo)
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+.mcp.json
+PLAN_JULIA1_1_13.md
+J_TEST_DERIVATION.md
+
+# Reference papers (copyrighted, local only)
+papers/**/*.pdf
+Manifest.toml
