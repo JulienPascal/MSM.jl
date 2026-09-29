@@ -19,6 +19,8 @@ Claude Code. The corresponding commits carry a `Co-Authored-By` line.
   that a future breaking release of a dependency cannot be installed with
   MSM.jl. Only the current major versions are allowed, in particular Optim 2,
   CSV 1, DataFrames 1, BlackBoxOptim 0.6 and OrderedCollections 2.
+  Known issue: with Optim 2, `localOptimizer = :AcceleratedGradientDescent` can
+  diverge (it does on the Rosenbrock function). Prefer `:LBFGS` (the default).
 
 **These fixes change numerical results.** If you used `J_test`,
 `calculate_pvalue`, `calculate_CI` or `summary_table`, re-run your inference.
