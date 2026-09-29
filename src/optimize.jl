@@ -4,13 +4,14 @@
 Function to launch an optimization. To be used after the following functions
 have been called: (i) set_empirical_moments! (ii) set_priors!
 (iii) set_simulate_empirical_moments! (iv) construct_objective_function!
+With `verbose = false`, the progress of the optimizer is not displayed.
 """
 function msm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
 
   # Initialize a BlackBoxOptim problem
   # this modifies sMMProblem.bbSetup
   #-----------------------------------
-  set_global_optimizer!(sMMProblem)
+  set_global_optimizer!(sMMProblem, verbose = verbose)
 
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------

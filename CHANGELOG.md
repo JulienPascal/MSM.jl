@@ -60,6 +60,9 @@ Claude Code. The corresponding commits carry a `Co-Authored-By` line.
 
 - `msm_optimize!` no longer prints a leftover debug message ("hello") on
   every worker.
+- `msm_optimize!(...; verbose = false)` now hides BlackBoxOptim's progress
+  trace and MSM's messages. The `verbose` keyword was previously ignored.
+  `set_global_optimizer!` and `set_bbSetup!` accept the same keyword.
 - `msm_multistart!` with 2 or more workers and without user-provided `x0`:
   candidate starting values were matched with the distances of *other*
   candidates, because results were collected in the order workers finished.

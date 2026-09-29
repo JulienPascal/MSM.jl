@@ -1210,6 +1210,35 @@ end
 
     end
 
+    @testset "Testing the verbose option of msm_optimize!" begin
+
+        myProblem = MSMProblem(options = MSMOptions(maxFuncEvals = 50))
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [0.5, 0.0, 1.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m" => [0.0, 1.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(1)))
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m" => x[1]))
+        construct_objective_function!(myProblem)
+
+        # Returns what f() prints to stdout
+        function captured_stdout(f)
+            mktemp() do path, io
+                redirect_stdout(f, io)
+                flush(io)
+                read(path, String)
+            end
+        end
+
+        # verbose = true: BlackBoxOptim displays its progress
+        output = captured_stdout(() -> msm_optimize!(myProblem, verbose = true))
+        @test occursin("Starting optimization", output)
+
+        # verbose = false: nothing printed, no log message
+        output = captured_stdout(() -> (@test_logs msm_optimize!(myProblem, verbose = false)))
+        @test output == ""
+        @test myProblem.bbResults !== nothing
+
+    end
+
     @testset "Testing Inference" begin
 
       # Inference in the linear model

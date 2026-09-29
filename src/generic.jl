@@ -164,16 +164,16 @@ function  set_Sigma0!(sMMProblem::MSMProblem, Sigma0::Array{Float64,2})
 end
 
 """
-  set_global_optimizer!(sMMProblem::MSMProblem)
+  set_global_optimizer!(sMMProblem::MSMProblem; verbose::Bool = true)
 
 Function to set the fields corresponding to the global
 optimizer problem.
 """
-function set_global_optimizer!(sMMProblem::MSMProblem)
+function set_global_optimizer!(sMMProblem::MSMProblem; verbose::Bool = true)
 
   if is_bb_optimizer(sMMProblem.options.globalOptimizer) == true
 
-    set_bbSetup!(sMMProblem)
+    set_bbSetup!(sMMProblem, verbose = verbose)
 
   else
 
@@ -184,36 +184,45 @@ function set_global_optimizer!(sMMProblem::MSMProblem)
 end
 
 """
-  set_bbSetup!(sMMProblem::MSMProblem)
+  set_bbSetup!(sMMProblem::MSMProblem; verbose::Bool = true)
 
 Function to set the field bbSetup for a MSMProblem.
+With `verbose = false`, BlackBoxOptim does not display the progress of the optimization.
 """
-function set_bbSetup!(sMMProblem::MSMProblem)
+function set_bbSetup!(sMMProblem::MSMProblem; verbose::Bool = true)
 
   # A. using sMMProblem.priors, generate searchRange:
   #-------------------------------------------------
   mySearchRange = generate_bbSearchRange(sMMProblem)
 
-  info("$(nworkers()) worker(s) detected")
+  traceMode = verbose ? :verbose : :silent
+
+  if verbose == true
+    info("$(nworkers()) worker(s) detected")
+  end
 
   if nworkers() == 1
-    info("Starting optimization in serial")
+    if verbose == true
+      info("Starting optimization in serial")
+    end
     sMMProblem.bbSetup = bbsetup(sMMProblem.objective_function;
                               Method = sMMProblem.options.globalOptimizer,
                               SearchRange = mySearchRange,
                               MaxFuncEvals = sMMProblem.options.maxFuncEvals,
-                              TraceMode = :verbose,
+                              TraceMode = traceMode,
                               PopulationSize = sMMProblem.options.populationSize,
                               NumDimensions = length(keys(sMMProblem.priors)))
   else
-    info("Starting optimization in parallel")
+    if verbose == true
+      info("Starting optimization in parallel")
+    end
     sMMProblem.bbSetup = bbsetup(sMMProblem.objective_function;
                                 Method = sMMProblem.options.globalOptimizer,
                                 SearchRange = mySearchRange,
                                 MaxFuncEvals = sMMProblem.options.maxFuncEvals,
                                 Workers = workers(),
                                 PopulationSize = sMMProblem.options.populationSize,
-                                TraceMode = :verbose,
+                                TraceMode = traceMode,
                                 NumDimensions = length(keys(sMMProblem.priors)))
   end
 
