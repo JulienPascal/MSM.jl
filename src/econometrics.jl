@@ -104,8 +104,8 @@ function calculate_pvalue(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tDat
   # asymptotically normally distributed N(0,1)
   d = Normal(0,1)
 
-  # p-value  = 2 times area to the right of t
-  pvalue = 2*(1.0 - cdf(d, t))
+  # p-value  = 2 times area to the right of |t| (two-sided test)
+  pvalue = 2*ccdf(d, abs(t))
 
   return pvalue
 
@@ -113,9 +113,10 @@ end
 
 
 """
-  calculate_CI(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64)
+  calculate_CI(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64, alpha::Float64)
 
-Function to calculate an alpha confidence interval for the ith parameter.
+Function to calculate a two-sided (1 - alpha) confidence interval for the ith parameter.
+`alpha` is the significance level (e.g. `alpha = 0.05` gives a 95% confidence interval).
 """
 function calculate_CI(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64, alpha::Float64)
 
@@ -130,7 +131,8 @@ function calculate_CI(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::I
   # asymptotically normally distributed N(0,1)
   d = Normal(0,1)
 
-  critical_value = - quantile(d, alpha)
+  # two-sided interval: alpha/2 in each tail
+  critical_value = quantile(d, 1.0 - alpha/2)
 
   #return lower and upper bound of the confidence interval
   return theta0[i] - se*critical_value, theta0[i] + se*critical_value
@@ -243,8 +245,13 @@ end
 
 Run a J-test, also called a test for over-identifying restrictions. The null hypothesis that the model is “valid”.
 The alternative hypothesis that model is “invalid”. For the test to be valid,
-the weigth matrix must converge in probability to the efficient weighting matrix
-(Sigma0^-1).
+the weigth matrix must converge in probability to Sigma0^-1, where Sigma0 is the
+(long-run) variance of the empirical moments.
+
+With tau = tData/tSimData, the statistic is J = tData/(1 + tau)*g'Wg, where g is
+the gap between empirical and simulated moments at theta0. Under the null,
+J converges in distribution to a Chi²(k-l), where k is the number of moments
+and l the number of parameters. See Lee and Ingram (1991, p. 202 and p. 204).
 
 #Ouput:
 * J: value of the J-statistic
@@ -253,8 +260,8 @@ the weigth matrix must converge in probability to the efficient weighting matrix
 function J_test(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, tSimData::Int64, alpha::Float64)
 
   df=length(keys(sMMProblem.empiricalMoments)) - length(theta0)
-  #Chi² distribution with k-l degrees of freedom, where
-  d_chi=Chi(df)
+  #Chi² distribution with k-l degrees of freedom
+  d_chi=Chisq(df)
   #Calculate J
   simulatedMoments=sMMProblem.simulate_empirical_moments(theta0)
   # to store the distance between empirical and simulated moments
@@ -263,9 +270,12 @@ function J_test(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, 
     arrayDistance[indexMoment] = (sMMProblem.empiricalMoments[k][1] - simulatedMoments[k])
   end
 
-  # See Lee and Ingram (1991) and Ruge-Murcia (2012)
+  # See Lee and Ingram (1991, p. 202 and p. 204)
+  # The variance of the moment gap is (1 + tau)*Sigma0 (data noise + simulation noise),
+  # so with W = Sigma0^-1 the statistic is divided by (1 + tau).
+  # Remark: Ruge-Murcia (2012, eq. 13) prints a multiplication, which over-rejects.
   tau = tData/tSimData
-  J = tData*(1.0 + tau)*transpose(arrayDistance)*sMMProblem.W*arrayDistance
+  J = tData/(1.0 + tau)*transpose(arrayDistance)*sMMProblem.W*arrayDistance
   #Critical value above which the null hypothesis is rejected
   #Look at the 1.0 - alpha percentile of Chi²(df)
   c = quantile(d_chi, 1.0 - alpha)

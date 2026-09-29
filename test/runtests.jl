@@ -1067,6 +1067,93 @@ end
 
     end
 
+    @testset "Testing J_test" begin
+
+        # Correctly specified model: two independent N(theta,1) series, one parameter.
+        # k = 2 moments, l = 1 parameter, so J should be Chi²(1) under the null.
+        # Sigma0 = I, so W = I is the efficient weighting matrix, and the SMM
+        # estimate has a closed form (average of the two moment gaps).
+        tData = 200
+        tSimData = 200 #tau = 1: the old formula T*(1+tau)*g'Wg rejected ~33% of the time
+        alpha = 0.05
+        nbReps = 4000
+        rng = MersenneTwister(1234)
+
+        myProblem = MSMProblem()
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(2)))
+
+        nbRejections = 0
+        for r = 1:nbReps
+
+            x = randn(rng, tData)
+            y = randn(rng, tData)
+            e1 = randn(rng, tSimData) #simulation draws held fixed
+            e2 = randn(rng, tSimData)
+
+            dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
+            dictEmpiricalMoments["mean_x"] = [mean(x), 1.0]
+            dictEmpiricalMoments["mean_y"] = [mean(y), 1.0]
+            set_empirical_moments!(myProblem, dictEmpiricalMoments)
+
+            set_simulate_empirical_moments!(myProblem, theta -> OrderedDict{String,Float64}("mean_x" => theta[1] + mean(e1), "mean_y" => theta[1] + mean(e2)))
+
+            thetaHat = [((mean(x) - mean(e1)) + (mean(y) - mean(e2)))/2]
+
+            J, c = J_test(myProblem, thetaHat, tData, tSimData, alpha)
+
+            # Value of the statistic and critical value
+            if r == 1
+                g = [mean(x) - mean(e1) - thetaHat[1], mean(y) - mean(e2) - thetaHat[1]]
+                @test J ≈ tData/(1.0 + tData/tSimData)*sum(g.^2)
+                @test c ≈ 3.841458820694124 #95% quantile of Chi²(1)
+            end
+
+            nbRejections += (J > c)
+
+        end
+
+        # Empirical size close to the nominal size (standard error ≈ 0.0034)
+        @test 0.03 < nbRejections/nbReps < 0.07
+
+    end
+
+    @testset "Testing p-values and confidence intervals" begin
+
+        # Known asymptotic variance: se = sqrt(Avar[i,i]/tData) = [0.2, 0.3]
+        # theta0 = [0.2, -0.3] gives t-statistics of +1 and -1
+        myProblem = MSMProblem()
+        myProblem.Avar = [4.0 0.0; 0.0 9.0]
+        theta0 = [0.2, -0.3]
+        tData = 100
+        alpha = 0.05
+
+        @test calculate_se(myProblem, tData, 1) ≈ 0.2
+        @test calculate_se(myProblem, tData, 2) ≈ 0.3
+        @test calculate_t(myProblem, theta0, tData, 1) ≈ 1.0
+        @test calculate_t(myProblem, theta0, tData, 2) ≈ -1.0
+
+        # Two-sided p-value for |t| = 1 is 0.3173..., whatever the sign of t
+        @test calculate_pvalue(myProblem, theta0, tData, 1) ≈ 0.31731050786291415
+        @test calculate_pvalue(myProblem, theta0, tData, 2) ≈ 0.31731050786291415
+
+        # 95% confidence interval uses the 97.5% quantile of N(0,1): 1.959963...
+        z = 1.959963984540054
+        CI_lower, CI_upper = calculate_CI(myProblem, theta0, tData, 1, alpha)
+        @test CI_lower ≈ 0.2 - 0.2*z
+        @test CI_upper ≈ 0.2 + 0.2*z
+        CI_lower, CI_upper = calculate_CI(myProblem, theta0, tData, 2, alpha)
+        @test CI_lower ≈ -0.3 - 0.3*z
+        @test CI_upper ≈ -0.3 + 0.3*z
+
+        # summary_table reports the same values
+        df = DataFrame(summary_table(myProblem, theta0, tData, alpha))
+        @test df[:, "Pr(>|t|)"] ≈ [0.31731050786291415, 0.31731050786291415]
+        @test df[:, "CI Lower"] ≈ theta0 .- [0.2, 0.3] .* z
+        @test df[:, "CI Upper"] ≈ theta0 .+ [0.2, 0.3] .* z
+
+    end
+
+
     @testset "Testing Inference" begin
 
       tolLinear = 0.05
