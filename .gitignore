@@ -13,3 +13,10 @@ J_TEST_DERIVATION.md
 # Reference papers (copyrighted, local only)
 papers/**/*.pdf
 Manifest.toml
+
+# Jupyter autosave copies
+.ipynb_checkpoints/
+
+# Figures and tables written by the notebooks
+notebooks/**/*.png
+notebooks/**/*.csv
