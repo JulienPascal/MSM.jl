@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+Starting with the `julia_1.13` branch, the bug fixes and the update to Julia
+1.13 were made with the help of Claude Opus 5.5 (Anthropic), used through
+Claude Code. The corresponding commits carry a `Co-Authored-By` line.
+
 ### Changed
 
 - MSM.jl now requires **Julia 1.10 or later** (1.10 is the current long-term
