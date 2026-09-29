@@ -44,8 +44,9 @@ function msm_slices(sMMProblem::MSMProblem, paramValues::Vector; nbPoints::Int64
         localParamValues = transpose(repeat(paramValues,outer=[1,nbPoints]))
         localParamValues[:, keyIndex] = vXGrid[:, keyIndex]
 
-        # Use pmap to use several workers in parallel:
-        vYGrid[:, keyIndex] = pmap(sMMProblem.objective_function, eachrow(localParamValues))
+        # Use pmap to use several workers in parallel
+        # (pass plain vectors, not row views: the user's function may require a Vector)
+        vYGrid[:, keyIndex] = pmap(sMMProblem.objective_function, [localParamValues[row, :] for row = 1:nbPoints])
 
     end
 

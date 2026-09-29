@@ -1153,6 +1153,81 @@ end
 
     end
 
+    @testset "Testing starting values and multistart with several workers" begin
+
+        # Regression test: results must be matched to the right points even when
+        # workers finish in a different order than the one in which they were started.
+        # The first worker is made slow, so that it finishes last.
+        newWorkers = addprocs(2)
+        @everywhere newWorkers begin
+            using Distributed
+            using MSM
+            using OrderedCollections
+        end
+        slowWorker = first(workers())
+
+        myProblem = MSMProblem(options = MSMOptions(localOptimizer = :LBFGS, thresholdStartingValue = 0.25))
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [0.5, 0.0, 1.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m" => [0.0, 1.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(1)))
+        # distance = x^2
+        set_simulate_empirical_moments!(myProblem, x -> (myid() == slowWorker && sleep(0.05); OrderedDict{String,Float64}("m" => x[1])))
+        construct_objective_function!(myProblem)
+
+        # Starting values: only x < 0.5 is valid (x^2 < 0.25), sorted by distance
+        Random.seed!(1234)
+        Validx0 = MSM.search_starting_values(myProblem, 4, verbose = false)
+        @test size(Validx0) == (4, 1)
+        @test all(Validx0[:, 1] .< 0.5)
+        @test issorted(Validx0[:, 1])
+
+        # Multistart: listOptimResults[i] must start from x0[i,:]
+        x0 = reshape(collect(range(0.9, 0.1, length = nworkers())), :, 1)
+        # All local minimizations converge, and they must all be counted
+        listOptimResults = @test_logs (:info, "Convergence reached for $(nworkers()) worker(s).") match_mode=:any msm_multistart!(myProblem, x0 = x0, nums = nworkers(), verbose = false)
+        for workerIndex = 1:nworkers()
+            @test listOptimResults[workerIndex].initial_x == x0[workerIndex, :]
+        end
+        @test msm_multistart_minimizer(myProblem)[1] ≈ 0.0 atol = 1e-4
+
+        # Fewer starting values than workers: explicit error
+        @test_throws ErrorException msm_multistart!(myProblem, x0 = x0, nums = nworkers() - 1, verbose = false)
+
+        rmprocs(newWorkers)
+
+    end
+
+    @testset "Testing robustness of the objective function" begin
+
+        myProblem = MSMProblem()
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [0.5, 0.0, 1.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m" => [0.0, 1.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(1)))
+        penaltyValue = myProblem.options.penaltyValue
+
+        # A simulated moment is missing: penalty value (instead of a KeyError)
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("wrong_name" => x[1]))
+        construct_objective_function!(myProblem)
+        @test myProblem.objective_function([0.3]) == penaltyValue
+
+        # NaN or Inf simulated moments: penalty value
+        for badValue in (NaN, Inf, -Inf)
+            set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m" => badValue))
+            construct_objective_function!(myProblem)
+            @test myProblem.objective_function([0.3]) == penaltyValue
+        end
+
+        # msm_slices must work with a function that requires a Vector{Float64}
+        set_simulate_empirical_moments!(myProblem, (x::Vector{Float64}) -> OrderedDict{String,Float64}("m" => x[1]))
+        construct_objective_function!(myProblem)
+        vXGrid, vYGrid = msm_slices(myProblem, [0.3], nbPoints = 5)
+        @test vYGrid ≈ vXGrid.^2
+
+        # Invalid gridType: explicit error
+        myProblem.options.gridType = :notAGrid
+        @test_throws ErrorException MSM.search_starting_values(myProblem, 1, verbose = false)
+
+    end
 
     @testset "Testing Inference" begin
 

@@ -32,6 +32,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `alpha = 0.05`, it previously reported a 90% confidence interval instead of a
   95% one.
 
+### Fixed
+
+- `msm_multistart!` with 2 or more workers and without user-provided `x0`:
+  candidate starting values were matched with the distances of *other*
+  candidates, because results were collected in the order workers finished.
+  Invalid points could therefore be used as starting values, and sorting them
+  by distance was arbitrary. `search_starting_values` now evaluates each batch
+  of candidates with `pmap` (results in input order) and keeps each point's
+  distance with it. Each search round now evaluates the whole batch of
+  candidates, not only one per worker. The saved `starting_values_*.bson` and
+  `starting_distances_*.bson` files now line up. This also removes a
+  `BoundsError` when there were more workers than requested starting values.
+- `msm_multistart!` with 2 or more workers: the logged "best starting value"
+  could belong to another worker. The selected minimizer itself was correct.
+- `msm_multistart!`: the logged number of converged local minimizations was
+  wrong.
+- `msm_multistart!` with `nums < nworkers()`, and `search_starting_values` with
+  an invalid `gridType`, threw an `UndefVarError` instead of an informative
+  error.
+- Objective function: if the user's function did not return one of the
+  empirical moments, the optimization crashed with a `KeyError`. It now returns
+  the penalty value. NaN or infinite distances are also replaced by the penalty
+  value instead of being passed to the optimizers.
+- `msm_slices`: passed row views instead of `Vector`s to the objective function.
+  A user function requiring `x::Vector{Float64}` failed silently, and the whole
+  slice was equal to the penalty value.
+
 ### Removed
 
 - Unused dependencies GLM, PlotlyJS and ParallelDataTransfer. The example

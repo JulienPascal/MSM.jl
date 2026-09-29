@@ -234,14 +234,15 @@ function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0)
   # Safety checks
   #--------------
   if nums < nworkers()
-    errors("nums < nworkers()")
+    error("nums < nworkers()")
   elseif nums > nworkers()
     info("nums > nworkers(). Some starting values will be ignored.")
   end
 
   # To store minization results
+  # (results[workerIndex] must correspond to the starting value myGrid[workerIndex,:])
   #----------------------------
-  results = []
+  results = Vector{Any}(undef, nworkers())
 
   # Look for valid starting values (for which convergence is reached)
   #-------------------------------------------------------------------
@@ -270,7 +271,8 @@ function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0)
       #---------------------------------------
       @sync for (workerIndex, w) in enumerate(workers())
 
-        @async push!(results, @fetchfrom w wrap_msm_localmin(sMMProblem, myGrid[workerIndex,:], verbose = true))
+        # Store by index: tasks finish in any order
+        @async results[workerIndex] = @fetchfrom w wrap_msm_localmin(sMMProblem, myGrid[workerIndex,:], verbose = true)
 
       end
 
@@ -293,12 +295,15 @@ function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0)
         minimumValue = Optim.minimum(results[workerIndex])
         minimizer = Optim.minimizer(results[workerIndex])
 
-        if minimumValue < minValue && Optim.converged(results[workerIndex]) == true
+        if Optim.converged(results[workerIndex]) == true
 
-          minIndex = workerIndex
-          minValue = minimumValue
-          minimizerValue = minimizer
           nbConvergenceReached += 1
+
+          if minimumValue < minValue
+            minIndex = workerIndex
+            minValue = minimumValue
+            minimizerValue = minimizer
+          end
 
         end
 
@@ -329,7 +334,7 @@ function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0)
   end
 
   if verbose == true
-    if nbConvergenceReached != 0
+    if minIndex != 0
       info("Best value found with starting values = $(myGrid[minIndex,:]).")
       info("Best value = $(minValue).")
       info("Minimizer = $(minimizerValue)")
@@ -434,7 +439,7 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
   #Each row is a new point and each column is a dimension of this points.
   #---------------------------------------------------------------------
   Validx0 = zeros(numPoints, length(lower_bound))
-  distanceValue = zeros(numPoints) #to store the distance associated to each point
+  distanceValue = zeros(numPoints) #distanceValue[i] is the distance associated to Validx0[i,:]
   nbValidx0Found = 0
 
   # Create many grids (stochastic draws) with many potential points
@@ -451,7 +456,7 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
   elseif sMMProblem.options.gridType == :Sobol
     candidates_starting_values = sobol_sampling(lower_bound, upper_bound, Int(sMMProblem.options.maxTrialsStartingValues*numPoints))
   else
-    err("sMMProblem.options.gridType = $(sMMProblem.options.gridType) is not a valid sampling procedure.")
+    error("sMMProblem.options.gridType = $(sMMProblem.options.gridType) is not a valid sampling procedure.")
   end
 
   # Split the grid into chunks
@@ -471,47 +476,33 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
   #----------------------------------------------------------------------------
   while nbValidx0Found < numPoints
 
-    results = []
     listGridsIndex += 1
 
     if listGridsIndex > sMMProblem.options.maxTrialsStartingValues
       error("Maximum number of attempts reached without success. maxTrialsStartingValues = $(sMMProblem.options.maxTrialsStartingValues)")
     end
 
-    # Use available workers to simulate moments
-    #------------------------------------------
-    @sync for (workerIndex, w) in enumerate(workers())
+    # Use available workers to calculate the distance of each candidate
+    # pmap returns results in the same order as the candidates
+    #------------------------------------------------------------------
+    candidates = [listGrids[listGridsIndex][row, :] for row = 1:size(listGrids[listGridsIndex], 1)]
 
-      @async push!(results, @fetchfrom w sMMProblem.objective_function(listGrids[listGridsIndex][workerIndex, :]))
-
-    end
+    results = pmap(sMMProblem.objective_function, candidates,
+                   on_error = myError -> (info("$(myError)"); sMMProblem.options.penaltyValue))
 
     # Check for convergence
     #----------------------
-    for (workerIndex, w) in enumerate(workers())
+    for (candidateIndex, distance) in enumerate(results)
 
-      # Set penalty value by default
-      distanceValue[workerIndex] = sMMProblem.options.penaltyValue
+      # discard inf and NaN distances, values equal to penaltyValue and values above the threshold
+      if isfinite(distance) == true && distance != sMMProblem.options.penaltyValue && distance < sMMProblem.options.thresholdStartingValue && nbValidx0Found < numPoints
 
-      try
+        nbValidx0Found +=1
 
-        distanceValue[workerIndex] = results[workerIndex]
+        Validx0[nbValidx0Found,:] = candidates[candidateIndex]
+        distanceValue[nbValidx0Found] = distance
+        info("Valid starting value = $(Validx0[nbValidx0Found,:]), distance = $(distance)")
 
-        # discard inf distances, values equal to penaltyValue and values above the threshold
-        if isinf(distanceValue[workerIndex]) == false && distanceValue[workerIndex] != sMMProblem.options.penaltyValue && distanceValue[workerIndex] < sMMProblem.options.thresholdStartingValue
-
-          nbValidx0Found +=1
-
-          if nbValidx0Found <= numPoints
-
-            Validx0[nbValidx0Found,:] = listGrids[listGridsIndex][workerIndex, :]
-            info("Valid starting value = $(Validx0[nbValidx0Found,:]), distance = $(distanceValue[workerIndex])")
-          end
-
-        end
-
-      catch myError
-        info("$(myError)")
       end
 
     end
@@ -521,6 +512,7 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
   # sorting starting values according to distance value (in ascending order)
   p = sortperm(distanceValue) #get the ascending order
   Validx0 = Validx0[p,:]  #re-order rows
+  distanceValue = distanceValue[p] #keep distances aligned with starting values
 
   if verbose == true
     info("Found $(nbValidx0Found) valid starting value(s)")

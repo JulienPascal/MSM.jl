@@ -67,19 +67,40 @@ function construct_objective_function!(sMMProblem::MSMProblem)
       #------------------------------------------------------------------------
       if convergence == 1
 
-        # to store the distance between empirical and simulated moments
-        arrayDistance = zeros(length(keys(sMMProblem.empiricalMoments)))
+        # Errors here (e.g. a simulated moment is missing) also return the penalty value
+        try
 
-        for (indexMoment, k) in enumerate(keys(sMMProblem.empiricalMoments))
+          # to store the distance between empirical and simulated moments
+          arrayDistance = zeros(length(keys(sMMProblem.empiricalMoments)))
 
-          # * sMMProblem.empiricalMoments[k][1] is the empirical moments
-          #---------------------------------------------------------------------
-          arrayDistance[indexMoment] = (sMMProblem.empiricalMoments[k][1] - simulatedMoments[k])
+          for (indexMoment, k) in enumerate(keys(sMMProblem.empiricalMoments))
+
+            # * sMMProblem.empiricalMoments[k][1] is the empirical moments
+            #---------------------------------------------------------------------
+            arrayDistance[indexMoment] = (sMMProblem.empiricalMoments[k][1] - simulatedMoments[k])
+
+          end
+
+          # formula is (m - m*)'*W*(m - m*)'
+          distanceEmpSimMoments = transpose(arrayDistance)*sMMProblem.W*arrayDistance
+
+        catch errorDistance
+
+          info("An error occured when calculating the distance with parameter values = $(x)")
+          info("$(errorDistance)")
+
+          distanceEmpSimMoments = sMMProblem.options.penaltyValue
 
         end
 
-        # formula is (m - m*)'*W*(m - m*)'
-        distanceEmpSimMoments = transpose(arrayDistance)*sMMProblem.W*arrayDistance
+        # NaN or Inf simulated moments: return the penalty value
+        if isfinite(distanceEmpSimMoments) == false
+
+          info("Non-finite distance with parameter values = $(x)")
+
+          distanceEmpSimMoments = sMMProblem.options.penaltyValue
+
+        end
 
         if sMMProblem.options.showDistance == true
           println("distance = $(distanceEmpSimMoments)")
