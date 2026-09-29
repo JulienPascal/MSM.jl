@@ -195,11 +195,6 @@ function set_bbSetup!(sMMProblem::MSMProblem)
   mySearchRange = generate_bbSearchRange(sMMProblem)
 
   info("$(nworkers()) worker(s) detected")
-   # Debug:
-   #-------
-   @sync for (idx, pid) in enumerate(workers())
-     @async @spawnat(pid, println("hello"))
-   end
 
   if nworkers() == 1
     info("Starting optimization in serial")

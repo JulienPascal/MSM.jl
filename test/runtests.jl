@@ -27,6 +27,47 @@ do_plots = false #To create "visual tests". Set to false when using Travis CI.
     Diagonal(ones(n))
 end
 
+# Simulated models used by several testsets
+#------------------------------------------
+# 1d: the moment is the mean of N(x[1], 1)
+@everywhere function functionTest1d(x)
+    d = Normal(x[1])
+    output = OrderedDict{String,Float64}()
+    output["meanU"] = mean(rand(d, 1000000))
+    return output
+end
+
+# Same, with fixed draws: when using one of the deterministic methods of Optim,
+# we can safely "control" for randomness
+@everywhere function functionTest1dSeeded(x)
+    Random.seed!(1234)
+    d = Normal(x[1])
+    output = OrderedDict{String,Float64}()
+    output["meanU"] = mean(rand(d, 1000000))
+    return output
+end
+
+# 2d: the moments are the means of N([x[1], x[2]], I)
+@everywhere function functionTest2d(x)
+    d = MvNormal( [x[1]; x[2]], eye(2))
+    output = OrderedDict{String,Float64}()
+    draws = rand(d, 1000000)
+    output["mean1"] = mean(draws[1,:])
+    output["mean2"] = mean(draws[2,:])
+    return output
+end
+
+# Same, with fixed draws
+@everywhere function functionTest2dSeeded(x)
+    Random.seed!(1234)
+    d = MvNormal( [x[1]; x[2]], eye(2))
+    output = OrderedDict{String,Float64}()
+    draws = rand(d, 1000000)
+    output["mean1"] = mean(draws[1,:])
+    output["mean2"] = mean(draws[2,:])
+    return output
+end
+
 @testset "MSM.jl" begin
 
 
@@ -66,6 +107,15 @@ end
             @test t.simulate_empirical_moments(1.0) == 1.0
             @test t.objective_function(1.0) == 1.0
             @test typeof(t.options) == MSMOptions
+
+            # No optimization results before optimizing: explicit error
+            @test t.bbSetup === nothing
+            @test t.bbResults === nothing
+            @test t.optimResults === nothing
+            @test_throws ErrorException msm_minimizer(t)
+            @test_throws ErrorException msm_minimum(t)
+            @test_throws ErrorException msm_local_minimizer(t)
+            @test_throws ErrorException msm_local_minimum(t)
 
 
         end
@@ -187,7 +237,14 @@ end
 
             @test is_local_optimizer(localOptim) == true
 
+            # Symbol -> Optim algorithm
+            @test typeof(convert_to_optim_algo(localOptim)) == typeof(getfield(Optim, localOptim)())
+
         end
+
+        @test convert_to_fminbox(:LBFGS) isa Fminbox
+        @test_throws ErrorException convert_to_optim_algo(:NotAnOptimizer)
+        @test_throws ErrorException convert_to_fminbox(:NotAnOptimizer)
 
     end
 
@@ -490,16 +547,6 @@ end
             #----------------------------------------------------
             tol1dMean = 0.2
 
-            @everywhere function functionTest1d(x)
-
-                d = Normal(x[1])
-                output = OrderedDict{String,Float64}()
-
-                output["meanU"] = mean(rand(d, 1000000))
-
-                return output
-            end
-
 
             t = MSMProblem(options = MSMOptions(maxFuncEvals=1000))
 
@@ -550,20 +597,6 @@ end
 
           tol1dMean = 0.1
 
-          @everywhere function functionTest1d(x)
-
-              # When using one of the deterministic methods of Optim,
-              # we can safely "control" for randomness
-              #-----------------------------------------------------
-              Random.seed!(1234)
-              d = Normal(x[1])
-              output = OrderedDict{String,Float64}()
-
-              output["meanU"] = mean(rand(d, 1000000))
-
-              return output
-          end
-
 
           t = MSMProblem(options = MSMOptions(maxFuncEvals=1000))
 
@@ -580,7 +613,7 @@ end
 
           # A. Set the function: parameter -> simulated moments
           #----------------------------------------------------
-          set_simulate_empirical_moments!(t, functionTest1d)
+          set_simulate_empirical_moments!(t, functionTest1dSeeded)
 
           # A'. Attach weight marix
           W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
@@ -610,20 +643,6 @@ end
 
           tol1dMean = 0.1
 
-          @everywhere function functionTest1d(x)
-
-              # When using one of the deterministic methods of Optim,
-              # we can safely "control" for randomness
-              #-----------------------------------------------------
-              Random.seed!(1234)
-              d = Normal(x[1])
-              output = OrderedDict{String,Float64}()
-
-              output["meanU"] = mean(rand(d, 1000000))
-
-              return output
-          end
-
           # Let's try with the optim minBox on
           #-----------------------------------
           t = MSMProblem(options = MSMOptions(maxFuncEvals=1000, localOptimizer = :LBFGS, minBox = true))
@@ -641,7 +660,7 @@ end
 
           # A. Set the function: parameter -> simulated moments
           #----------------------------------------------------
-          set_simulate_empirical_moments!(t, functionTest1d)
+          set_simulate_empirical_moments!(t, functionTest1dSeeded)
 
           # A'. Attach weight marix
           W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
@@ -677,18 +696,6 @@ end
             # Otherwise, BlackBoxOptim does not find the solution
             #----------------------------------------------------
             tol2dMean = 0.2
-
-            @everywhere function functionTest2d(x)
-
-                d = MvNormal( [x[1]; x[2]], eye(2))
-                output = OrderedDict{String,Float64}()
-
-                draws = rand(d, 1000000)
-                output["mean1"] = mean(draws[1,:])
-                output["mean2"] = mean(draws[2,:])
-
-                return output
-            end
 
 
             t = MSMProblem(options = MSMOptions(maxFuncEvals=1000))
@@ -749,22 +756,6 @@ end
             #----------------------------------------------------
             tol2dMean = 0.2
 
-            @everywhere function functionTest2d(x)
-
-                d = MvNormal( [x[1]; x[2]], eye(2))
-                output = OrderedDict{String,Float64}()
-
-                # When using one of the deterministic methods of Optim,
-                # we can safely "control" for randomness
-                #-----------------------------------------------------
-                Random.seed!(1234)
-                draws = rand(d, 1000000)
-                output["mean1"] = mean(draws[1,:])
-                output["mean2"] = mean(draws[2,:])
-
-                return output
-            end
-
 
             t = MSMProblem(options = MSMOptions(maxFuncEvals=1000))
 
@@ -784,7 +775,7 @@ end
             set_priors!(t, dictPriors)
 
             # A. Set the function: parameter -> simulated moments
-            set_simulate_empirical_moments!(t, functionTest2d)
+            set_simulate_empirical_moments!(t, functionTest2dSeeded)
 
             # A'. Attach weight marix
             W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
@@ -818,22 +809,6 @@ end
               #----------------------------------------------------
               tol2dMean = 0.2
 
-              @everywhere function functionTest2d(x)
-
-                  d = MvNormal( [x[1]; x[2]], eye(2))
-                  output = OrderedDict{String,Float64}()
-
-                  # When using one of the deterministic methods of Optim,
-                  # we can safely "control" for randomness
-                  #-----------------------------------------------------
-                  Random.seed!(1234)
-                  draws = rand(d, 1000000)
-                  output["mean1"] = mean(draws[1,:])
-                  output["mean2"] = mean(draws[2,:])
-
-                  return output
-              end
-
 
               t = MSMProblem(options = MSMOptions(maxFuncEvals=1000, localOptimizer = :GradientDescent, minBox = true))
 
@@ -853,7 +828,7 @@ end
               set_priors!(t, dictPriors)
 
               # A. Set the function: parameter -> simulated moments
-              set_simulate_empirical_moments!(t, functionTest2d)
+              set_simulate_empirical_moments!(t, functionTest2dSeeded)
 
               # A'. Attach weight marix
               W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization

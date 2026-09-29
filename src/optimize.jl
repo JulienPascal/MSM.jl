@@ -55,6 +55,10 @@ function msm_minimizer(sMMProblem::MSMProblem)
   #-----------------------------------------------
   if is_bb_optimizer(sMMProblem.options.globalOptimizer) == true
 
+    if sMMProblem.bbResults === nothing
+      error("No global optimization results. Please call msm_optimize! first.")
+    end
+
     best_candidate(sMMProblem.bbResults)
 
   # In the future, we may use other global minimizer
@@ -79,6 +83,10 @@ function msm_minimum(sMMProblem::MSMProblem)
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------
   if is_bb_optimizer(sMMProblem.options.globalOptimizer) == true
+
+    if sMMProblem.bbResults === nothing
+      error("No global optimization results. Please call msm_optimize! first.")
+    end
 
     best_fitness(sMMProblem.bbResults)
 
@@ -156,6 +164,10 @@ function msm_local_minimizer(sMMProblem::MSMProblem)
   #-----------------------------------------------
   if is_optim_optimizer(sMMProblem.options.localOptimizer) == true
 
+    if sMMProblem.optimResults === nothing
+      error("No local optimization results. Please call msm_refine_globalmin! or msm_multistart! first (msm_multistart! stores results only if at least one local minimization converged).")
+    end
+
     Optim.minimizer(sMMProblem.optimResults)
 
   # In the future, we may use other global minimizer
@@ -179,6 +191,10 @@ function msm_local_minimum(sMMProblem::MSMProblem)
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------
   if is_optim_optimizer(sMMProblem.options.localOptimizer) == true
+
+    if sMMProblem.optimResults === nothing
+      error("No local optimization results. Please call msm_refine_globalmin! or msm_multistart! first (msm_multistart! stores results only if at least one local minimization converged).")
+    end
 
     Optim.minimum(sMMProblem.optimResults)
 

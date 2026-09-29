@@ -97,9 +97,9 @@ mutable struct MSMProblem
 	simulate_empirical_moments_array::Function		#returns an Array
 	objective_function::Function
 	options::MSMOptions
-	bbSetup::BlackBoxOptim.OptController					#set up when using BlackBoxOptim (global minimum)
-	bbResults::BlackBoxOptim.OptimizationResults	#results when using BlackBoxOptim (global minimum)
-	optimResults::Optim.OptimizationResults				#results when using Optim (local minimum)
+	bbSetup::Union{Nothing, BlackBoxOptim.OptController}					#set up when using BlackBoxOptim (global minimum). nothing until set
+	bbResults::Union{Nothing, BlackBoxOptim.OptimizationResults}	#results when using BlackBoxOptim (global minimum). nothing until msm_optimize!
+	optimResults::Union{Nothing, Optim.OptimizationResults}				#results when using Optim (local minimum). nothing until a local minimization
 	Sigma0::Array{Float64,2}											#distance matrix (in the terminology of Duffie and Singleton (1993))
 	Avar::Array{Float64,2}											  #asymptotic variance of the SMM estimate
 end
@@ -115,9 +115,9 @@ function MSMProblem(  ; priors::OrderedDict{String,Array{Float64,1}} = OrderedDi
 						simulate_empirical_moments_array::Function = default_function, #returns an Array
 						objective_function::Function = default_function,
 						options::MSMOptions = MSMOptions(),
-						bbSetup::BlackBoxOptim.OptController = defaultbbOptimOptController,
-						bbResults::BlackBoxOptim.OptimizationResults = defaultbbOptimOptimizationResults,
-						optimResults::Optim.OptimizationResults = defaultOptimResults,
+						bbSetup::Union{Nothing, BlackBoxOptim.OptController} = nothing,
+						bbResults::Union{Nothing, BlackBoxOptim.OptimizationResults} = nothing,
+						optimResults::Union{Nothing, Optim.OptimizationResults} = nothing,
 						Sigma0::Array{Float64,2} = Array{Float64}(undef,0,0),
 						Avar::Array{Float64,2} = Array{Float64}(undef,0,0))
 
@@ -151,26 +151,11 @@ end
 """
 	rosenbrock2d(x)
 
-Rosenbrock function. Used to initialize BlackBoxOptim.OptController().
+Rosenbrock function (a standard test function for optimizers). Its minimum is 0, at [1.0, 1.0].
 """
 function rosenbrock2d(x)
   return (1.0 - x[1])^2 + 100.0 * (x[2] - x[1]^2)^2
 end
-
-# It is quite useful to have "default" BlackBoxOptim.OptController and
-# BlackBoxOptim.OptimizationResults objects, since
-# BlackBoxOptim.OptController() and BlackBoxOptim.OptimizationResults()
-# do not work
-#-------------------------------------------------------------------------------
-defaultbbOptimOptController = bbsetup(x -> rosenbrock2d(x);
-											Method=:dxnes,
-											SearchRange = (-5.0, 5.0),
-											NumDimensions = 2, MaxFuncEvals = 2,
-											TraceMode = :silent);
-
-defaultbbOptimOptimizationResults = bboptimize(defaultbbOptimOptController);
-
-defaultOptimResults = optimize(rosenbrock2d, [0.0, 0.0], LBFGS());
 
 """
 	is_global_optimizer(s::Symbol)
@@ -252,7 +237,14 @@ end
 function to convert local optimizer (of type Symbol) to an Optim algo.
 """
 function convert_to_optim_algo(s::Symbol)
-	eval(Meta.parse("$(s)()"))
+
+	if is_optim_optimizer(s) == false
+		error("$(s) is not a supported local optimizer.")
+	end
+
+	# e.g. :LBFGS -> Optim.LBFGS()
+	getfield(Optim, s)()
+
 end
 
 """
@@ -263,8 +255,6 @@ by Optim.
 """
 function convert_to_fminbox(s::Symbol)
 
-	# Old API (before v0.15.0)
-	# To be changed when switching to Julia v0.7
-	eval(Meta.parse("Fminbox($(String(s))())"))
+	Fminbox(convert_to_optim_algo(s))
 
 end

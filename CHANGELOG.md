@@ -21,6 +21,17 @@ Claude Code. The corresponding commits carry a `Co-Authored-By` line.
   CSV 1, DataFrames 1, BlackBoxOptim 0.6 and OrderedCollections 2.
   Known issue: with Optim 2, `localOptimizer = :AcceleratedGradientDescent` can
   diverge (it does on the Rosenbrock function). Prefer `:LBFGS` (the default).
+- `msm_minimizer`, `msm_minimum`, `msm_local_minimizer` and `msm_local_minimum`
+  now throw an informative error when called before the corresponding
+  optimization (or after `msm_multistart!` if no local minimization converged).
+  They previously returned the result of a dummy optimization of the
+  Rosenbrock function. The fields `bbSetup`, `bbResults` and `optimResults` of
+  `MSMProblem` are now `nothing` until they are set.
+- Loading MSM.jl no longer runs a BlackBoxOptim and an Optim optimization at
+  precompile time (they were only used to create those dummy default values).
+- `convert_to_optim_algo` and `convert_to_fminbox` no longer use
+  `eval(Meta.parse(...))`, and throw an error for names that are not supported
+  local optimizers.
 
 **These fixes change numerical results.** If you used `J_test`,
 `calculate_pvalue`, `calculate_CI` or `summary_table`, re-run your inference.
@@ -47,6 +58,8 @@ Claude Code. The corresponding commits carry a `Co-Authored-By` line.
 
 ### Fixed
 
+- `msm_optimize!` no longer prints a leftover debug message ("hello") on
+  every worker.
 - `msm_multistart!` with 2 or more workers and without user-provided `x0`:
   candidate starting values were matched with the distances of *other*
   candidates, because results were collected in the order workers finished.
