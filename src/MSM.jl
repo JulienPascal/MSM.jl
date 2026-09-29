@@ -9,16 +9,13 @@ module MSM
     using CSV
     using FiniteDifferences
     using DataFrames
-    using DataStructures
     using OrderedCollections
     using Dates
     using Distributed
     using Random
-    using Logging
     using Statistics
     using Distributions
     using LinearAlgebra
-    using SharedArrays
     using LatinHypercubeSampling
     using Sobol
     using StatsBase

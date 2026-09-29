@@ -6,14 +6,12 @@ end
 println(nworkers())
 
 @everywhere using MSM
-@everywhere using DataStructures
 @everywhere using OrderedCollections
 @everywhere using Random
 @everywhere using Distributions
 @everywhere using Statistics
 @everywhere using LinearAlgebra
 using Test
-using Pkg
 using Optim
 using BlackBoxOptim
 using DataFrames
@@ -282,7 +280,7 @@ end
 
        @testset "testing read_priors" begin
 
-            dictPriors = read_priors(joinpath(Pkg.dir("MSM"), "test/priorsTest.csv"))
+            dictPriors = read_priors(joinpath(@__DIR__, "priorsTest.csv"))
 
             @test typeof(dictPriors) == OrderedDict{String,Array{Float64,1}}
             # First component stores the value
@@ -297,7 +295,7 @@ end
 
        @testset "testing read_empirical_moments" begin
 
-            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
+            dictEmpiricalMoments = read_empirical_moments(joinpath(@__DIR__, "empiricalMomentsTest.csv"))
 
             @test typeof(dictEmpiricalMoments) == OrderedDict{String,Array{Float64,1}}
 
@@ -319,7 +317,7 @@ end
 
         @testset "testing set_priors!" begin
 
-            dictPriors = read_priors(joinpath(Pkg.dir("MSM"), "test/priorsTest.csv"))
+            dictPriors = read_priors(joinpath(@__DIR__, "priorsTest.csv"))
 
             set_priors!(t, dictPriors)
 
@@ -329,7 +327,7 @@ end
 
         @testset "set_empirical_moments!" begin
 
-            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
+            dictEmpiricalMoments = read_empirical_moments(joinpath(@__DIR__, "empiricalMomentsTest.csv"))
 
             set_empirical_moments!(t, dictEmpiricalMoments)
 
@@ -397,7 +395,7 @@ end
             # For the test to make sense, we need to set the field
             # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
             #------------------------------------------------------
-            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
+            dictEmpiricalMoments = read_empirical_moments(joinpath(@__DIR__, "empiricalMomentsTest.csv"))
             set_empirical_moments!(t, dictEmpiricalMoments)
 
             # A. Set the function: parameter -> simulated moments
@@ -432,7 +430,7 @@ end
             #----
             t = MSMProblem();
 
-            dictPriors = read_priors(joinpath(Pkg.dir("MSM"), "test/priorsTest.csv"))
+            dictPriors = read_priors(joinpath(@__DIR__, "priorsTest.csv"))
 
             set_priors!(t, dictPriors)
 
@@ -500,7 +498,7 @@ end
             # For the test to make sense, we need to set the field
             # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
             #------------------------------------------------------
-            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
+            dictEmpiricalMoments = read_empirical_moments(joinpath(@__DIR__, "empiricalMomentsTest.csv"))
             set_empirical_moments!(t, dictEmpiricalMoments)
 
 
@@ -564,7 +562,7 @@ end
           # For the test to make sense, we need to set the field
           # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
           #------------------------------------------------------
-          dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
+          dictEmpiricalMoments = read_empirical_moments(joinpath(@__DIR__, "empiricalMomentsTest.csv"))
           set_empirical_moments!(t, dictEmpiricalMoments)
 
 
@@ -625,7 +623,7 @@ end
           # For the test to make sense, we need to set the field
           # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
           #------------------------------------------------------
-          dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
+          dictEmpiricalMoments = read_empirical_moments(joinpath(@__DIR__, "empiricalMomentsTest.csv"))
           set_empirical_moments!(t, dictEmpiricalMoments)
 
 

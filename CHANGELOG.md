@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- MSM.jl now requires **Julia 1.10 or later** (1.10 is the current long-term
+  support release). It is tested on Julia 1.13.
+- `Project.toml` now declares compatibility bounds for every dependency, so
+  that a future breaking release of a dependency cannot be installed with
+  MSM.jl. Only the current major versions are allowed, in particular Optim 2,
+  CSV 1, DataFrames 1, BlackBoxOptim 0.6 and OrderedCollections 2.
+
 **These fixes change numerical results.** If you used `J_test`,
 `calculate_pvalue`, `calculate_CI` or `summary_table`, re-run your inference.
 
@@ -64,3 +71,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unused dependencies GLM, PlotlyJS and ParallelDataTransfer. The example
   notebooks still use GLM and ParallelDataTransfer: add them to the
   environment you run the notebooks in.
+- Unused dependencies DataStructures, Logging, Pkg and SharedArrays.
+  `OrderedDict` still comes from OrderedCollections. If your own code used
+  DataStructures through MSM.jl, add it to your environment.
