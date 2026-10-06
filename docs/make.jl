@@ -13,6 +13,7 @@ Random.seed!(1234)  #for replicability reasons
 makedocs(
          sitename = "MSM.jl",
          modules  = [MSM],
+         checkdocs = :exports,     # every exported function and type must be documented (see functions.md)
          authors = "Julien Pascal",
     pages =["Home" => "index.md",
         "Installation" => "installation.md",

@@ -10,12 +10,13 @@ julia> options = MSMOptions(maxFuncEvals=1000, globalOptimizer = :dxnes, localOp
 mutable struct MSMOptions
 	globalOptimizer::Symbol #algorithm for finding a global maximum
 	localOptimizer::Symbol 	#algorithm for finding a local maximum
-	maxFuncEvals::Int64			#maximum number of evaluations
+	maxFuncEvals::Int64			#maximum number of evaluations (global optimization, and each local minimization)
 	saveName::String				#name under which the optimization should be saved
 	showDistance::Bool			#show the distance, everytime the objective function is calculated?
 	minBox::Bool						#When looking for a local maximum, use Fminbox ?
-	populationSize::Int64		#When using BlackBoxOptim, set the population size
-	penaltyValue::Float64 	#Objective function's value when the model fails
+	populationSize::Int64		#When using BlackBoxOptim, set the population size (differential evolution; ignored by NES methods)
+	lambda::Int64						#NES global optimizers (dxnes, xnes, separable_nes): points evaluated per generation (0 = automatic)
+	penaltyValue::Float64 	#Objective function's value when the model fails (Inf by default)
 	gridType::Symbol				#sampling procedure to use (latin hypercube by default)
 	saveStartingValues::Bool #whether or not saving the starting values when using local_to_global
 	maxTrialsStartingValues::Int64 #maximum number of attempts when searching for valid starting values
@@ -26,6 +27,24 @@ end
 	MSMOptions
 
 Constructor for MSMOptions. MSMOptions is a mutable struct that contains options related to the optimization.
+
+* `maxFuncEvals`: maximum number of evaluations of the objective function, for the global
+  optimization and for each local minimization (finite-difference gradients included).
+* `penaltyValue`: value of the objective function when the simulation fails (`Inf` by default).
+* `thresholdStartingValue`: when searching for starting values, a point is valid if its
+  objective function is below this value (default `penaltyValue/10`: with the default
+  `penaltyValue = Inf`, any successful point is valid).
+* `lambda`: for the natural evolution strategies (`:dxnes`, `:xnes`, `:separable_nes`), number
+  of points evaluated per generation. The points of a generation are evaluated in parallel,
+  and the next generation starts when all of them are done. With `lambda = 0` (default),
+  BlackBoxOptim's default (which depends on the number of parameters) is rounded up to a
+  multiple of the number of workers, so that no worker is idle (see `nes_lambda`).
+  `:dxnes` requires an even `lambda`. Note that `maxFuncEvals` counts evaluations: a larger
+  `lambda` means fewer generations for the same `maxFuncEvals`.
+* `populationSize`: population size of the differential evolution optimizers (default 50).
+  NES methods ignore it (see `lambda`). Differential evolution evaluates about one new
+  point at a time, so it gets essentially no speed-up from several workers: prefer a NES
+  method (e.g. `:dxnes`, the default) in parallel.
 
 # Examples
 ```julia-repl
@@ -39,8 +58,9 @@ function MSMOptions( ;
 					saveName::String = get_now(),
 					showDistance::Bool = false,
 					minBox::Bool = false,
-					populationSize::Int64 = 50,
-					penaltyValue::Float64 = 999999.0,
+					populationSize::Union{Nothing, Int64} = nothing,
+					lambda::Int64 = 0,
+					penaltyValue::Float64 = Inf,
 					gridType::Symbol = :LHC,
 					saveStartingValues::Bool = false,
 					maxTrialsStartingValues::Int64 = 20,
@@ -65,6 +85,22 @@ function MSMOptions( ;
 		error("gridType must be in $(listValidGridTypes)")
 	end
 
+	#Number of points per generation of the NES optimizers
+	if lambda < 0
+		error("lambda must be >= 0 (0 = automatic).")
+	end
+	if globalOptimizer == :dxnes && isodd(lambda)
+		error("globalOptimizer = :dxnes requires an even lambda (or lambda = 0, automatic).")
+	end
+
+	#populationSize is ignored by the NES optimizers
+	if populationSize !== nothing && is_nes_optimizer(globalOptimizer) == true
+		@warn "populationSize is ignored by globalOptimizer = :$(globalOptimizer). The number of points per generation is set by lambda."
+	end
+	if populationSize === nothing
+		populationSize = 50
+	end
+
 
 	MSMOptions(globalOptimizer,
 				localOptimizer,
@@ -73,6 +109,7 @@ function MSMOptions( ;
 				showDistance,
 				minBox,
 				populationSize,
+				lambda,
 				penaltyValue,
 				gridType,
 				saveStartingValues,
@@ -212,6 +249,18 @@ function is_local_optimizer(s::Symbol)
 								:MomentumGradientDescent, :AcceleratedGradientDescent]
 
 	in(s, listValidLocalOptimizers)
+
+end
+
+"""
+	is_nes_optimizer(s::Symbol)
+
+function to check whether the global optimizer is a natural evolution strategy of
+BlackBoxOptim (:dxnes, :xnes or :separable_nes), which evaluates lambda points per generation.
+"""
+function is_nes_optimizer(s::Symbol)
+
+	in(s, [:dxnes, :xnes, :separable_nes])
 
 end
 

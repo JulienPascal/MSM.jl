@@ -10,14 +10,23 @@ function set_simulate_empirical_moments!(sMMProblem::MSMProblem, f::Function)
   # set the function that returns an ordered dictionary
   sMMProblem.simulate_empirical_moments = f
 
-  # set the function that returns an array (respecting the order of the ordered dict)
+  # set the function that returns an array
   # this function is used to calculate the jacobian
   function simulate_empirical_moments_array(x)
 
     momentsODict = sMMProblem.simulate_empirical_moments(x)
-    momentsArray = Array{Float64}(undef, length(momentsODict))
 
-    for (i, k) in enumerate(keys(momentsODict))
+    # Follow the order of the empirical moments (which defines the order of W),
+    # not the order in which the user's function inserted the simulated moments
+    if isempty(sMMProblem.empiricalMoments) == true
+      momentKeys = collect(keys(momentsODict))
+    else
+      momentKeys = collect(keys(sMMProblem.empiricalMoments))
+    end
+
+    momentsArray = Array{Float64}(undef, length(momentKeys))
+
+    for (i, k) in enumerate(momentKeys)
         momentsArray[i] = momentsODict[k]
     end
 
@@ -119,6 +128,88 @@ function construct_objective_function!(sMMProblem::MSMProblem)
 end
 
 """
+  check_problem(sMMProblem::MSMProblem)
+
+Check that the MSMProblem is ready for the optimization, and throw an informative
+error otherwise. The objective function returns the penalty value on any error, so
+without this check a mistake (e.g. a weight matrix of the wrong size, a misspelled
+moment name, or a bug in the simulation function) would give a flat objective function
+and the optimization would run to completion.
+
+Checks that the priors, the empirical moments, the simulation function and the objective
+function are set, that `W` is k×k (k empirical moments), and simulates the moments once,
+at the initial values of the priors: the simulation must not throw, must return every
+empirical moment, and the simulated moments must be finite.
+
+Called by `msm_optimize!` and `msm_multistart!`, unless `check = false`.
+"""
+function check_problem(sMMProblem::MSMProblem)
+
+  skipMessage = "To skip this check, use check = false in msm_optimize! or msm_multistart!."
+
+  # A. Fields that must be set
+  #---------------------------
+  if isempty(sMMProblem.priors) == true
+    error("No priors. Please call set_priors! first.")
+  end
+
+  if isempty(sMMProblem.empiricalMoments) == true
+    error("No empirical moments. Please call set_empirical_moments! first.")
+  end
+
+  nbMoments = length(sMMProblem.empiricalMoments)
+  if size(sMMProblem.W) != (nbMoments, nbMoments)
+    error("The weight matrix W is $(size(sMMProblem.W, 1))×$(size(sMMProblem.W, 2)), but there are $(nbMoments) empirical moments. Please call set_weight_matrix! with a $(nbMoments)×$(nbMoments) matrix.")
+  end
+
+  if sMMProblem.simulate_empirical_moments === default_function
+    error("No simulation function. Please call set_simulate_empirical_moments! first.")
+  end
+
+  if sMMProblem.objective_function === default_function
+    error("No objective function. Please call construct_objective_function! first.")
+  end
+
+  # B. One simulation at the initial values of the priors
+  # (outside of the objective function, which would turn an error into the penalty value)
+  #---------------------------------------------------------------------------------------
+  x0 = [sMMProblem.priors[k][1] for k in keys(sMMProblem.priors)]
+
+  simulatedMoments = try
+    sMMProblem.simulate_empirical_moments(x0)
+  catch simulationError
+    @error "The simulation of moments failed at the initial values of the priors" x0 exception = (simulationError, catch_backtrace())
+    error("The simulation of moments failed at the initial values of the priors, $(x0) (see the error above). Fix the simulation function, or change the initial values with set_priors!. $(skipMessage)")
+  end
+
+  missingMoments = [k for k in keys(sMMProblem.empiricalMoments) if haskey(simulatedMoments, k) == false]
+  if isempty(missingMoments) == false
+    error("The simulation function does not return the empirical moment(s) $(missingMoments). It returns $(collect(keys(simulatedMoments))). $(skipMessage)")
+  end
+
+  extraMoments = [k for k in keys(simulatedMoments) if haskey(sMMProblem.empiricalMoments, k) == false]
+  if isempty(extraMoments) == false
+    @warn "The simulated moment(s) $(extraMoments) are not empirical moments: they are ignored."
+  end
+
+  nonFiniteMoments = [k for k in keys(sMMProblem.empiricalMoments) if isfinite(simulatedMoments[k]) == false]
+  if isempty(nonFiniteMoments) == false
+    error("Non-finite simulated moment(s) $(nonFiniteMoments) at the initial values of the priors, $(x0). Change the initial values with set_priors!. $(skipMessage)")
+  end
+
+  # C. With a finite penalty value, successful points must not look worse than failures
+  #-------------------------------------------------------------------------------------
+  arrayDistance = [sMMProblem.empiricalMoments[k][1] - simulatedMoments[k] for k in keys(sMMProblem.empiricalMoments)]
+  distance = transpose(arrayDistance)*sMMProblem.W*arrayDistance
+  if isfinite(sMMProblem.options.penaltyValue) == true && distance >= sMMProblem.options.penaltyValue
+    @warn "At the initial values of the priors, the distance between empirical and simulated moments ($(distance)) is larger than penaltyValue ($(sMMProblem.options.penaltyValue)): failed simulations look better than this point. Consider rescaling W, or using penaltyValue = Inf."
+  end
+
+  return nothing
+
+end
+
+"""
   set_priors!(sMMProblem::MSMProblem, priors::OrderedDict{String,Array{Float64,1}})
 
 Function to change the field sMMProblem.priors
@@ -188,17 +279,47 @@ end
 
 Function to set the field bbSetup for a MSMProblem.
 With `verbose = false`, BlackBoxOptim does not display the progress of the optimization.
+For the NES optimizers (`:dxnes`, `:xnes`, `:separable_nes`), the number of points per
+generation is `nes_lambda(globalOptimizer, options.lambda, number of parameters, nworkers())`.
 """
 function set_bbSetup!(sMMProblem::MSMProblem; verbose::Bool = true)
 
   # A. using sMMProblem.priors, generate searchRange:
   #-------------------------------------------------
   mySearchRange = generate_bbSearchRange(sMMProblem)
+  nbDimensions = length(keys(sMMProblem.priors))
+  globalOptimizer = sMMProblem.options.globalOptimizer
 
   traceMode = verbose ? :verbose : :silent
 
   if verbose == true
     info("$(nworkers()) worker(s) detected")
+  end
+
+  # B. NES optimizers: number of points per generation (evaluated in parallel)
+  #---------------------------------------------------------------------------
+  if is_nes_optimizer(globalOptimizer) == true
+
+    lambda = nes_lambda(globalOptimizer, sMMProblem.options.lambda, nbDimensions, nworkers())
+    extraOptions = (lambda = lambda,)
+
+    if verbose == true
+      message = "$(globalOptimizer): λ = $(lambda) points per generation ($(nworkers()) worker(s)), maxFuncEvals = $(sMMProblem.options.maxFuncEvals) → ~$(div(sMMProblem.options.maxFuncEvals, lambda)) generations"
+      if nworkers() > 1 && mod(lambda, nworkers()) != 0
+        message *= " (λ is not a multiple of the number of workers: some workers are idle at the end of each generation)"
+      end
+      info(message)
+    end
+
+  else
+
+    extraOptions = NamedTuple()
+
+    # Differential evolution evaluates about one new point at a time
+    if verbose == true && nworkers() > 1 && occursin("de_rand", string(globalOptimizer)) == true
+      info("$(globalOptimizer) evaluates about one new point at a time: extra workers give little speed-up. In parallel, prefer :dxnes, :xnes or :separable_nes.")
+    end
+
   end
 
   if nworkers() == 1
@@ -211,7 +332,8 @@ function set_bbSetup!(sMMProblem::MSMProblem; verbose::Bool = true)
                               MaxFuncEvals = sMMProblem.options.maxFuncEvals,
                               TraceMode = traceMode,
                               PopulationSize = sMMProblem.options.populationSize,
-                              NumDimensions = length(keys(sMMProblem.priors)))
+                              NumDimensions = nbDimensions,
+                              extraOptions...)
   else
     if verbose == true
       info("Starting optimization in parallel")
@@ -223,9 +345,73 @@ function set_bbSetup!(sMMProblem::MSMProblem; verbose::Bool = true)
                                 Workers = workers(),
                                 PopulationSize = sMMProblem.options.populationSize,
                                 TraceMode = traceMode,
-                                NumDimensions = length(keys(sMMProblem.priors)))
+                                NumDimensions = nbDimensions,
+                                extraOptions...)
   end
 
+
+end
+
+"""
+  nes_lambda(globalOptimizer::Symbol, lambda::Int64, nbDimensions::Int64, nbWorkers::Int64)
+
+Number of points λ evaluated per generation by a natural evolution strategy of BlackBoxOptim
+(`:dxnes`, `:xnes`, `:separable_nes`). If `lambda > 0`, returns `lambda`. If `lambda == 0`
+(automatic), returns BlackBoxOptim's default for `nbDimensions` parameters, rounded up to a
+multiple of `nbWorkers`: the points of a generation are evaluated in parallel, and the next
+generation starts when all of them are done, so no worker is idle. `:dxnes` requires an even λ:
+when the multiple is odd, λ is decreased by one (one worker is idle at the end of each generation).
+
+# Examples
+```julia-repl
+julia> nes_lambda(:dxnes, 0, 5, 1)    # BlackBoxOptim's default for 5 parameters
+8
+julia> nes_lambda(:dxnes, 0, 5, 32)
+32
+julia> nes_lambda(:dxnes, 0, 5, 11)   # 11 is odd: one worker idle
+10
+julia> nes_lambda(:dxnes, 0, 10, 4)   # default 10, rounded up to a multiple of 4
+12
+```
+"""
+function nes_lambda(globalOptimizer::Symbol, lambda::Int64, nbDimensions::Int64, nbWorkers::Int64)
+
+  if is_nes_optimizer(globalOptimizer) == false
+    error("globalOptimizer = $(globalOptimizer) is not a natural evolution strategy (:dxnes, :xnes, :separable_nes).")
+  end
+
+  if lambda < 0
+    error("lambda must be >= 0 (0 = automatic).")
+  end
+
+  if globalOptimizer == :dxnes && isodd(lambda)
+    error("globalOptimizer = :dxnes requires an even lambda (or lambda = 0, automatic).")
+  end
+
+  # Value set by the user
+  if lambda > 0
+    return lambda
+  end
+
+  # BlackBoxOptim's default (v0.6)
+  if globalOptimizer == :dxnes
+    lambdaDefault = 4 + 3*floor(Int, log(nbDimensions))
+    lambdaDefault += isodd(lambdaDefault) ? 1 : 0
+  elseif globalOptimizer == :xnes
+    lambdaDefault = 4 + 3*floor(Int, log(nbDimensions))
+  else
+    lambdaDefault = 4 + ceil(Int, log(3*nbDimensions))
+  end
+
+  # Rounded up to a multiple of the number of workers
+  lambdaWorkers = nbWorkers*ceil(Int, lambdaDefault/nbWorkers)
+
+  # dxnes: even λ
+  if globalOptimizer == :dxnes && isodd(lambdaWorkers)
+    lambdaWorkers -= 1
+  end
+
+  return lambdaWorkers
 
 end
 
@@ -262,7 +448,7 @@ end
 """
   create_upper_bound(sMMProblem::MSMProblem)
 
-Function to generate a lower bound used by Optim when minimizing with Fminbox.
+Function to generate an upper bound used by Optim when minimizing with Fminbox.
 The upper bound is of type Array{Float64,1}.
 """
 function create_upper_bound(sMMProblem::MSMProblem)
@@ -285,7 +471,7 @@ end
 
 Randomly sample `n` vectors from the parallelogram defined
 by `mins` and `maxs` using the Latin hypercube algorithm.
-Returns `dims`×`n` matrix.
+Returns an `n`×`dims` matrix (one point per row).
 """
 function latin_hypercube_sampling(mins::AbstractVector{T},
                                   maxs::AbstractVector{T},
@@ -359,10 +545,13 @@ end
   get_now()
 
 Returns date and time in a manner that does not clash with Windows, Linux and OSX
+(e.g. "2026-09-30--14h-5m-3s")
 """
 function get_now()
 
-  "$(Dates.today())--$(Dates.hour(Dates.now()))h-$(Dates.minute(Dates.now()))m-$(Dates.second(Dates.now()))s"
+  # Read the clock once: separate calls could straddle a second, minute or day boundary
+  t = Dates.now()
+  "$(Dates.Date(t))--$(Dates.hour(t))h-$(Dates.minute(t))m-$(Dates.second(t))s"
 
 end
 
@@ -376,9 +565,9 @@ function info(text)
 end
 
 """
-  linspace(z_n::Int64, z_start::Real, z_end::Real)
+  linspace(z_start::Real, z_end::Real, z_n::Int64)
 
-Similar behavior of Base.linespace on julia v. < 0.6
+Vector of z_n evenly spaced points from z_start to z_end (similar to Base.linspace on julia v. < 0.7)
 """
 function linspace(z_start::Real, z_end::Real, z_n::Int64)
     return collect(range(z_start,stop=z_end,length=z_n))

@@ -1,12 +1,19 @@
 """
-  msm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
+  msm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true, check::Bool = true)
 
 Function to launch an optimization. To be used after the following functions
 have been called: (i) set_empirical_moments! (ii) set_priors!
 (iii) set_simulate_empirical_moments! (iv) construct_objective_function!
 With `verbose = false`, the progress of the optimizer is not displayed.
+With `check = true`, `check_problem` is called first: it throws an error if the
+problem is not set up correctly, or if the simulation fails at the initial values
+of the priors.
 """
-function msm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
+function msm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true, check::Bool = true)
+
+  if check == true
+    check_problem(sMMProblem)
+  end
 
   # Initialize a BlackBoxOptim problem
   # this modifies sMMProblem.bbSetup
@@ -46,7 +53,7 @@ function msm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
 end
 
 """
-  function msm_minimizer(sMMProblem::MSMProblem)
+  msm_minimizer(sMMProblem::MSMProblem)
 
 Function to get the parameter value minimizing the objective function
 """
@@ -75,7 +82,7 @@ end
 
 
 """
-  function msm_minimum(sMMProblem::MSMProblem)
+  msm_minimum(sMMProblem::MSMProblem)
 
 Function to get the minimum of the objective function
 """
@@ -127,18 +134,7 @@ function msm_refine_globalmin!(sMMProblem::MSMProblem; verbose::Bool = true)
 
   if is_local_optimizer(sMMProblem.options.localOptimizer) == true
 
-    # If using Fminbox option is true
-    #-------------------------------
-    if sMMProblem.options.minBox == true
-
-        lower = create_lower_bound(sMMProblem)
-        upper = create_upper_bound(sMMProblem)
-
-        sMMProblem.optimResults = optimize(sMMProblem.objective_function, lower, upper, x0, convert_to_fminbox(sMMProblem.options.localOptimizer), Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
-
-    else
-        sMMProblem.optimResults = optimize(sMMProblem.objective_function, x0, convert_to_optim_algo(sMMProblem.options.localOptimizer), Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
-    end
+    sMMProblem.optimResults = run_local_optimizer(sMMProblem, x0, verbose = verbose)
 
   # In the future, we may use other local minimizer
   # routines. For the moment, let's return an error
@@ -155,7 +151,7 @@ end
 
 
 """
-  function msm_local_minimizer(sMMProblem::MSMProblem)
+  msm_local_minimizer(sMMProblem::MSMProblem)
 
 Function to get the parameter value minimizing the objective function (local)
 """
@@ -166,7 +162,7 @@ function msm_local_minimizer(sMMProblem::MSMProblem)
   if is_optim_optimizer(sMMProblem.options.localOptimizer) == true
 
     if sMMProblem.optimResults === nothing
-      error("No local optimization results. Please call msm_refine_globalmin! or msm_multistart! first (msm_multistart! stores results only if at least one local minimization converged).")
+      error("No local optimization results. Please call msm_refine_globalmin! or msm_multistart! first (msm_multistart! stores results only if at least one local minimization returned a finite value).")
     end
 
     Optim.minimizer(sMMProblem.optimResults)
@@ -183,7 +179,7 @@ function msm_local_minimizer(sMMProblem::MSMProblem)
 end
 
 """
-  function msm_local_minimum(sMMProblem::MSMProblem)
+  msm_local_minimum(sMMProblem::MSMProblem)
 
 Function to get the local minimum value of the objetive function
 """
@@ -194,7 +190,7 @@ function msm_local_minimum(sMMProblem::MSMProblem)
   if is_optim_optimizer(sMMProblem.options.localOptimizer) == true
 
     if sMMProblem.optimResults === nothing
-      error("No local optimization results. Please call msm_refine_globalmin! or msm_multistart! first (msm_multistart! stores results only if at least one local minimization converged).")
+      error("No local optimization results. Please call msm_refine_globalmin! or msm_multistart! first (msm_multistart! stores results only if at least one local minimization returned a finite value).")
     end
 
     Optim.minimum(sMMProblem.optimResults)
@@ -212,7 +208,7 @@ end
 
 
 """
-  function msm_multistart_minimizer(sMMProblem::MSMProblem)
+  msm_multistart_minimizer(sMMProblem::MSMProblem)
 
 Function to get the parameter value minimizing the objective function when
 using the multistart algorithm
@@ -225,7 +221,7 @@ function msm_multistart_minimizer(sMMProblem::MSMProblem)
 end
 
 """
-  function msm_multistart_minimum(sMMProblem::MSMProblem)
+  msm_multistart_minimum(sMMProblem::MSMProblem)
 
 Function to get the minimum value of the objetive function when
 using the multistart algorithm
@@ -239,14 +235,20 @@ end
 
 
 """
-  msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true)
+  msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true, check::Bool = true)
 
 Function to run several local minimization algorithms in parallel, with different
-starting values. The minimum is calculated as the minimum of the local minima.
-Changes sMMProblem.optimResults. This function also returns
-a list containing Optim results.
+starting values. The minimum is calculated as the minimum of the local minima that
+converged. If none converged, the best finite local minimum is used instead, with a
+message saying so. Changes sMMProblem.optimResults. This function also returns
+a list containing Optim results (`nothing` for a local minimization that threw an error).
+With `check = true`, `check_problem` is called first (see `msm_optimize!`).
 """
-function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true)
+function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true, check::Bool = true)
+
+  if check == true
+    check_problem(sMMProblem)
+  end
 
   # Safety checks
   #--------------
@@ -289,7 +291,7 @@ function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0)
       @sync for (workerIndex, w) in enumerate(workers())
 
         # Store by index: tasks finish in any order
-        @async results[workerIndex] = @fetchfrom w wrap_msm_localmin(sMMProblem, myGrid[workerIndex,:], verbose = true)
+        @async results[workerIndex] = @fetchfrom w wrap_msm_localmin(sMMProblem, myGrid[workerIndex,:], verbose = verbose)
 
       end
 
@@ -307,36 +309,50 @@ function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0)
 
       push!(listOptimResults, results[workerIndex])
 
-      try
+      # The local minimization threw an error (logged by wrap_msm_localmin)
+      if results[workerIndex] === nothing
+        continue
+      end
 
-        minimumValue = Optim.minimum(results[workerIndex])
-        minimizer = Optim.minimizer(results[workerIndex])
+      if Optim.converged(results[workerIndex]) == true
 
-        if Optim.converged(results[workerIndex]) == true
+        nbConvergenceReached += 1
 
-          nbConvergenceReached += 1
-
-          if minimumValue < minValue
-            minIndex = workerIndex
-            minValue = minimumValue
-            minimizerValue = minimizer
-          end
-
+        if Optim.minimum(results[workerIndex]) < minValue
+          minIndex = workerIndex
+          minValue = Optim.minimum(results[workerIndex])
+          minimizerValue = Optim.minimizer(results[workerIndex])
         end
 
-      catch myError
-        info("$(myError)")
       end
 
     end
 
-
-    # D. If none of the optimization converged
-    #-----------------------------------------
+    # C. If none of the local minimizations converged: best finite local minimum
+    #-----------------------------------------------------------------------------
     if minIndex == 0
-      info("None of the local optimizer algorithm converged.")
+
+      for (workerIndex, w) in enumerate(workers())
+        if results[workerIndex] !== nothing && isfinite(Optim.minimum(results[workerIndex])) == true && Optim.minimum(results[workerIndex]) < minValue
+          minIndex = workerIndex
+          minValue = Optim.minimum(results[workerIndex])
+          minimizerValue = Optim.minimizer(results[workerIndex])
+        end
+      end
+
+      if minIndex != 0
+        info("None of the local minimizations converged. Using the best finite local minimum instead (worker $(minIndex)), which did not converge: check it, or increase maxFuncEvals.")
+      end
+
     else
       info("Convergence reached for $(nbConvergenceReached) worker(s).")
+    end
+
+    # D. If none of the local minimizations returned a finite value
+    #---------------------------------------------------------------
+    if minIndex == 0
+      info("None of the local minimizations returned a finite value.")
+    else
       info("Minimum value found with worker $(minIndex)")
       sMMProblem.optimResults = results[minIndex]
     end
@@ -382,18 +398,7 @@ function msm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Boo
 
     if is_local_optimizer(sMMProblem.options.localOptimizer) == true
 
-    # If using Fminbox option is true
-    #-------------------------------
-    if sMMProblem.options.minBox == true
-
-        lower = create_lower_bound(sMMProblem)
-        upper = create_upper_bound(sMMProblem)
-
-        optimResults = optimize(sMMProblem.objective_function, lower, upper, x0, convert_to_fminbox(sMMProblem.options.localOptimizer), Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
-
-    else
-        optimResults = optimize(sMMProblem.objective_function, x0, convert_to_optim_algo(sMMProblem.options.localOptimizer), Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
-    end
+    optimResults = run_local_optimizer(sMMProblem, x0, verbose = verbose)
 
     # In the future, we may use other local minimizer
     # routines. For the moment, let's return an error
@@ -410,15 +415,64 @@ end
 
 
 """
+  run_local_optimizer(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
 
+Minimize the objective function with the local optimizer (Optim), starting from x0, with at
+most `sMMProblem.options.maxFuncEvals` evaluations of the objective function, finite-difference
+gradients included. Optim's own counter (`f_calls_limit`) does not count the evaluations used by
+finite differences, so the evaluations are counted here, and Optim is stopped by a callback at the
+end of the iteration during which the budget is reached.
+"""
+function run_local_optimizer(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
+
+  nbEvaluations = Ref(0)
+
+  function counted_objective_function(x)
+    nbEvaluations[] += 1
+    sMMProblem.objective_function(x)
+  end
+
+  # Optim stops when the callback returns true
+  budget_reached(state) = nbEvaluations[] >= sMMProblem.options.maxFuncEvals
+
+  # Each iteration evaluates the objective function at least once:
+  # the limit on the number of iterations never binds before the budget
+  optimOptions = Optim.Options(iterations = sMMProblem.options.maxFuncEvals, callback = budget_reached)
+
+  # If using Fminbox option is true
+  #-------------------------------
+  if sMMProblem.options.minBox == true
+
+      lower = create_lower_bound(sMMProblem)
+      upper = create_upper_bound(sMMProblem)
+
+      optimResults = optimize(counted_objective_function, lower, upper, x0, convert_to_fminbox(sMMProblem.options.localOptimizer), optimOptions)
+
+  else
+      optimResults = optimize(counted_objective_function, x0, convert_to_optim_algo(sMMProblem.options.localOptimizer), optimOptions)
+  end
+
+  if verbose == true && nbEvaluations[] >= sMMProblem.options.maxFuncEvals
+    info("Local minimization stopped after $(nbEvaluations[]) evaluations of the objective function (maxFuncEvals = $(sMMProblem.options.maxFuncEvals)).")
+  end
+
+  return optimResults
+
+end
+
+
+"""
+  wrap_msm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
+
+Call msm_localmin. If the local minimization throws an error, log it and return `nothing`.
 """
 function wrap_msm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
 
   try
     msm_localmin(sMMProblem, x0, verbose = verbose)
   catch myError
-    info("$(myError)")
-    info("Error with msm_localmin")
+    info("Local minimization from starting value $(x0) failed: $(myError)")
+    nothing
   end
 
 end

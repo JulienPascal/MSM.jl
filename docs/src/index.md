@@ -17,7 +17,7 @@ via the [Method of Simulated Moments](https://en.wikipedia.org/wiki/Method_of_si
 
 An economic theory can be written as a system of equations that depends on primitive
 parameters. The aim of the econometrician is to **recover the unknown parameters**
-using **empirical data**. One popular approach is to maximize the [likelihood funtion](https://en.wikipedia.org/wiki/Likelihood_function).
+using **empirical data**. One popular approach is to maximize the [likelihood function](https://en.wikipedia.org/wiki/Likelihood_function).
 Yet in many instances, the likelihood function is intractable. An alternative approach to estimate the unknown parameters is to minimize a (weighted) distance between
 the empirical [moments](https://en.wikipedia.org/wiki/Moment_(mathematics)) and their theoretical counterparts.
 

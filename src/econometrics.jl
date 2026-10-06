@@ -1,8 +1,10 @@
 """
-  function calculate_D(sMMProblem::MSMProblem, theta0::Array{Float64,1}; method::Symbol = :central)
+  calculate_D(sMMProblem::MSMProblem, theta0::Array{Float64,1})
 
-Function to calculate the jacobian of the simulated moments.
-If the simulation is long enough, this provideds a good approximation for
+Function to calculate the jacobian of the simulated moments at theta0, by central
+finite differences (5-point stencil, FiniteDifferences.jl). Rows follow the order of
+the empirical moments, columns the order of the priors.
+If the simulation is long enough, this provides a good approximation for
 the expected value of the jacobian. The output is the "D" matrix in the terminology
 of Gouriéroux and Monfort (1996).
 """
@@ -47,10 +49,11 @@ function calculate_Avar!(sMMProblem::MSMProblem, theta0::Array{Float64,1}; tau::
 end
 
 """
-  calculate_se(sMMProblem::MSMProblem, tData::Int64, tSimulation::Int64)
+  calculate_se(sMMProblem::MSMProblem, tData::Int64, i::Int64)
 
-Function to calculate the standard error associated to the the ith parameter,
-respecting the ordering given by the ordered dictionary sMMProblem.priors
+Function to calculate the standard error associated to the ith parameter,
+respecting the ordering given by the ordered dictionary sMMProblem.priors.
+`tData` is the length of the empirical sample. Requires calculate_Avar! first.
 """
 function calculate_se(sMMProblem::MSMProblem, tData::Int64, i::Int64)
 
@@ -65,9 +68,9 @@ end
 
 
 """
-  calculate_t(sMMProblem::MSMProblem, tData::Int64, tSimulation::Int64)
+  calculate_t(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64)
 
-Function to calculate the t-statistic associated to following test:
+Function to calculate the t-statistic of the ith parameter (value theta0[i]) associated to following test:
 H0: theta_i = 0
 H1: theta_i != 0
 The ordering of parameters is the one given by the ordered dictionary sMMProblem.priors
@@ -85,9 +88,9 @@ end
 
 
 """
-  calculate_pvalue(sMMProblem::MSMProblem, tData::Int64, tSimulation::Int64)
+  calculate_pvalue(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, i::Int64)
 
-Function to calculate the p-value associated to following test:
+Function to calculate the two-sided p-value of the ith parameter (value theta0[i]) associated to following test:
 H0: theta_i = 0
 H1: theta_i != 0
 The ordering of parameters is the one given by the ordered dictionary sMMProblem.priors

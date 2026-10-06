@@ -307,7 +307,11 @@ defined `@everywhere`. See the file [LinearModelCluster.jl](https://github.com/J
 
 ### Option 1: Global parallel optimization
 
-Choose a global optimizer that **supports parallel evaluations** (e.g. xnes or dxnes). See the [documentation](https://github.com/robertfeldt/BlackBoxOptim.jl) for BlackBoxOptim.jl.
+Choose a global optimizer that **supports parallel evaluations**: the natural evolution strategies `:dxnes` (the default), `:xnes` and `:separable_nes`. See the [documentation](https://github.com/robertfeldt/BlackBoxOptim.jl) for BlackBoxOptim.jl.
+
+These methods evaluate `lambda` points per generation, in parallel, and start the next generation when all of them are done. By default (`MSMOptions(lambda = 0)`), `lambda` is BlackBoxOptim's default for the number of parameters, rounded up to a multiple of `nworkers()`, so that no worker is idle (see `nes_lambda`). With `verbose = true`, `msm_optimize!` logs the value used, and the number of generations it implies. `maxFuncEvals` counts evaluations: with more workers, `lambda` is larger and there are fewer generations for the same `maxFuncEvals`, so scale `maxFuncEvals` with `lambda` (about `lambda` times the number of generations you want).
+
+Differential evolution (e.g. `:adaptive_de_rand_1_bin_radiuslimited`) evaluates about one new point at a time: it gets essentially no speed-up from several workers. `populationSize` only applies to differential evolution.
 
 ```@example 1
 msm_optimize!(myProblem, verbose = false)

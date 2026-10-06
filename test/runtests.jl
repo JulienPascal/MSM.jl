@@ -85,7 +85,8 @@ end
             @test t.showDistance == false
             @test t.minBox == false
             @test t.populationSize == 50
-            @test t.penaltyValue == 999999.0
+            @test t.lambda == 0
+            @test t.penaltyValue == Inf
             @test t.gridType == :LHC
             @test t.saveStartingValues == false
             @test t.maxTrialsStartingValues == 20
@@ -270,10 +271,15 @@ end
 
             results = optimize(f, x0, convert_to_optim_algo(localOptim), Optim.Options(iterations = 2000))
 
-            # Known upstream problem: with Optim 2, AcceleratedGradientDescent diverges
-            # on the Rosenbrock function (the objective increases with the number of
-            # iterations). @test_broken reports an "Unexpected Pass" once Optim fixes it.
-            if localOptim == :AcceleratedGradientDescent
+            # MSM.jl supports Optim 1 (1.13 or later) and Optim 2, and AcceleratedGradientDescent
+            # behaves differently in the two:
+            # * Optim 1: it converges on the Rosenbrock function, like the other algorithms
+            #   (regular @test, in the else branch below).
+            # * Optim 2: known upstream problem, it diverges on the Rosenbrock function (the
+            #   objective increases with the number of iterations). The tests are marked as
+            #   broken: @test_broken reports an "Unexpected Pass" once Optim fixes it.
+            # A plain @test_broken for both versions would fail with Optim 1 ("Unexpected Pass").
+            if localOptim == :AcceleratedGradientDescent && pkgversion(Optim) >= v"2"
                 @test_broken Optim.minimizer(results)[1] ≈ 1.0 atol = atolOptim
                 @test_broken Optim.minimizer(results)[2] ≈ 1.0 atol = atolOptim
             else
@@ -1207,6 +1213,234 @@ end
         # Invalid gridType: explicit error
         myProblem.options.gridType = :notAGrid
         @test_throws ErrorException MSM.search_starting_values(myProblem, 1, verbose = false)
+
+    end
+
+    @testset "Testing lambda (NES optimizers) and populationSize" begin
+
+        # Options: lambda >= 0, even for dxnes
+        @test_throws "lambda must be >= 0" MSMOptions(lambda = -2)
+        @test_throws "even lambda" MSMOptions(lambda = 7)
+        @test MSMOptions(globalOptimizer = :xnes, lambda = 7).lambda == 7
+
+        # populationSize: warning with NES optimizers only, when set by the user
+        @test_logs MSMOptions()
+        @test_logs (:warn, r"populationSize is ignored") MSMOptions(populationSize = 20)
+        @test_logs MSMOptions(populationSize = 20, globalOptimizer = :adaptive_de_rand_1_bin_radiuslimited)
+        @test MSMOptions(populationSize = 20, globalOptimizer = :adaptive_de_rand_1_bin_radiuslimited).populationSize == 20
+
+        # Automatic lambda: BlackBoxOptim's default rounded up to a multiple of the number of workers
+        # (dxnes: even, so one worker idle when the number of workers is odd)
+        @test nes_lambda(:dxnes, 0, 5, 1) == 8
+        @test nes_lambda(:dxnes, 0, 5, 10) == 10
+        @test nes_lambda(:dxnes, 0, 5, 32) == 32
+        @test nes_lambda(:dxnes, 0, 5, 11) == 10
+        @test nes_lambda(:dxnes, 0, 5, 3) == 8
+        @test nes_lambda(:dxnes, 0, 10, 4) == 12
+        @test nes_lambda(:xnes, 0, 5, 11) == 11
+        @test nes_lambda(:dxnes, 12, 5, 32) == 12
+        @test_throws "even lambda" nes_lambda(:dxnes, 7, 5, 1)
+        @test_throws "not a natural evolution strategy" nes_lambda(:adaptive_de_rand_1_bin_radiuslimited, 0, 5, 1)
+
+        # With one worker, the automatic lambda is BlackBoxOptim's own default
+        for method in (:dxnes, :xnes, :separable_nes), d in (1, 2, 5, 10, 30)
+            bbDefault = bbsetup(x -> sum(abs2, x); Method = method, SearchRange = (-1.0, 1.0), NumDimensions = d, TraceMode = :silent)
+            @test nes_lambda(method, 0, d, 1) == bbDefault.optimizer.lambda
+        end
+
+        # lambda is passed to BlackBoxOptim, and logged with verbose = true
+        myProblem = MSMProblem(options = MSMOptions(maxFuncEvals = 40))
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x$(i)" => [0.5, 0.0, 1.0] for i in 1:5))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m$(i)" => [0.0] for i in 1:5))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(5)))
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m$(i)" => x[i] for i in 1:5))
+        construct_objective_function!(myProblem)
+        expectedLambda = nes_lambda(:dxnes, 0, 5, nworkers())
+        @test_logs (:info, r"dxnes: λ = \d+ points per generation") match_mode=:any set_bbSetup!(myProblem, verbose = true)
+        @test myProblem.bbSetup.optimizer.lambda == expectedLambda
+        myProblem.options.lambda = 12
+        msm_optimize!(myProblem, verbose = false)
+        @test myProblem.bbSetup.optimizer.lambda == 12
+
+    end
+
+    @testset "Testing small utilities" begin
+
+        # get_now: "yyyy-mm-dd--HHh-MMm-SSs", a valid date and time, close to now
+        stamp = get_now()
+        m = match(r"^(\d{4}-\d{2}-\d{2})--(\d{1,2})h-(\d{1,2})m-(\d{1,2})s$", stamp)
+        @test m !== nothing
+        t = MSM.Dates.DateTime(MSM.Dates.Date(m[1]), MSM.Dates.Time(parse(Int, m[2]), parse(Int, m[3]), parse(Int, m[4])))
+        @test abs(MSM.Dates.now() - t) < MSM.Dates.Second(5)
+
+        # linspace(z_start, z_end, z_n)
+        @test linspace(0.0, 1.0, 5) == [0.0, 0.25, 0.5, 0.75, 1.0]
+
+        # latin_hypercube_sampling(mins, maxs, n): n×dims matrix
+        @test size(latin_hypercube_sampling([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 5)) == (5, 3)
+
+    end
+
+    @testset "Testing check_problem" begin
+
+        # A problem set up correctly: no error, no log message
+        myProblem = MSMProblem(options = MSMOptions(maxFuncEvals = 20))
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [0.5, 0.0, 1.0], "y" => [0.5, 0.0, 1.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m1" => [0.0], "m2" => [0.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(2)))
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m1" => x[1], "m2" => x[2]))
+        construct_objective_function!(myProblem)
+        @test (@test_logs check_problem(myProblem)) === nothing
+
+        # Fields that are not set
+        @test_throws "set_priors!" check_problem(MSMProblem())
+        emptyProblem = MSMProblem(priors = myProblem.priors)
+        @test_throws "set_empirical_moments!" check_problem(emptyProblem)
+        set_empirical_moments!(emptyProblem, myProblem.empiricalMoments)
+        set_weight_matrix!(emptyProblem, myProblem.W)
+        @test_throws "set_simulate_empirical_moments!" check_problem(emptyProblem)
+        set_simulate_empirical_moments!(emptyProblem, myProblem.simulate_empirical_moments)
+        @test_throws "construct_objective_function!" check_problem(emptyProblem)
+
+        # Default 1×1 weight matrix with 2 moments: error, also in msm_optimize! and msm_multistart!
+        myProblem.W = Matrix(1.0 .* I(1))
+        @test_throws "W is 1×1, but there are 2 empirical moments" check_problem(myProblem)
+        @test_throws "W is 1×1" msm_optimize!(myProblem, verbose = false)
+        @test_throws "W is 1×1" msm_multistart!(myProblem, verbose = false)
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(2)))
+
+        # A missing moment: error
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m1" => x[1], "wrong_name" => x[2]))
+        construct_objective_function!(myProblem)
+        @test_throws "does not return the empirical moment(s) [\"m2\"]" check_problem(myProblem)
+
+        # An extra moment: warning only
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m1" => x[1], "extra" => 1.0, "m2" => x[2]))
+        construct_objective_function!(myProblem)
+        @test_logs (:warn, r"extra") check_problem(myProblem)
+
+        # Non-finite simulated moments at the initial values: error
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m1" => NaN, "m2" => x[2]))
+        construct_objective_function!(myProblem)
+        @test_throws "Non-finite simulated moment(s) [\"m1\"]" check_problem(myProblem)
+
+        # The simulation throws at the initial values: error (with the original error logged),
+        # which says how to skip the check. With check = false, the optimization runs
+        set_simulate_empirical_moments!(myProblem, x -> error("typo in the simulation function"))
+        construct_objective_function!(myProblem)
+        @test_logs (:error, "The simulation of moments failed at the initial values of the priors") @test_throws "check = false" check_problem(myProblem)
+        @test_logs (:error, r"failed at the initial values") @test_throws "check = false" msm_optimize!(myProblem, verbose = false)
+        @test_logs (:info, r"An error occured") match_mode=:any msm_optimize!(myProblem, verbose = false, check = false)
+        @test msm_minimum(myProblem) == Inf
+
+        # With a finite penalty value, a distance larger than the penalty value: warning
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m1" => x[1], "m2" => x[2]))
+        construct_objective_function!(myProblem)
+        myProblem.options.penaltyValue = 0.1
+        @test_logs (:warn, r"larger than penaltyValue") check_problem(myProblem)
+
+    end
+
+    @testset "Testing the order of simulate_empirical_moments_array" begin
+
+        # The array follows the order of the empirical moments (the order of W),
+        # whatever the order of the moments returned by the simulation function
+        myProblem = MSMProblem()
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m1" => [0.0], "m2" => [0.0]))
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m2" => 2.0*x[1], "extra" => 99.0, "m1" => x[1]))
+        @test myProblem.simulate_empirical_moments_array([1.0]) == [1.0, 2.0]
+        # Jacobian: one row per empirical moment, in the same order (d m1/dx = 1, d m2/dx = 2)
+        @test calculate_D(myProblem, [1.0]) ≈ [1.0; 2.0;;]
+
+        # Without empirical moments: the order of the simulated moments
+        otherProblem = MSMProblem()
+        set_simulate_empirical_moments!(otherProblem, myProblem.simulate_empirical_moments)
+        @test otherProblem.simulate_empirical_moments_array([1.0]) == [2.0, 99.0, 1.0]
+
+    end
+
+    @testset "Testing the evaluation budget of local minimizations" begin
+
+        # Rosenbrock function (distance = (1 - x)^2 + 100 (y - x^2)^2), started far from its minimum [1, 1]
+        nbCalls = Ref(0)
+        myProblem = MSMProblem(options = MSMOptions(maxFuncEvals = 50))
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [-1.2, -5.0, 5.0], "y" => [1.0, -5.0, 5.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m1" => [0.0], "m2" => [0.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(2)))
+        set_simulate_empirical_moments!(myProblem, x -> (nbCalls[] += 1; OrderedDict{String,Float64}("m1" => 1.0 - x[1], "m2" => 10.0*(x[2] - x[1]^2))))
+        construct_objective_function!(myProblem)
+
+        # maxFuncEvals counts the evaluations of finite-difference gradients too:
+        # stop at the end of the iteration during which the budget is reached (an LBFGS iteration
+        # with a long line search can take ~25 evaluations here; before the fix, maxFuncEvals was the
+        # number of iterations, i.e. several hundred evaluations)
+        for (localOptimizer, minBox) in [(:LBFGS, false), (:NelderMead, false), (:LBFGS, true)]
+            myProblem.options.localOptimizer = localOptimizer
+            myProblem.options.minBox = minBox
+            nbCalls[] = 0
+            optimResults = msm_localmin(myProblem, [-1.2, 1.0], verbose = false)
+            @test 50 <= nbCalls[] <= 100
+            @test Optim.converged(optimResults) == false
+        end
+
+        # A large enough budget: convergence
+        myProblem.options.localOptimizer = :LBFGS
+        myProblem.options.minBox = false
+        myProblem.options.maxFuncEvals = 10000
+        optimResults = msm_localmin(myProblem, [-1.2, 1.0], verbose = false)
+        @test Optim.converged(optimResults) == true
+        @test Optim.minimizer(optimResults) ≈ [1.0, 1.0] atol = 1e-3
+
+        # msm_multistart!: if no local minimization converged, the best finite local minimum is used
+        myProblem.options.maxFuncEvals = 50
+        x0 = repeat([-1.2 1.0], nworkers())
+        @test_logs (:info, r"None of the local minimizations converged") match_mode=:any msm_multistart!(myProblem, x0 = x0, verbose = false)
+        @test msm_multistart_minimum(myProblem) < myProblem.objective_function([-1.2, 1.0])
+        @test Optim.converged(myProblem.optimResults) == false
+
+    end
+
+    @testset "Testing msm_multistart! with failed local minimizations" begin
+
+        myProblem = MSMProblem()
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [0.5, 0.0, 1.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m" => [0.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(1)))
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m" => x[1]))
+        construct_objective_function!(myProblem)
+        x0 = fill(0.5, nworkers(), 1)
+
+        # verbose is passed to the local minimizations
+        logs, _ = Test.collect_test_logs(() -> msm_multistart!(myProblem, x0 = x0, verbose = false))
+        @test any(occursin("Starting value", string(log.message)) for log in logs) == false
+        logs, _ = Test.collect_test_logs(() -> msm_multistart!(myProblem, x0 = x0, verbose = true))
+        @test any(occursin("Starting value", string(log.message)) for log in logs) == true
+
+        # A local minimization that throws: one clear message, result nothing, no MethodError
+        myProblem.objective_function = x -> error("boom")
+        logs, listOptimResults = Test.collect_test_logs(() -> msm_multistart!(myProblem, x0 = x0, verbose = false, check = false))
+        messages = [string(log.message) for log in logs]
+        @test all(listOptimResults .=== nothing)
+        @test any(occursin("failed: ", m) for m in messages)
+        @test any(occursin("MethodError", m) for m in messages) == false
+        @test "None of the local minimizations returned a finite value." in messages
+
+    end
+
+    @testset "Testing msm_slices at a parameter equal to 0" begin
+
+        myProblem = MSMProblem()
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [0.0, -1.0, 1.0], "y" => [0.5, 0.0, 1.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m1" => [0.0], "m2" => [0.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(2)))
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m1" => x[1], "m2" => x[2]))
+        construct_objective_function!(myProblem)
+
+        vXGrid, vYGrid = msm_slices(myProblem, [0.0, 0.5], nbPoints = 5, offset = 0.001)
+        # x = 0: the slice uses the width of the prior (2), y = 0.5: percent deviation
+        @test vXGrid[:, 1] ≈ collect(range(-0.002, 0.002, length = 5))
+        @test vXGrid[:, 2] ≈ collect(range(0.4995, 0.5005, length = 5))
+        @test vYGrid[:, 1] ≈ vXGrid[:, 1].^2 .+ 0.25
 
     end
 
