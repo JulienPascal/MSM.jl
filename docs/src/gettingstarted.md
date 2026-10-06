@@ -1,18 +1,21 @@
 # Getting Started
 
-Our overarching goal is to find the parameter values $\theta_{MSM}$ minimizing
-the following function:
+Our goal is to estimate the parameter vector $\theta$ of an economic model by the method of simulated moments. The MSM estimator $\hat{\theta}_{MSM}$ minimizes the weighted distance between the empirical moments and the simulated moments, measured by the objective function $g$:
 
-$$g(\theta; m*, W) = (m(\theta) - m*)' W (m(\theta) - m*)$$
+```math
+\begin{aligned}
+\hat{\theta}_{MSM} &= \underset{\theta \in \Theta}{\arg\min} \; g(\theta), \\[4pt]
+g(\theta) &= \big(m(\theta) - m^{*}\big)^{\top} \, W \, \big(m(\theta) - m^{*}\big),
+\end{aligned}
+```
 
-where $m*$ is a vector of empirical moments, $m(\theta)$ is a vector of moments
-calculated using simulated data, and $W$ is carefully chosen weighting matrix. We also
-want to build confidence intervals for $\theta_{MSM}$.
+where $m^{*}$ is the vector of empirical moments, $m(\theta)$ is the vector of moments
+calculated with data simulated from the model at the parameter values $\theta$, $W$ is a
+weighting matrix, and $\Theta$ is the set of admissible parameter values. Once we have found
+$\hat{\theta}_{MSM}$, we also want to build confidence intervals for it.
 
-While simple in theory (it is just a function minimization, right?), in practice
-many bad things can happen. The function $g$ may fail in some areas of the parameter
-space; $g$ may be stuck in some local minima; $g$ is really slow and you do not
-have a strong prior regarding good starting values. [MSM.jl](https://github.com/JulienPascal/MSM.jl) uses minimization algorithms that are robust to the problems mentioned above. You may choose between two options:
+While this looks like a simple function minimization, many bad things can happen in practice. The function $g$ may:
+(a) fail in some areas of the parameter space, (b) have several local minima, in which a local optimizer may get stuck, (c) be slow to evaluate and hard to parallelize efficiently. [MSM.jl](https://github.com/JulienPascal/MSM.jl) uses minimization algorithms that are robust to the problems mentioned above. You may choose between two options:
 1. Global minimization algorithms from [BlackBoxOptim](https://github.com/robertfeldt/BlackBoxOptim.jl)
 2. A multistart algorithm using several local optimization routines from [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)
 
@@ -22,7 +25,7 @@ parameters in serial. In a second step, we use several workers on a cluster.
 
 ## Example in serial
 
-In a real-world scenario, you would probably use empirical data. Here, let's
+In a real-world scenario, one would use empirical data. Here, let's
 simulate a fake dataset.
 
 ```@example 1
@@ -40,7 +43,7 @@ ww = round(Int, (16/9)*hh); nothing # hide
 gr(size = (ww,hh)); nothing # hide
 Random.seed!(1234)  #for replicability reasons
 T = 100000          #number of periods
-P = 2               #number of dependent variables
+P = 2               #number of explanatory variables
 beta0 = rand(P)     #choose true coefficients by drawing from a uniform distribution on [0,1]
 alpha0 = rand(1)[]  #intercept
 theta0 = 0.0 #coefficient to create serial correlation in the error terms
@@ -55,7 +58,7 @@ for t = 2:T
     U[t] = rand(d, 1)[] + theta0*U[t-1]
 end
 
-# Let's simulate the dependent variables x_t
+# Let's simulate the explanatory variables x_t
 x = zeros(T, P)
 d = Uniform(0, 5)
 for p = 1:P  
@@ -78,7 +81,7 @@ savefig(p, "f-fake-data.png"); nothing # hide
 
 ![](f-fake-data.png)
 
-### Step 1: Initializing a MSMProblem
+### Step 1. Initializing an MSMProblem
 
 ```@example 1
 # Select a global optimizer (see BlackBoxOptim.jl) and a local minimizer (see Optim.jl):
@@ -87,7 +90,7 @@ myProblem = MSMProblem(options = MSMOptions(maxFuncEvals=10000, globalOptimizer 
 
 ### Step 2. Set empirical moments and weight matrix
 
-Choose the set of empirical moments to match and the weight matrix $W$ using the functions `set_empirical_moments!` and `set_weight_matrix!`
+Choose the set of empirical moments to match and the weight matrix $W$ using the functions `set_empirical_moments!` and `set_weight_matrix!`.
 
 ```@example 1
 dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
@@ -112,7 +115,7 @@ set_weight_matrix!(myProblem, W)
 ### Step 3. Set priors
 
 Our "prior" belief regarding the parameter values is to be specified using `set_priors!()`.
-It is not fully a full-fledged prior probability distribution, but simply an
+It is not a full-fledged prior probability distribution, but simply an
 initial guess for each parameter, as well as lower and upper bounds:
 
 ```@example 1
@@ -124,19 +127,19 @@ dictPriors["beta2"] = [0.5, 0.001, 1.0]
 set_priors!(myProblem, dictPriors)
 ```
 
-### Step 4: Specifying the function generating simulated moments
+### Step 4. Specifying the function generating simulated moments
 
-The objective function must generate an **ordered dictionary** containing the **keys of dictEmpiricalMoments**. Use `set_simulate_empirical_moments!` and `construct_objective_function!`
+The function generating simulated moments must return an **ordered dictionary** containing the **keys of dictEmpiricalMoments**. Use `set_simulate_empirical_moments!` and `construct_objective_function!`.
 
 **Remark:** we "freeze" randomness during the minimization step. One way to do
-that is to generate draws from a Uniform([0,1]) outside of the objective function and to use [inverse transform sampling](https://en.wikipedia.org/wiki/Inverse_transform_sampling) to generate draws from a normal distribution. Otherwise the objective function would be "noisy" and the minimization algorithms would have a hard time finding
+that is to generate draws from a Uniform([0,1]) outside of the objective function and to use [inverse transform sampling](https://en.wikipedia.org/wiki/Inverse_transform_sampling) to generate draws from a normal distribution. Otherwise, the objective function would be "noisy" and the minimization algorithms would have a hard time finding
 the global minimum.
 
 ```@example 1
 # x[1] corresponds to the intercept; x[2] corresponds to beta1; x[3] corresponds to beta2
 function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 0)
     T = nbDraws
-    P = 2       #number of dependent variables
+    P = 2       #number of explanatory variables
     alpha = x[1]
     beta = x[2:end]
     theta = 0.0     #coefficient to create serial correlation in the error terms
@@ -200,24 +203,30 @@ Use the global optimization algorithm specified in `globalOptimizer`:
 msm_optimize!(myProblem, verbose = false)
 ```
 
-### Step 6. Analysing Results
+### Step 6. Analyzing the results
 
-####  Step 6.A. Point estimates
+#### Step 6.A. Point estimates
 
 ```@example 1
 minimizer = msm_minimizer(myProblem)
 minimum_val = msm_minimum(myProblem)
 println("Minimum objective function = $(minimum_val)")
-println("Estimated value for alpha = $(minimizer[1]). True value for beta1 = $(alpha0[1])")
+println("Estimated value for alpha = $(minimizer[1]). True value for alpha = $(alpha0[1])")
 println("Estimated value for beta1 = $(minimizer[2]). True value for beta1 = $(beta0[1])")
 println("Estimated value for beta2 = $(minimizer[3]). True value for beta2 = $(beta0[2])")
 ```
 
-####  Step 6.B. Inference
+#### Step 6.B. Inference
 
-##### Estimation of the distance matrix $\Sigma_0$
+##### Estimation of $\Sigma_0$
 
-Let's calculate the variance-covariance matrix of the **"distance matrix"** (using the terminolgy of [Duffie and Singleton (1993)](https://www.jstor.org/stable/2951768?seq=1)). Here we know that errors are not correlated (the serial correlation coefficient is set to 0 in the code above). in the presence of serial correlation, an HAC estimation would be needed.
+The precision of the estimates depends on $\Sigma_0$, the (long-run) variance-covariance matrix of the empirical moments:
+
+```math
+\sqrt{T} \, \big(m^{*} - m_0\big) \xrightarrow{d} \mathcal{N}\big(0, \Sigma_0\big),
+```
+
+where $T$ is the number of periods in the empirical data and $m_0$ is the true value of the moments. Each empirical moment is an average over periods (for instance, the average of $x_{1t} y_t$), so $\Sigma_0$ can be estimated from the series being averaged. Here, we know that the error terms are not serially correlated (the serial correlation coefficient is set to 0 in the code above), so $\Sigma_0$ is simply the variance-covariance matrix of these series. In the presence of serial correlation, a heteroskedasticity and autocorrelation consistent (HAC) estimator would be needed, such as the Newey-West estimator `cov_NW`.
 
 ```@example 1
 # Empirical Series
@@ -235,19 +244,25 @@ Sigma0 = cov(X)
 
 ###### Theory
 
-The asymptotic variance of the MSM estimate is calculated using the usual **GMM sandwich formula**, corrected to take into account simulation noise.
+The asymptotic variance of the MSM estimator is given by the usual **GMM sandwich formula**, multiplied by $(1 + \tau)$ to take into account the noise coming from the simulation:
 
-$$AsymptoticVarianceMSM = (1 + \tau)*AsymptoticVarianceGMM$$
+```math
+\sqrt{T} \, \big(\hat{\theta}_{MSM} - \theta_0\big) \xrightarrow{d} \mathcal{N}\big(0, V\big),
+\qquad
+V = (1 + \tau) \, \big(D^{\top} W D\big)^{-1} D^{\top} W \, \Sigma_0 \, W D \, \big(D^{\top} W D\big)^{-1},
+```
 
-Here we are trying to match unconditional moments from time series. In this case, $\tau = \frac{tData}{tSimulation}$, where $tData$ is the number of periods in the empirical data and $tSimulation$ is the number of time periods in the simulated data.
+where $\theta_0$ is the true value of the parameters, $D = \partial m(\theta) / \partial \theta^{\top}$ is the Jacobian matrix of the simulated moments with respect to the parameters (calculated by finite differences at $\hat{\theta}_{MSM}$, see `calculate_D`), and $\tau = T / S$ is the ratio of the number of periods in the empirical data, $T$, to the number of periods in the simulated data, $S$. The standard error of the $i$-th parameter is $\sqrt{V_{ii} / T}$.
 
-See [Duffie and Singleton (1993)](https://www.jstor.org/stable/2951768?seq=1) and [Gouriéroux and Montfort (1996)](https://www.jstor.org/stable/3533164?seq=1) for details on how to choose $\tau$.
+The factor $(1 + \tau)$ is the cost of simulating the moments instead of calculating them exactly: with $S = T$, as in this example, simulation doubles the asymptotic variance; with a long simulated sample ($S \gg T$), the MSM estimator is almost as precise as the GMM estimator. With the optimal weighting matrix $W = \Sigma_0^{-1}$, the formula simplifies to $V = (1 + \tau) \, \big(D^{\top} \Sigma_0^{-1} D\big)^{-1}$.
+
+This formula applies when the moments are unconditional averages over time, and when the simulated data are drawn independently of the empirical data. See [Lee and Ingram (1991)](https://doi.org/10.1016/0304-4076(91)90098-X), [Duffie and Singleton (1993)](https://www.jstor.org/stable/2951768?seq=1) and Gouriéroux and Monfort (1996) for details.
 
 ###### Practice
 
 Calculating the asymptotic variance using MSM.jl is done in two steps:
-* setting the value of the **"distance matrix"** using the function `set_Sigma0!`
-* calculating the asymptotic variance using the function `calculate_Avar!`
+* setting the value of $\Sigma_0$ using the function `set_Sigma0!`;
+* calculating the asymptotic variance $V$ using the function `calculate_Avar!`, with $\tau = T / S$.
 
 ```@example 1
 set_Sigma0!(myProblem, Sigma0)
@@ -258,19 +273,20 @@ calculate_Avar!(myProblem, minimizer, tau = T/nbDraws) # nbDraws = number of dra
 
 Once the asymptotic variance has been calculated, a summary table can be obtained using the
 function `summary_table`. This function has four inputs:
-1. a MSMProblem
-2. the minimizer of the objective function
-3. the length of the empirical sample
-4. the confidence level associated to the test **H0:** $\theta_i = 0$,  **H1:** $\theta_i != 0$
+1. an MSMProblem;
+2. the minimizer of the objective function;
+3. the length of the empirical sample, $T$;
+4. the significance level $\alpha$ of the test **H0:** $\theta_i = 0$ against **H1:** $\theta_i \neq 0$ (the confidence intervals have a confidence level of $1 - \alpha$).
 
 ```@example 1
 df = summary_table(myProblem, minimizer, T, 0.05)
+show(stdout, MIME("text/plain"), df) # hide
 ```
 
-### Step 7. Identification checks
+### Step 7. Identification checks and J-test
 
-**Local** identification requires that the Jacobian matrix of the function
-$$f(\theta) -> m(\theta)$$ to be **full column rank** in a neighborhood of the solution:
+**Local** identification requires the Jacobian matrix $D$ of the function
+$\theta \mapsto m(\theta)$ to have **full column rank** in a neighborhood of the solution:
 
 ```@example 1
 D = calculate_D(myProblem, minimizer)
@@ -280,6 +296,7 @@ println("rank of D is: $(rank(D))")
 
 Local identification can also be visually checked by inspecting slices of the
 objective function in a neighborhood of the estimated value:
+
 ```@example 1
 vXGrid, vYGrid = msm_slices(myProblem, minimizer, nbPoints = 7);
 
@@ -296,6 +313,29 @@ savefig(plot_combined, "slices.png"); nothing # hide
 ```
 
 ![](slices.png)
+
+#### J-test of the over-identifying restrictions
+
+With more moments ($k = 5$) than parameters ($p = 3$), the model is over-identified, and we can test whether all the moments are matched, up to sampling and simulation noise. Under the null hypothesis that the model is correctly specified, the J statistic follows a chi-squared distribution with $k - p$ degrees of freedom:
+
+```math
+J = \frac{T}{1 + \tau} \, \big(m(\hat{\theta}_{MSM}) - m^{*}\big)^{\top} \, \Sigma_0^{-1} \, \big(m(\hat{\theta}_{MSM}) - m^{*}\big) \xrightarrow{d} \chi^2(k - p),
+```
+
+where the factor $1 / (1 + \tau)$ accounts for the simulation noise (Lee and Ingram, 1991). This result requires the **optimal weighting matrix** $W = \Sigma_0^{-1}$, which is not the matrix used so far. We therefore estimate the parameters again with $W = \Sigma_0^{-1}$, starting from the previous estimate (the usual two-step procedure), and then use the function `J_test`. Its inputs are the MSMProblem, the estimate, the number of periods in the empirical data $T$ and in the simulated data $S$, and the significance level of the test. It returns the J statistic and the critical value above which the model is rejected:
+
+```@example 1
+# Second step: optimal weighting matrix, and a local minimization from the first-step estimate
+set_weight_matrix!(myProblem, inv(Sigma0))
+construct_objective_function!(myProblem)
+msm_refine_globalmin!(myProblem, verbose = false)
+minimizer_optimal = msm_local_minimizer(myProblem)
+
+J, criticalValue = J_test(myProblem, minimizer_optimal, T, nbDraws, 0.05)
+println("Estimates with the optimal weighting matrix = $(minimizer_optimal)")
+println("J statistic = $(J). Critical value at 5% = $(criticalValue)")
+println("The model is $(J > criticalValue ? "rejected" : "not rejected") at the 5% level")
+```
 
 
 ## Example in parallel
@@ -323,7 +363,7 @@ minimum_val = msm_minimum(myProblem)
 
 The function `msm_multistart!` proceeds in two steps:
 1. It searches for starting values for which the model converges.
-2. Several local optimization algorithms (specified with `localOptimizer`) are started in parallel using promising starting values from step 1
+2. Several local optimization algorithms (specified with `localOptimizer`) are started in parallel using promising starting values from step 1.
 
 The "global" minimum is the minimum of the local minima:
 

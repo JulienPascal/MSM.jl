@@ -3,8 +3,7 @@
 
 | **Documentation**  | **Build Status** | **Coverage** |
 |:-:|:-:|:-:|
-| [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://JulienPascal.github.io/MSM.jl/dev)|[![Build Status](https://github.com/JulienPascal/MSM.jl/workflows/CI/badge.svg)](https://github.com/JulienPascal/MSM.jl/actions)|[![codecov.io](https://codecov.io/gh/JulienPascal/MSM.jl/branch/julia_1.5/graphs/badge.svg)](https://codecov.io/gh/JulienPascal/MSM.jl/branch/julia_1.5/)|
-||[![Build Status](https://travis-ci.com/JulienPascal/MSM.jl.svg?branch=main)](https://travis-ci.com/JulienPascal/MSM.jl)||
+| [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://JulienPascal.github.io/MSM.jl/dev)|[![CI](https://github.com/JulienPascal/MSM.jl/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/JulienPascal/MSM.jl/actions/workflows/ci.yml?query=branch%3Amain)|[![codecov](https://codecov.io/gh/JulienPascal/MSM.jl/graph/badge.svg?branch=main)](https://codecov.io/gh/JulienPascal/MSM.jl)|
 
 
 
@@ -32,6 +31,6 @@ However, in many interesting cases the *expected response function* is unknown. 
 `MSM.jl` is being developed with the following constraints in mind:
 
 1. Parallelization **within the expected response function** is difficult to achieve. This is generally the case when working with the simulated method of moments, as the simulated time series are often serially correlated.
-2. Thus, the **minimizing algorithm** should be able to run in **parallel**
+2. Thus, the **minimizing algorithm** should be able to run in **parallel**.
 3. The minimizing algorithm should search for a **global minimum**, as the objective function may have multiple local minima.
 4. **Do not reinvent the wheel**. Excellent minimization packages already exist in the Julia ecosystem. This is why `MSM.jl` relies on [BlackBoxOptim.jl](https://github.com/robertfeldt/BlackBoxOptim.jl) and [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl) to perform the minimization.

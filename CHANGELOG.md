@@ -48,6 +48,14 @@ Claude Code. The corresponding commits carry a `Co-Authored-By` line.
   It recovers known parameters from simulated data, and checks the coverage of
   the confidence intervals and the size of the J-test in a Monte Carlo
   experiment.
+- A notebook estimating the same model with Dynare.jl instead of
+  MacroModelling.jl to solve and simulate it:
+  `notebooks/models/dynare/RBCDynare.ipynb`, with its own environment and the
+  model file `RBC.mod`. Each worker loads the model in its own temporary folder,
+  because Dynare.jl writes files next to the model file. An optional last
+  section runs the `method_of_moments` command of Dynare 6 in Octave (as an
+  external program, with the model file `RBC_mom.mod`) and compares its
+  estimates with those of MSM.jl. It is skipped when Octave is not installed.
 
 ### Changed
 
@@ -80,8 +88,8 @@ Claude Code. The corresponding commits carry a `Co-Authored-By` line.
   support release). It is tested on Julia 1.13.
 - `Project.toml` now declares compatibility bounds for every dependency, so
   that a future breaking release of a dependency cannot be installed with
-  MSM.jl. Only the current major versions are allowed, in particular CSV 1,
-  DataFrames 1 and BlackBoxOptim 0.6.
+  MSM.jl. Only the current major versions are allowed, in particular
+  DataFrames 1 and BlackBoxOptim 0.6 (with the exceptions below).
 - Both **Optim 1 (1.13 or later) and Optim 2** are allowed, so that MSM.jl can
   be installed next to packages that still require Optim 1 (e.g.
   MacroModelling.jl). The test suite passes with Optim 1.13.3 and Optim 2.3.2.
@@ -93,6 +101,10 @@ Claude Code. The corresponding commits carry a `Co-Authored-By` line.
   MacroModelling.jl's Bayesian estimation requires Turing.jl 0.30 to 0.45,
   whose dependencies require OrderedCollections 1. The test suite passes with
   OrderedCollections 1.8.2 (with Optim 1.13.3) and 2.0.1.
+- Both **CSV 0.10 and CSV 1** are allowed, so that MSM.jl can be installed next
+  to Dynare.jl (version 0.10.4 requires CSV 0.10). MSM.jl only uses
+  `CSV.File`, which is the same in both. The test suite passes with CSV 0.10.17
+  and 1.1.0.
 - `msm_minimizer`, `msm_minimum`, `msm_local_minimizer` and `msm_local_minimum`
   now throw an informative error when called before the corresponding
   optimization (or after `msm_multistart!` if no local minimization returned a

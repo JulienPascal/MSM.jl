@@ -25,6 +25,12 @@ Manifest.toml
 notebooks/models/*
 !notebooks/models/Project.toml
 !notebooks/models/RBC.ipynb
+# Dynare.jl notebook, in its own environment: everything is tracked except the data written by the
+# notebook, including the Manifest (it records the versions of the dependencies that work with
+# Dynare.jl 0.10.4)
+!notebooks/models/dynare/
+notebooks/models/dynare/fake_data_RBC.csv
+!notebooks/models/dynare/Manifest.toml
 
 # Local helper to re-run all the notebooks, and its logs
 notebooks/run_all_notebooks.sh

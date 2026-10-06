@@ -45,6 +45,7 @@ See the following notebooks:
 * [`notebooks/LinearModel.ipynb`](notebooks/LinearModel.ipynb) for an **introduction** to the package
 * [`notebooks/LinearModelCluster.ipynb`](notebooks/LinearModelCluster.ipynb) to see how to use the package on a **cluster**
 * [`notebooks/models/RBC.ipynb`](notebooks/models/RBC.ipynb): estimate a simple RBC model using [MacroModelling](https://github.com/thorek1/MacroModelling.jl) to solve and simulate the economic model, while MSM.jl handles the estimation procedure (function minimization and inference).
+* [`notebooks/models/dynare/RBCDynare.ipynb`](notebooks/models/dynare/RBCDynare.ipynb): the same estimation, using [Dynare.jl](https://github.com/DynareJulia/Dynare.jl) to solve and simulate the model.
 ---
 
 ## Experiments

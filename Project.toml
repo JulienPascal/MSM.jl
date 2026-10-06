@@ -24,7 +24,7 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 [compat]
 BSON = "0.3"
 BlackBoxOptim = "0.6"
-CSV = "1"
+CSV = "0.10, 1"
 DataFrames = "1"
 Dates = "1"
 Distributed = "1"
