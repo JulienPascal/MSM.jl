@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-Starting with the `julia_1.13` branch, the bug fixes and the update to Julia
-1.13 were made with the help of Claude Opus 5.5 (Anthropic), used through
-Claude Code. The corresponding commits carry a `Co-Authored-By` line.
+## [0.2.0] - 2026-10-06
+
+Starting with the branch `julia_1.13`, the bug fixes and the update to Julia
+1.13 were made with the assistance of Claude Opus 5.5 (Anthropic), used through
+Claude Code. 
 
 ### Added
 
@@ -127,7 +129,7 @@ Claude Code. The corresponding commits carry a `Co-Authored-By` line.
   too often.
 - `J_test`: the statistic is now `tData/(1 + tau)*g'Wg`, with
   `tau = tData/tSimData`, following Lee and Ingram (1991, pp. 202 and 204). It
-  was `tData*(1 + tau)*g'Wg`, as printed in Ruge-Murcia (2012, eq. 13), which
+  was `tData*(1 + tau)*g'Wg`, as printed in Ruge-Murcia (2012, eq. 13, probably a typo), which
   overstates J by a factor `(1 + tau)^2`: 4 when the simulated and observed
   series have the same length. Combined with the previous point, a correctly
   specified model was rejected 18% to 48% of the time at the 5% level in
@@ -197,6 +199,10 @@ Claude Code. The corresponding commits carry a `Co-Authored-By` line.
 - `msm_slices`: passed row views instead of `Vector`s to the objective function.
   A user function requiring `x::Vector{Float64}` failed silently, and the whole
   slice was equal to the penalty value.
+- Spelling mistakes in error and log messages: "caclulate" in the errors of
+  `calculate_se`, `calculate_t`, `calculate_pvalue`, `calculate_CI` and
+  `summary_table`, and "occured" in the messages logged when the simulation or
+  the distance fails (they now read "An error occurred ...").
 
 ### Removed
 

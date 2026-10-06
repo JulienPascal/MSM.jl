@@ -1330,7 +1330,7 @@ end
         construct_objective_function!(myProblem)
         @test_logs (:error, "The simulation of moments failed at the initial values of the priors") @test_throws "check = false" check_problem(myProblem)
         @test_logs (:error, r"failed at the initial values") @test_throws "check = false" msm_optimize!(myProblem, verbose = false)
-        @test_logs (:info, r"An error occured") match_mode=:any msm_optimize!(myProblem, verbose = false, check = false)
+        @test_logs (:info, r"An error occurred") match_mode=:any msm_optimize!(myProblem, verbose = false, check = false)
         @test msm_minimum(myProblem) == Inf
 
         # With a finite penalty value, a distance larger than the penalty value: warning

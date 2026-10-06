@@ -12,7 +12,7 @@ mutable struct MSMOptions
 	localOptimizer::Symbol 	#algorithm for finding a local maximum
 	maxFuncEvals::Int64			#maximum number of evaluations (global optimization, and each local minimization)
 	saveName::String				#name under which the optimization should be saved
-	showDistance::Bool			#show the distance, everytime the objective function is calculated?
+	showDistance::Bool			#show the distance, every time the objective function is calculated?
 	minBox::Bool						#When looking for a local maximum, use Fminbox ?
 	populationSize::Int64		#When using BlackBoxOptim, set the population size (differential evolution; ignored by NES methods)
 	lambda::Int64						#NES global optimizers (dxnes, xnes, separable_nes): points evaluated per generation (0 = automatic)

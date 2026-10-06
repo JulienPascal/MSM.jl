@@ -181,7 +181,7 @@ end
 """
   msm_local_minimum(sMMProblem::MSMProblem)
 
-Function to get the local minimum value of the objetive function
+Function to get the local minimum value of the objective function
 """
 function msm_local_minimum(sMMProblem::MSMProblem)
 
@@ -223,7 +223,7 @@ end
 """
   msm_multistart_minimum(sMMProblem::MSMProblem)
 
-Function to get the minimum value of the objetive function when
+Function to get the minimum value of the objective function when
 using the multistart algorithm
 """
 function msm_multistart_minimum(sMMProblem::MSMProblem)
@@ -258,7 +258,7 @@ function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0)
     info("nums > nworkers(). Some starting values will be ignored.")
   end
 
-  # To store minization results
+  # To store minimization results
   # (results[workerIndex] must correspond to the starting value myGrid[workerIndex,:])
   #----------------------------
   results = Vector{Any}(undef, nworkers())

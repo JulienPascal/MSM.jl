@@ -59,7 +59,7 @@ function calculate_se(sMMProblem::MSMProblem, tData::Int64, i::Int64)
 
   # Safety Checks
   if isempty(sMMProblem.Avar) == true
-    error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
+    error("Please calculate the asymptotic variance using the function calculate_Avar!.")
   end
 
   sqrt((1/tData)*sMMProblem.Avar[i,i])
@@ -79,7 +79,7 @@ function calculate_t(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::In
 
   # Safety Checks
   if isempty(sMMProblem.Avar) == true
-    error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
+    error("Please calculate the asymptotic variance using the function calculate_Avar!.")
   end
 
   theta0[i]/calculate_se(sMMProblem, tData, i)
@@ -99,7 +99,7 @@ function calculate_pvalue(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tDat
 
   # Safety Checks
   if isempty(sMMProblem.Avar) == true
-    error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
+    error("Please calculate the asymptotic variance using the function calculate_Avar!.")
   end
 
   t =  calculate_t(sMMProblem, theta0, tData, i)
@@ -125,7 +125,7 @@ function calculate_CI(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::I
 
   # Safety Checks
   if isempty(sMMProblem.Avar) == true
-    error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
+    error("Please calculate the asymptotic variance using the function calculate_Avar!.")
   end
 
   # standard error
@@ -143,32 +143,6 @@ function calculate_CI(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::I
 end
 
 
-#=
-function summary_table(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, alpha::Float64)
-
-  # Safety Checks
-  if isempty(sMMProblem.Avar) == true
-    error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
-  end
-
-  df = DataFrame(Estimate = Float64[], StdError = Float64[], tValue = Float64[], pValue = Float64[], ConfIntervalLower = Float64[], ConfIntervalUpper = Float64[])
-
-  for i = 1:length(theta0)
-
-    se = calculate_se(sMMProblem, tData, i)
-    t = calculate_t(sMMProblem, theta0, tData, i)
-    p = calculate_pvalue(sMMProblem, theta0, tData, i)
-    CI_lower, CI_upper = calculate_CI(sMMProblem, theta0, tData, i, alpha)
-
-    push!(df, [theta0[i], se, t, p, CI_lower, CI_upper])
-
-  end
-
-  return df
-
-end
-=#
-
 """
   summary_table(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::Int64, alpha::Float64)
 
@@ -179,7 +153,7 @@ function summary_table(sMMProblem::MSMProblem, theta0::Array{Float64,1}, tData::
 
   # Safety Checks
   if isempty(sMMProblem.Avar) == true
-    error("Please caclulate the asymptotic variance using the function calculate_Avar!.")
+    error("Please calculate the asymptotic variance using the function calculate_Avar!.")
   end
 
   se = zeros(length(theta0))
@@ -210,7 +184,7 @@ end
 
 Function to calculate Newey–West (1987) variance-covariance matrix. `data` is the
 data matrix with each row representing a time period and each column representing
-a variable. `l` is the nummber of lags to include.
+a variable. `l` is the number of lags to include.
 """
 function cov_NW(data::Matrix; l::Int64 = -1)
     # See: Newey, Whitney K; West, Kenneth D (1987)
@@ -248,7 +222,7 @@ end
 
 Run a J-test, also called a test for over-identifying restrictions. The null hypothesis that the model is “valid”.
 The alternative hypothesis that model is “invalid”. For the test to be valid,
-the weigth matrix must converge in probability to Sigma0^-1, where Sigma0 is the
+the weight matrix must converge in probability to Sigma0^-1, where Sigma0 is the
 (long-run) variance of the empirical moments.
 
 With tau = tData/tSimData, the statistic is J = tData/(1 + tau)*g'Wg, where g is
@@ -256,7 +230,7 @@ the gap between empirical and simulated moments at theta0. Under the null,
 J converges in distribution to a Chi²(k-l), where k is the number of moments
 and l the number of parameters. See Lee and Ingram (1991, p. 202 and p. 204).
 
-#Ouput:
+#Output:
 * J: value of the J-statistic
 * c: critical value associated to the J-test
 """

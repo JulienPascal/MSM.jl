@@ -62,7 +62,7 @@ function construct_objective_function!(sMMProblem::MSMProblem)
 
       catch errorSimulation
 
-            info("An error occured with parameter values = $(x)")
+            info("An error occurred with parameter values = $(x)")
             info("$(errorSimulation)")
 
             OrderedDict{String,Array{Float64,1}}(), 0
@@ -95,7 +95,7 @@ function construct_objective_function!(sMMProblem::MSMProblem)
 
         catch errorDistance
 
-          info("An error occured when calculating the distance with parameter values = $(x)")
+          info("An error occurred when calculating the distance with parameter values = $(x)")
           info("$(errorDistance)")
 
           distanceEmpSimMoments = sMMProblem.options.penaltyValue
