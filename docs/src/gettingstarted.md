@@ -15,7 +15,7 @@ weighting matrix, and $\Theta$ is the set of admissible parameter values. Once w
 $\hat{\theta}_{MSM}$, we also want to build confidence intervals for it.
 
 While this looks like a simple function minimization, many bad things can happen in practice. The function $g$ may:
-(a) fail in some areas of the parameter space, (b) have several local minima, in which a local optimizer may get stuck, (c) be slow to evaluate and hard to parallelize efficiently. [MSM.jl](https://github.com/JulienPascal/MSM.jl) uses minimization algorithms that are robust to the problems mentioned above. You may choose between two options:
+(a) fail in some areas of the parameter space, (b) have several local minima, in which a local optimizer may get stuck, (c) be slow to evaluate and hard to parallelize efficiently. [MethodOfSimulatedMoments.jl](https://github.com/JulienPascal/MethodOfSimulatedMoments.jl) uses minimization algorithms that are robust to the problems mentioned above. You may choose between two options:
 1. Global minimization algorithms from [BlackBoxOptim](https://github.com/robertfeldt/BlackBoxOptim.jl)
 2. A multistart algorithm using several local optimization routines from [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)
 
@@ -29,7 +29,7 @@ In a real-world scenario, one would use empirical data. Here, let's
 simulate a fake dataset.
 
 ```@example 1
-using MSM
+using MethodOfSimulatedMoments
 using DataStructures
 using OrderedCollections
 using Random
@@ -260,7 +260,7 @@ This formula applies when the moments are unconditional averages over time, and 
 
 ###### Practice
 
-Calculating the asymptotic variance using MSM.jl is done in two steps:
+Calculating the asymptotic variance using MethodOfSimulatedMoments.jl is done in two steps:
 * setting the value of $\Sigma_0$ using the function `set_Sigma0!`;
 * calculating the asymptotic variance $V$ using the function `calculate_Avar!`, with $\tau = T / S$.
 
@@ -342,7 +342,7 @@ println("The model is $(J > criticalValue ? "rejected" : "not rejected") at the 
 
 To use the package on a cluster, one must make sure that empirical moments, priors
 and the weight matrix are defined for each worker. This can be done using `@everywhere begin end` blocks, or by using [ParallelDataTransfer.jl](https://github.com/ChrisRackauckas/ParallelDataTransfer.jl). The function returning simulated moments must also be
-defined `@everywhere`. See the file [LinearModelCluster.jl](https://github.com/JulienPascal/MSM.jl/blob/main/notebooks/LinearModelCluster.jl) for details.
+defined `@everywhere`. See the file [LinearModelCluster.jl](https://github.com/JulienPascal/MethodOfSimulatedMoments.jl/blob/main/notebooks/LinearModelCluster.jl) for details.
 
 
 ### Option 1: Global parallel optimization

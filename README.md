@@ -1,12 +1,12 @@
-# MSM.jl
+# MethodOfSimulatedMoments.jl
 
 
 | **Documentation**  | **Build Status** | **Coverage** |
 |:-:|:-:|:-:|
-| [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://JulienPascal.github.io/MSM.jl/dev)|[![CI](https://github.com/JulienPascal/MSM.jl/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/JulienPascal/MSM.jl/actions/workflows/ci.yml?query=branch%3Amain)|[![codecov](https://codecov.io/gh/JulienPascal/MSM.jl/graph/badge.svg?branch=main)](https://codecov.io/gh/JulienPascal/MSM.jl)|
+| [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://JulienPascal.github.io/MethodOfSimulatedMoments.jl/dev)|[![CI](https://github.com/JulienPascal/MethodOfSimulatedMoments.jl/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/JulienPascal/MethodOfSimulatedMoments.jl/actions/workflows/ci.yml?query=branch%3Amain)|[![codecov](https://codecov.io/gh/JulienPascal/MethodOfSimulatedMoments.jl/graph/badge.svg?branch=main)](https://codecov.io/gh/JulienPascal/MethodOfSimulatedMoments.jl)|
 
 
-`MSM.jl` is a package designed to facilitate the estimation of economic models
+`MethodOfSimulatedMoments.jl` is a package designed to facilitate the estimation of economic models
 via the [Method of Simulated Moments](https://en.wikipedia.org/wiki/Method_of_simulated_moments).
 
 ## Why
@@ -23,34 +23,36 @@ However, in many interesting cases the *expected response function* is unknown. 
 
 ## Philosophy
 
-`MSM.jl` is being developed with the following constraints in mind:
+`MethodOfSimulatedMoments.jl` is being developed with the following constraints in mind:
 1. Parallelization **within the expected response function** is difficult
 to achieve. This is generally the case when working with the simulated method of moments, as the simulated time series are often serially correlated.
 2. Thus, the **minimizing algorithm** should be able to run in **parallel**.
 3. The minimizing algorithm should search for a **global minimum**, as the
 objective function may have multiple local minima.
 4. **Do not reinvent the wheel**. Excellent minimization packages already exist in
-the Julia ecosystem. This is why `MSM.jl` relies on [BlackBoxOptim.jl](https://github.com/robertfeldt/BlackBoxOptim.jl) and [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl) to perform the minimization.
+the Julia ecosystem. This is why `MethodOfSimulatedMoments.jl` relies on [BlackBoxOptim.jl](https://github.com/robertfeldt/BlackBoxOptim.jl) and [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl) to perform the minimization.
 
 
 ## Installation
 
 ```julia
-pkg> add https://github.com/JulienPascal/MSM.jl.git
+pkg> add https://github.com/JulienPascal/MethodOfSimulatedMoments.jl.git
 ```
+
+Then load it with `using MethodOfSimulatedMoments`. Before version 0.2.0, the package was called `MSM.jl`: the functions and types keep their names (`MSMProblem`, `msm_optimize!`...), only `using MSM` becomes `using MethodOfSimulatedMoments`.
 
 ## Usage
 
 See the following notebooks:
 * [`notebooks/LinearModel.ipynb`](notebooks/LinearModel.ipynb) for an **introduction** to the package
 * [`notebooks/LinearModelCluster.ipynb`](notebooks/LinearModelCluster.ipynb) to see how to use the package on a **cluster**
-* [`notebooks/models/RBC.ipynb`](notebooks/models/RBC.ipynb): estimate a simple RBC model using [MacroModelling](https://github.com/thorek1/MacroModelling.jl) to solve and simulate the economic model, while MSM.jl handles the estimation procedure (function minimization and inference).
+* [`notebooks/models/RBC.ipynb`](notebooks/models/RBC.ipynb): estimate a simple RBC model using [MacroModelling](https://github.com/thorek1/MacroModelling.jl) to solve and simulate the economic model, while MethodOfSimulatedMoments.jl handles the estimation procedure (function minimization and inference).
 * [`notebooks/models/dynare/RBCDynare.ipynb`](notebooks/models/dynare/RBCDynare.ipynb): the same estimation, using [Dynare.jl](https://github.com/DynareJulia/Dynare.jl) to solve and simulate the model.
 ---
 
 ## Experiments
 
-See the following notebooks for experimental features and to see how MSM.jl can interact with the other estimation packages in the Julia ecosystem:
+See the following notebooks for experimental features and to see how MethodOfSimulatedMoments.jl can interact with the other estimation packages in the Julia ecosystem:
 * [`notebooks/ABC.ipynb`](notebooks/ABC.ipynb): [Approximate Bayesian computation](https://en.wikipedia.org/wiki/Approximate_Bayesian_computation)
 * [`notebooks/Surrogates.ipynb`](notebooks/Surrogates.ipynb): surrogate-based optimization with [Surrogates.jl](https://github.com/SciML/Surrogates.jl)
 * [`notebooks/SurrogatesParallel.ipynb`](notebooks/SurrogatesParallel.ipynb): surrogate-based optimization *in parallel* with [Surrogates.jl](https://github.com/SciML/Surrogates.jl)

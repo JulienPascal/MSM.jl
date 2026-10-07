@@ -1,4 +1,4 @@
-# Estimation of a linear model with MSM.jl, in parallel, locally or on a cluster (SLURM).
+# Estimation of a linear model with MethodOfSimulatedMoments.jl, in parallel, locally or on a cluster (SLURM).
 # Same steps as the notebook LinearModelCluster.ipynb.
 #
 # Usage:
@@ -76,7 +76,7 @@ using Plots
 using ParallelDataTransfer
 using LaTeXStrings
 
-@everywhere using MSM
+@everywhere using MethodOfSimulatedMoments
 @everywhere using OrderedCollections
 @everywhere using Distributions
 @everywhere using Random

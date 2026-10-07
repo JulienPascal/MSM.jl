@@ -1,3 +1,3 @@
 # Licence
 
-See [LICENSE.md](https://github.com/JulienPascal/MSM.jl/blob/main/LICENSE)
+See [LICENSE.md](https://github.com/JulienPascal/MethodOfSimulatedMoments.jl/blob/main/LICENSE)

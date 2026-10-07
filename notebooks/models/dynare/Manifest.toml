@@ -2,7 +2,7 @@
 
 julia_version = "1.13.1"
 manifest_format = "2.1"
-project_hash = "c31d8167116ce24c321d36be0586514ab961ac97"
+project_hash = "22f1bcd24155e347a129904071e853eebcb2892f"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -1538,11 +1538,11 @@ registries = "General"
 uuid = "e80e1ace-859a-464e-9ed9-23947d8ae3ea"
 version = "1.12.1"
 
-[[deps.MSM]]
+[[deps.MethodOfSimulatedMoments]]
 deps = ["BSON", "BlackBoxOptim", "CSV", "DataFrames", "Dates", "Distributed", "Distributions", "FiniteDifferences", "LatinHypercubeSampling", "LinearAlgebra", "Optim", "OrderedCollections", "Random", "Sobol", "Statistics", "StatsBase"]
 path = "../../.."
 uuid = "553e158a-22df-4687-a16d-90d753ebe799"
-version = "0.1.0"
+version = "0.2.0"
 
 [[deps.MacroTools]]
 git-tree-sha1 = "1e0228a030642014fe5cfe68c2c0a818f9e3f522"

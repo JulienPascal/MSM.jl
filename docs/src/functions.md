@@ -16,7 +16,7 @@ options = MSMOptions(maxFuncEvals=1000, globalOptimizer = :dxnes, localOptimizer
 ## All exported functions and types
 
 ```@autodocs
-Modules = [MSM]
+Modules = [MethodOfSimulatedMoments]
 Private = false
 Order = [:type, :function]
 Filter = t -> t !== MSMOptions

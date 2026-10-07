@@ -1,4 +1,4 @@
-module MSM
+module MethodOfSimulatedMoments
 
     #---------------------------------------------------------------------------
     # Dependencies

@@ -5,7 +5,7 @@ while nworkers() < maxNbWorkers
 end
 println(nworkers())
 
-@everywhere using MSM
+@everywhere using MethodOfSimulatedMoments
 @everywhere using OrderedCollections
 @everywhere using Random
 @everywhere using Distributions
@@ -68,7 +68,7 @@ end
     return output
 end
 
-@testset "MSM.jl" begin
+@testset "MethodOfSimulatedMoments.jl" begin
 
 
     @testset "testing Types" begin
@@ -271,7 +271,7 @@ end
 
             results = optimize(f, x0, convert_to_optim_algo(localOptim), Optim.Options(iterations = 2000))
 
-            # MSM.jl supports Optim 1 (1.13 or later) and Optim 2, and AcceleratedGradientDescent
+            # MethodOfSimulatedMoments.jl supports Optim 1 (1.13 or later) and Optim 2, and AcceleratedGradientDescent
             # behaves differently in the two:
             # * Optim 1: it converges on the Rosenbrock function, like the other algorithms
             #   (regular @test, in the else branch below).
@@ -1148,7 +1148,7 @@ end
         newWorkers = addprocs(2)
         @everywhere newWorkers begin
             using Distributed
-            using MSM
+            using MethodOfSimulatedMoments
             using OrderedCollections
         end
         slowWorker = first(workers())
@@ -1163,7 +1163,7 @@ end
 
         # Starting values: only x < 0.5 is valid (x^2 < 0.25), sorted by distance
         Random.seed!(1234)
-        Validx0 = MSM.search_starting_values(myProblem, 4, verbose = false)
+        Validx0 = MethodOfSimulatedMoments.search_starting_values(myProblem, 4, verbose = false)
         @test size(Validx0) == (4, 1)
         @test all(Validx0[:, 1] .< 0.5)
         @test issorted(Validx0[:, 1])
@@ -1212,7 +1212,7 @@ end
 
         # Invalid gridType: explicit error
         myProblem.options.gridType = :notAGrid
-        @test_throws ErrorException MSM.search_starting_values(myProblem, 1, verbose = false)
+        @test_throws ErrorException MethodOfSimulatedMoments.search_starting_values(myProblem, 1, verbose = false)
 
     end
 
@@ -1270,8 +1270,8 @@ end
         stamp = get_now()
         m = match(r"^(\d{4}-\d{2}-\d{2})--(\d{1,2})h-(\d{1,2})m-(\d{1,2})s$", stamp)
         @test m !== nothing
-        t = MSM.Dates.DateTime(MSM.Dates.Date(m[1]), MSM.Dates.Time(parse(Int, m[2]), parse(Int, m[3]), parse(Int, m[4])))
-        @test abs(MSM.Dates.now() - t) < MSM.Dates.Second(5)
+        t = MethodOfSimulatedMoments.Dates.DateTime(MethodOfSimulatedMoments.Dates.Date(m[1]), MethodOfSimulatedMoments.Dates.Time(parse(Int, m[2]), parse(Int, m[3]), parse(Int, m[4])))
+        @test abs(MethodOfSimulatedMoments.Dates.now() - t) < MethodOfSimulatedMoments.Dates.Second(5)
 
         # linspace(z_start, z_end, z_n)
         @test linspace(0.0, 1.0, 5) == [0.0, 0.25, 0.5, 0.75, 1.0]

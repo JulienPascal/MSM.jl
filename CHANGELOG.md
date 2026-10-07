@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to MSM.jl are documented in this file.
+All notable changes to MethodOfSimulatedMoments.jl are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -57,10 +57,18 @@ Claude Code.
   because Dynare.jl writes files next to the model file. An optional last
   section runs the `method_of_moments` command of Dynare 6 in Octave (as an
   external program, with the model file `RBC_mom.mod`) and compares its
-  estimates with those of MSM.jl. It is skipped when Octave is not installed.
+  estimates with those of MethodOfSimulatedMoments.jl. It is skipped when Octave is not installed.
 
 ### Changed
 
+- **The package is renamed `MethodOfSimulatedMoments.jl`** (it was `MSM.jl`),
+  so that it can be registered in Julia's General registry, whose naming rules
+  exclude short, all-caps names. Replace `using MSM` with
+  `using MethodOfSimulatedMoments`. The functions and types keep their names
+  (`MSMProblem`, `MSMOptions`, `msm_optimize!`...), and the UUID is unchanged.
+  The repository is now `github.com/JulienPascal/MethodOfSimulatedMoments.jl`
+  (the old address redirects to it), and the documentation is at
+  `julienpascal.github.io/MethodOfSimulatedMoments.jl`.
 - `populationSize` is ignored by the NES optimizers (it only applies to
   differential evolution). `MSMOptions` now warns when it is set together with
   one of them. With `verbose = true` and several workers, `msm_optimize!` also
@@ -86,13 +94,13 @@ Claude Code.
 - `msm_multistart!`: if none of the local minimizations converged, the best
   finite local minimum is now used, with a message saying so. Previously, no
   result was stored.
-- MSM.jl now requires **Julia 1.10 or later** (1.10 is the current long-term
+- MethodOfSimulatedMoments.jl now requires **Julia 1.10 or later** (1.10 is the current long-term
   support release). It is tested on Julia 1.13.
 - `Project.toml` now declares compatibility bounds for every dependency, so
   that a future breaking release of a dependency cannot be installed with
-  MSM.jl. Only the current major versions are allowed, in particular
+  MethodOfSimulatedMoments.jl. Only the current major versions are allowed, in particular
   DataFrames 1 and BlackBoxOptim 0.6 (with the exceptions below).
-- Both **Optim 1 (1.13 or later) and Optim 2** are allowed, so that MSM.jl can
+- Both **Optim 1 (1.13 or later) and Optim 2** are allowed, so that MethodOfSimulatedMoments.jl can
   be installed next to packages that still require Optim 1 (e.g.
   MacroModelling.jl). The test suite passes with Optim 1.13.3 and Optim 2.3.2.
   The results of local minimizations can differ slightly between the two.
@@ -103,8 +111,8 @@ Claude Code.
   MacroModelling.jl's Bayesian estimation requires Turing.jl 0.30 to 0.45,
   whose dependencies require OrderedCollections 1. The test suite passes with
   OrderedCollections 1.8.2 (with Optim 1.13.3) and 2.0.1.
-- Both **CSV 0.10 and CSV 1** are allowed, so that MSM.jl can be installed next
-  to Dynare.jl (version 0.10.4 requires CSV 0.10). MSM.jl only uses
+- Both **CSV 0.10 and CSV 1** are allowed, so that MethodOfSimulatedMoments.jl can be installed next
+  to Dynare.jl (version 0.10.4 requires CSV 0.10). MethodOfSimulatedMoments.jl only uses
   `CSV.File`, which is the same in both. The test suite passes with CSV 0.10.17
   and 1.1.0.
 - `msm_minimizer`, `msm_minimum`, `msm_local_minimizer` and `msm_local_minimum`
@@ -114,7 +122,7 @@ Claude Code.
   They previously returned the result of a dummy optimization of the
   Rosenbrock function. The fields `bbSetup`, `bbResults` and `optimResults` of
   `MSMProblem` are now `nothing` until they are set.
-- Loading MSM.jl no longer runs a BlackBoxOptim and an Optim optimization at
+- Loading MethodOfSimulatedMoments.jl no longer runs a BlackBoxOptim and an Optim optimization at
   precompile time (they were only used to create those dummy default values).
 - `convert_to_optim_algo` and `convert_to_fminbox` no longer use
   `eval(Meta.parse(...))`, and throw an error for names that are not supported
@@ -213,4 +221,4 @@ Claude Code.
   environment you run the notebooks in.
 - Unused dependencies DataStructures, Logging, Pkg and SharedArrays.
   `OrderedDict` still comes from OrderedCollections. If your own code used
-  DataStructures through MSM.jl, add it to your environment.
+  DataStructures through MethodOfSimulatedMoments.jl, add it to your environment.

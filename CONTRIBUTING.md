@@ -1,29 +1,29 @@
-# Contributing to MSM.jl
+# Contributing to MethodOfSimulatedMoments.jl
 
-Thank you for your interest in MSM.jl! Contributions are welcome: bug reports, corrections to the
+Thank you for your interest in MethodOfSimulatedMoments.jl! Contributions are welcome: bug reports, corrections to the
 documentation, examples, and improvements to the code.
 
-MSM.jl is maintained in my spare time, so replies to issues and pull requests may take a while.
+MethodOfSimulatedMoments.jl is maintained in my spare time, so replies to issues and pull requests may take a while.
 Thank you for your patience.
 
-## Philosophy: keep MSM.jl small and focused
+## Philosophy: keep MethodOfSimulatedMoments.jl small and focused
 
-MSM.jl aims to remain a **minimalist, focused package**. The target audience are economists who want
+MethodOfSimulatedMoments.jl aims to remain a **minimalist, focused package**. The target audience are economists who want
 to estimate structural economic models using the method of simulated moments. Before proposing a new feature, please check that
 it fits its design principles:
 
 1. **Parallelism at the optimizer level.** The user's simulation function (the expected response
    function) is assumed to be hard to parallelize, as simulated time series are often serially
-   correlated. Instead, MSM.jl evaluates the objective function at several parameter values in
+   correlated. Instead, MethodOfSimulatedMoments.jl evaluates the objective function at several parameter values in
    parallel, on `Distributed` workers.
 2. **A global search, then a local refinement.** The objective function may have several local
-   minima, so MSM.jl first searches for a global minimum (with BlackBoxOptim.jl), then optionally
+   minima, so MethodOfSimulatedMoments.jl first searches for a global minimum (with BlackBoxOptim.jl), then optionally
    refines it with a local optimizer (from Optim.jl).
-3. **Do not reinvent the wheel.** MSM.jl relies on existing, well-maintained packages for
+3. **Do not reinvent the wheel.** MethodOfSimulatedMoments.jl relies on existing, well-maintained packages for
    optimization (BlackBoxOptim.jl, Optim.jl) and numerical derivatives (FiniteDifferences.jl).
    Contributions that reimplement what such a package already does are unlikely to be accepted;
-   contributions that connect MSM.jl to such packages are welcome.
-4. **Agnostic about how the economic model is solved and simulated.** MSM.jl only needs a
+   contributions that connect MethodOfSimulatedMoments.jl to such packages are welcome.
+4. **Agnostic about how the economic model is solved and simulated.** MethodOfSimulatedMoments.jl only needs a
    function that maps parameter values to simulated moments. How the model behind it is solved
    and simulated (value function iteration, linearization, higher-order perturbation, projection
    methods...) is left to the user. The aim is **not** to recreate packages that solve economic
@@ -37,15 +37,15 @@ request; for anything larger, please open an issue first (see below).
 
 ## Reporting a bug
 
-Please [open an issue](https://github.com/JulienPascal/MSM.jl/issues) with:
+Please [open an issue](https://github.com/JulienPascal/MethodOfSimulatedMoments.jl/issues) with:
 
-* your Julia version (the output of `versioninfo()`) and the version or commit of MSM.jl;
+* your Julia version (the output of `versioninfo()`) and the version or commit of MethodOfSimulatedMoments.jl;
 * a minimal example that reproduces the problem: ideally a few lines, with a simple simulation
   function;
 * the full error message and stack trace, or what you expected and what you observed.
 
 Tip: when an estimation runs but gives strange results, run `check_problem(myProblem)`. When the
-simulation function throws an error, MSM.jl's objective function returns a penalty value instead
+simulation function throws an error, MethodOfSimulatedMoments.jl's objective function returns a penalty value instead
 of stopping, so a mistake (e.g. a misspelled moment name) may otherwise go unnoticed.
 
 ## Proposing a feature
@@ -57,8 +57,8 @@ above. Agreeing on the approach before writing code saves time on both sides.
 
 1. Fork the repository on GitHub (the `Fork` button in the top-right corner), and clone your fork:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/MSM.jl.git
-   cd MSM.jl
+   git clone https://github.com/YOUR_USERNAME/MethodOfSimulatedMoments.jl.git
+   cd MethodOfSimulatedMoments.jl
    ```
 2. Create a branch from `main` for your change:
    ```bash
@@ -88,7 +88,7 @@ include:
 
 * **tests** for the change, in `test/runtests.jl`. All the tests must pass;
 * **docstrings** for new public functions, starting with a signature line, and the function
-  exported in `src/MSM.jl`. The docstrings of the exported functions are collected
+  exported in `src/MethodOfSimulatedMoments.jl`. The docstrings of the exported functions are collected
   automatically on the "Functions and Types" page of the documentation;
 * an **entry in `CHANGELOG.md`**, under "Unreleased" (the file follows
   [Keep a Changelog](https://keepachangelog.com/en/1.1.0/));
@@ -116,5 +116,5 @@ Please follow the [Julia Community Standards](https://julialang.org/community/st
 
 ## License
 
-MSM.jl is released under the [MIT License](LICENSE). By contributing, you agree that your
+MethodOfSimulatedMoments.jl is released under the [MIT License](LICENSE). By contributing, you agree that your
 contributions are licensed under the same terms.

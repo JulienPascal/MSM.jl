@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.10'   # long-term support release, and the minimum version required by MSM.jl
+          - '1.10'   # long-term support release, and the minimum version required by MethodOfSimulatedMoments.jl
           - '1'      # latest release
         os:
           - ubuntu-latest

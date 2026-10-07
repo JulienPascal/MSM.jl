@@ -1,5 +1,5 @@
 using Documenter
-using MSM
+using MethodOfSimulatedMoments
 using DataStructures
 using OrderedCollections
 using Random
@@ -11,8 +11,8 @@ using LaTeXStrings
 Random.seed!(1234)  #for replicability reasons
 
 makedocs(
-         sitename = "MSM.jl",
-         modules  = [MSM],
+         sitename = "MethodOfSimulatedMoments.jl",
+         modules  = [MethodOfSimulatedMoments],
          checkdocs = :exports,     # every exported function and type must be documented (see functions.md)
          authors = "Julien Pascal",
     pages =["Home" => "index.md",
@@ -27,6 +27,6 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/JulienPascal/MSM.jl.git",
+    repo = "github.com/JulienPascal/MethodOfSimulatedMoments.jl.git",
     devbranch = "main",
 )
