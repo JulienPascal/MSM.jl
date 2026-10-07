@@ -1,9 +1,41 @@
+# Estimation of a linear model with MethodOfSimulatedMoments.jl, in parallel, locally or on a cluster (SLURM).
+# Same steps as the notebook LinearModelCluster.ipynb.
+#
+# Usage:
+#   julia LinearModelCluster.jl [OnCluster=true|false] [addWorkers=true|false]
+#
+# Default values, when an option is not passed:
+# * OnCluster: true if the script runs inside a SLURM job (SLURM_JOB_ID is set), false otherwise
+# * addWorkers: true
+# On the cluster, the number of workers is the number of SLURM tasks of the job (SLURM_NTASKS),
+# see submit_job.sh.
+#
+# Figures are saved next to this script (LinearModelCluster_*.png).
+
+#-------------------------------------------------------------------------------
+# Command-line options
+#-------------------------------------------------------------------------------
+const usage = "usage: julia LinearModelCluster.jl [OnCluster=true|false] [addWorkers=true|false]"
+
+options = Dict("OnCluster" => haskey(ENV, "SLURM_JOB_ID"), "addWorkers" => true)
+for arg in ARGS
+    m = match(r"^(OnCluster|addWorkers)=(true|false)$", arg)
+    m === nothing && error("unknown argument \"$(arg)\"\n$(usage)")
+    options[m.captures[1]] = parse(Bool, m.captures[2])
+end
+OnCluster = options["OnCluster"]   #set to false to run locally
+addWorkers = options["addWorkers"] #set to false to run serially
+println("OnCluster = $(OnCluster), addWorkers = $(addWorkers)")
+
+if OnCluster == true && !haskey(ENV, "SLURM_JOB_ID")
+    error("OnCluster=true requires running inside a SLURM job (e.g. sbatch submit_job.sh)\n$(usage)")
+end
+
+#-------------------------------------------------------------------------------
+# Workers
+#-------------------------------------------------------------------------------
 using ClusterManagers
 using Distributed
-
-OnCluster = true #set to false to run locally
-addWorkers = true #set to false to run serially
-println("OnCluster = $(OnCluster)")
 
 # Current number of workers
 #--------------------------
@@ -11,8 +43,9 @@ currentWorkers = nworkers()
 println("Initial number of workers = $(currentWorkers)")
 
 # Increase the number of workers available
+# (on the cluster: one worker per SLURM task of the job)
 #-----------------------------------------
-maxNumberWorkers = 10
+maxNumberWorkers = OnCluster == true ? parse(Int, get(ENV, "SLURM_NTASKS", "10")) : 10
 if addWorkers == true
 	if OnCluster == true
 	  addprocs(SlurmManager(maxNumberWorkers))
@@ -20,7 +53,6 @@ if addWorkers == true
 	  addprocs(maxNumberWorkers)
 	end
 end
-
 
 # Sanity checks
 #-------------
@@ -36,23 +68,29 @@ end
 currentWorkers = nworkers()
 println("Number of workers = $(currentWorkers)")
 
+#-------------------------------------------------------------------------------
+# Packages
+#-------------------------------------------------------------------------------
+ENV["GKSwstype"] = "100" #plots without a display (batch jobs): save them to files
 using Plots
-using LaTeXStrings
 using ParallelDataTransfer
+using LaTeXStrings
 
-@everywhere using MSM
-@everywhere using DataStructures
+@everywhere using MethodOfSimulatedMoments
 @everywhere using OrderedCollections
 @everywhere using Distributions
 @everywhere using Random
-@everywhere using DataStructures
 @everywhere using Statistics
 @everywhere using LinearAlgebra
 
+figurePath(name) = joinpath(@__DIR__, "LinearModelCluster_$(name).png")
+
+#-------------------------------------------------------------------------------
 # Generate simulated data
+#-------------------------------------------------------------------------------
 Random.seed!(1234)  #for replicability reasons
 T = 100000          #number of periods
-P = 2               #number of dependent variables
+P = 2               #number of independent variables
 beta0 = rand(P)     #choose true coefficients by drawing from a uniform distribution on [0,1]
 alpha0 = rand(1)[]  #intercept
 theta0 = 0.0        #coefficient to create serial correlation in the error terms
@@ -71,7 +109,7 @@ for t = 2:T
     U[t] = rand(d, 1)[] + theta0*U[t-1]
 end
 
-# Let's simulate the dependent variables x_t
+# Let's simulate the independent variables x_t
 x = zeros(T, P)
 
 d = Uniform(0, 5)
@@ -93,15 +131,17 @@ sendto(workers(), x=x)
 # Visualize data
 p1 = scatter(x[1:100,1], y[1:100], xlabel = "x1", ylabel = "y", legend=:none, smooth=true)
 p2 = scatter(x[1:100,2], y[1:100], xlabel = "x2", ylabel = "y", legend=:none, smooth=true)
-plot(p1, p2)
+savefig(plot(p1, p2), figurePath("data"))
 
-
+#-------------------------------------------------------------------------------
+# MSM problem
+#-------------------------------------------------------------------------------
 # Define locally
-optionsSMM = MSMOptions(maxFuncEvals=2000, globalOptimizer = :dxnes, localOptimizer = :NelderMead)
-myProblem = MSMProblem(options = optionsSMM);
+# 10,000 function evaluations: with fewer, the global search may stop before converging
+# (the intercept, the least precisely estimated parameter, is then the most affected)
+myProblem = MSMProblem(options = MSMOptions(maxFuncEvals=10000, globalOptimizer = :dxnes, localOptimizer = :NelderMead));
 
 # Send to workers
-sendto(workers(), optionsSMM=optionsSMM)
 sendto(workers(), myProblem=myProblem)
 
 # Priors
@@ -109,7 +149,6 @@ dictPriors = OrderedDict{String,Array{Float64,1}}()
 dictPriors["alpha"] = [0.5, 0.001, 1.0]
 dictPriors["beta1"] = [0.5, 0.001, 1.0]
 dictPriors["beta2"] = [0.5, 0.001, 1.0]
-sendto(workers(), dictPriors=dictPriors)
 
 # Empirical moments
 dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
@@ -139,7 +178,7 @@ sendto(workers(), W=W)
 # x[1] corresponds to the intercept, x[2] corresponds to beta1, x[3] corresponds to beta2
 @everywhere function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 0)
     T = nbDraws
-    P = 2       #number of dependent variables
+    P = 2       #number of independent variables
 
     alpha = x[1]
     beta = x[2:end]
@@ -166,9 +205,9 @@ sendto(workers(), W=W)
         y[t] = alpha + simX[t,1]*beta[1] + simX[t,2]*beta[2] + U[t]
     end
 
-	# Get rid of the burn-in phase:
+    # Get rid of the burn-in phase:
     #------------------------------
-    startT = max(1, Int(nbDraws * (burnInPerc / 100)))
+    startT = max(1, floor(Int, nbDraws * burnInPerc / 100))
 
     # Moments:
     #---------
@@ -185,7 +224,7 @@ end
 
 # Let's freeze the randomness during the minimization
 d_Uni = Uniform(0,1)
-nbDraws = 2*T #number of draws in the simulated data
+nbDraws = 1000000 #number of draws in the simulated data
 uniform_draws = rand(d_Uni, nbDraws)
 simX = zeros(length(uniform_draws), 2)
 d = Uniform(0, 5)
@@ -212,6 +251,9 @@ for (wIndex, w) in enumerate(workers())
     @test abs(val_local - val_workers[wIndex]) < 10e-10
 end
 
+#-------------------------------------------------------------------------------
+# Global optimization in parallel using BlackBoxOptim
+#-------------------------------------------------------------------------------
 println("Global Algorithm")
 # Choose a global optimizer that supports parallel evaluations (e.g. xnes or dxnes)
 # (see the documentation: https://github.com/robertfeldt/BlackBoxOptim.jl)
@@ -222,11 +264,13 @@ minimizer = msm_minimizer(myProblem)
 minimum_val = msm_minimum(myProblem)
 
 println("Minimum objective function = $(minimum_val)")
-println("Estimated value for alpha = $(minimizer[1]). True value for beta1 = $(alpha0[1]) \n")
+println("Estimated value for alpha = $(minimizer[1]). True value for alpha = $(alpha0[1]) \n")
 println("Estimated value for beta1 = $(minimizer[2]). True value for beta1 = $(beta0[1]) \n")
 println("Estimated value for beta2 = $(minimizer[3]). True value for beta2 = $(beta0[2]) \n")
 
-
+#-------------------------------------------------------------------------------
+# Multistart algorithm
+#-------------------------------------------------------------------------------
 println("Multistart Algorithm")
 # Start several local optimization algorithms in parallel
 # Choose algorithms from the package Optim.jl (https://github.com/JuliaNLSolvers/Optim.jl)
@@ -237,9 +281,22 @@ minimizer_multistart = msm_multistart_minimizer(myProblem)
 minimum_multistart = msm_multistart_minimum(myProblem)
 
 println("Minimum objective function = $(minimum_multistart)")
-println("Estimated value for alpha = $(minimizer_multistart[1]). True value for beta1 = $(alpha0[1]) \n")
+println("Estimated value for alpha = $(minimizer_multistart[1]). True value for alpha = $(alpha0[1]) \n")
 println("Estimated value for beta1 = $(minimizer_multistart[2]). True value for beta1 = $(beta0[1]) \n")
 println("Estimated value for beta2 = $(minimizer_multistart[3]). True value for beta2 = $(beta0[2]) \n")
+
+#-------------------------------------------------------------------------------
+# Inference
+#-------------------------------------------------------------------------------
+# Point estimates: best point found, by the global optimization (BlackBoxOptim)
+# or by the multistart algorithm
+#--------------------------------------------------------------------------------
+if minimum_multistart < minimum_val
+    theta_hat = minimizer_multistart
+else
+    theta_hat = minimizer
+end
+println("Point estimates used for inference = $(theta_hat)")
 
 # Empirical Series
 #-----------------
@@ -258,36 +315,39 @@ Sigma0 = cov(X)
 xs = [string("x", i) for i = 1:length(dictEmpiricalMoments)]
 ys = [string("x", i) for i = 1:length(dictEmpiricalMoments)]
 z = cor(X)
-hh = heatmap(xs, ys, z, aspect_ratio = 1)
+savefig(heatmap(xs, ys, z, aspect_ratio = 1), figurePath("correlations"))
 
 set_Sigma0!(myProblem, Sigma0)
 # nbDraws = number of draws in the simulated data
 # To decrease standard errors, increase nbDraws
-calculate_Avar!(myProblem, minimizer_multistart, tau = T/nbDraws)
+calculate_Avar!(myProblem, theta_hat, tau = T/nbDraws)
 
-df = summary_table(myProblem, minimizer_multistart, T, 0.05)
-println(df)
+df = summary_table(myProblem, theta_hat, T, 0.05)
+show(stdout, MIME("text/plain"), df) #formatted table (println would print the raw structure)
+println()
 
 # Check the rank condition
 # Local identification requires D to be full column rank (in a neighborhood of the solution)
-D = calculate_D(myProblem, minimizer_multistart)
+D = calculate_D(myProblem, theta_hat)
 println("number of parameters: $(size(D,2))")
 println("rank of D is: $(rank(D))")
-
-# Slices
-vXGrid, vYGrid = msm_slices(myProblem, minimizer_multistart, nbPoints = 7);
-
-p1 = plot(vXGrid[:, 1],vYGrid[:, 1],title = L"\alpha", label = "",linewidth = 3, xrotation = 45)
-plot!(p1, [minimizer_multistart[1]], seriestype = :vline, label = "",linewidth = 1)
-p2 = plot(vXGrid[:, 2],vYGrid[:, 2],title = L"\beta_1", label = "",linewidth = 3, xrotation = 45)
-plot!(p2, [minimizer_multistart[2]], seriestype = :vline, label = "",linewidth = 1)
-p3 = plot(vXGrid[:, 3],vYGrid[:, 3],title = L"\beta_2", label = "",linewidth = 3, xrotation = 45)
-plot!(p3, [minimizer_multistart[3]], seriestype = :vline, label = "",linewidth = 1)
-plot_combined = plot(p1, p2, p3)
-display(plot_combined)
 
 # Compare results with GLM
 using DataFrames, GLM
 data = DataFrame(x1=x[:,1], x2=x[:,2], y= y[:]);
 ols = lm(@formula(y ~ x1 + x2), data)
-println(ols)
+show(stdout, MIME("text/plain"), coeftable(ols)) #coefficients only (println(ols) would print the whole data set)
+println()
+
+# Slices
+vXGrid, vYGrid = msm_slices(myProblem, theta_hat, nbPoints = 7);
+
+p1 = plot(vXGrid[:, 1],vYGrid[:, 1],title = L"\alpha", label = "",linewidth = 3, xrotation = 45)
+plot!(p1, [theta_hat[1]], seriestype = :vline, label = "",linewidth = 1)
+p2 = plot(vXGrid[:, 2],vYGrid[:, 2],title = L"\beta_1", label = "",linewidth = 3, xrotation = 45)
+plot!(p2, [theta_hat[2]], seriestype = :vline, label = "",linewidth = 1)
+p3 = plot(vXGrid[:, 3],vYGrid[:, 3],title = L"\beta_2", label = "",linewidth = 3, xrotation = 45)
+plot!(p3, [theta_hat[3]], seriestype = :vline, label = "",linewidth = 1)
+plot_combined = plot(p1, p2, p3)
+savefig(plot_combined, figurePath("slices"))
+println("Figures saved to $(figurePath("*"))")

@@ -5,15 +5,13 @@ while nworkers() < maxNbWorkers
 end
 println(nworkers())
 
-@everywhere using MSM
-@everywhere using DataStructures
+@everywhere using MethodOfSimulatedMoments
 @everywhere using OrderedCollections
 @everywhere using Random
 @everywhere using Distributions
 @everywhere using Statistics
 @everywhere using LinearAlgebra
 using Test
-using Pkg
 using Optim
 using BlackBoxOptim
 using DataFrames
@@ -29,7 +27,48 @@ do_plots = false #To create "visual tests". Set to false when using Travis CI.
     Diagonal(ones(n))
 end
 
-@testset "MSM.jl" begin
+# Simulated models used by several testsets
+#------------------------------------------
+# 1d: the moment is the mean of N(x[1], 1)
+@everywhere function functionTest1d(x)
+    d = Normal(x[1])
+    output = OrderedDict{String,Float64}()
+    output["meanU"] = mean(rand(d, 1000000))
+    return output
+end
+
+# Same, with fixed draws: when using one of the deterministic methods of Optim,
+# we can safely "control" for randomness
+@everywhere function functionTest1dSeeded(x)
+    Random.seed!(1234)
+    d = Normal(x[1])
+    output = OrderedDict{String,Float64}()
+    output["meanU"] = mean(rand(d, 1000000))
+    return output
+end
+
+# 2d: the moments are the means of N([x[1], x[2]], I)
+@everywhere function functionTest2d(x)
+    d = MvNormal( [x[1]; x[2]], eye(2))
+    output = OrderedDict{String,Float64}()
+    draws = rand(d, 1000000)
+    output["mean1"] = mean(draws[1,:])
+    output["mean2"] = mean(draws[2,:])
+    return output
+end
+
+# Same, with fixed draws
+@everywhere function functionTest2dSeeded(x)
+    Random.seed!(1234)
+    d = MvNormal( [x[1]; x[2]], eye(2))
+    output = OrderedDict{String,Float64}()
+    draws = rand(d, 1000000)
+    output["mean1"] = mean(draws[1,:])
+    output["mean2"] = mean(draws[2,:])
+    return output
+end
+
+@testset "MethodOfSimulatedMoments.jl" begin
 
 
     @testset "testing Types" begin
@@ -46,7 +85,8 @@ end
             @test t.showDistance == false
             @test t.minBox == false
             @test t.populationSize == 50
-            @test t.penaltyValue == 999999.0
+            @test t.lambda == 0
+            @test t.penaltyValue == Inf
             @test t.gridType == :LHC
             @test t.saveStartingValues == false
             @test t.maxTrialsStartingValues == 20
@@ -68,6 +108,15 @@ end
             @test t.simulate_empirical_moments(1.0) == 1.0
             @test t.objective_function(1.0) == 1.0
             @test typeof(t.options) == MSMOptions
+
+            # No optimization results before optimizing: explicit error
+            @test t.bbSetup === nothing
+            @test t.bbResults === nothing
+            @test t.optimResults === nothing
+            @test_throws ErrorException msm_minimizer(t)
+            @test_throws ErrorException msm_minimum(t)
+            @test_throws ErrorException msm_local_minimizer(t)
+            @test_throws ErrorException msm_local_minimum(t)
 
 
         end
@@ -189,7 +238,14 @@ end
 
             @test is_local_optimizer(localOptim) == true
 
+            # Symbol -> Optim algorithm
+            @test typeof(convert_to_optim_algo(localOptim)) == typeof(getfield(Optim, localOptim)())
+
         end
+
+        @test convert_to_fminbox(:LBFGS) isa Fminbox
+        @test_throws ErrorException convert_to_optim_algo(:NotAnOptimizer)
+        @test_throws ErrorException convert_to_fminbox(:NotAnOptimizer)
 
     end
 
@@ -215,8 +271,21 @@ end
 
             results = optimize(f, x0, convert_to_optim_algo(localOptim), Optim.Options(iterations = 2000))
 
-            @test Optim.minimizer(results)[1] ≈ 1.0 atol = atolOptim
-            @test Optim.minimizer(results)[2] ≈ 1.0 atol = atolOptim
+            # MethodOfSimulatedMoments.jl supports Optim 1 (1.13 or later) and Optim 2, and AcceleratedGradientDescent
+            # behaves differently in the two:
+            # * Optim 1: it converges on the Rosenbrock function, like the other algorithms
+            #   (regular @test, in the else branch below).
+            # * Optim 2: known upstream problem, it diverges on the Rosenbrock function (the
+            #   objective increases with the number of iterations). The tests are marked as
+            #   broken: @test_broken reports an "Unexpected Pass" once Optim fixes it.
+            # A plain @test_broken for both versions would fail with Optim 1 ("Unexpected Pass").
+            if localOptim == :AcceleratedGradientDescent && pkgversion(Optim) >= v"2"
+                @test_broken Optim.minimizer(results)[1] ≈ 1.0 atol = atolOptim
+                @test_broken Optim.minimizer(results)[2] ≈ 1.0 atol = atolOptim
+            else
+                @test Optim.minimizer(results)[1] ≈ 1.0 atol = atolOptim
+                @test Optim.minimizer(results)[2] ≈ 1.0 atol = atolOptim
+            end
 
         end
 
@@ -282,7 +351,7 @@ end
 
        @testset "testing read_priors" begin
 
-            dictPriors = read_priors(joinpath(Pkg.dir("MSM"), "test/priorsTest.csv"))
+            dictPriors = read_priors(joinpath(@__DIR__, "priorsTest.csv"))
 
             @test typeof(dictPriors) == OrderedDict{String,Array{Float64,1}}
             # First component stores the value
@@ -297,7 +366,7 @@ end
 
        @testset "testing read_empirical_moments" begin
 
-            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
+            dictEmpiricalMoments = read_empirical_moments(joinpath(@__DIR__, "empiricalMomentsTest.csv"))
 
             @test typeof(dictEmpiricalMoments) == OrderedDict{String,Array{Float64,1}}
 
@@ -319,7 +388,7 @@ end
 
         @testset "testing set_priors!" begin
 
-            dictPriors = read_priors(joinpath(Pkg.dir("MSM"), "test/priorsTest.csv"))
+            dictPriors = read_priors(joinpath(@__DIR__, "priorsTest.csv"))
 
             set_priors!(t, dictPriors)
 
@@ -329,7 +398,7 @@ end
 
         @testset "set_empirical_moments!" begin
 
-            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
+            dictEmpiricalMoments = read_empirical_moments(joinpath(@__DIR__, "empiricalMomentsTest.csv"))
 
             set_empirical_moments!(t, dictEmpiricalMoments)
 
@@ -397,7 +466,7 @@ end
             # For the test to make sense, we need to set the field
             # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
             #------------------------------------------------------
-            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
+            dictEmpiricalMoments = read_empirical_moments(joinpath(@__DIR__, "empiricalMomentsTest.csv"))
             set_empirical_moments!(t, dictEmpiricalMoments)
 
             # A. Set the function: parameter -> simulated moments
@@ -432,7 +501,7 @@ end
             #----
             t = MSMProblem();
 
-            dictPriors = read_priors(joinpath(Pkg.dir("MSM"), "test/priorsTest.csv"))
+            dictPriors = read_priors(joinpath(@__DIR__, "priorsTest.csv"))
 
             set_priors!(t, dictPriors)
 
@@ -484,23 +553,13 @@ end
             #----------------------------------------------------
             tol1dMean = 0.2
 
-            @everywhere function functionTest1d(x)
-
-                d = Normal(x[1])
-                output = OrderedDict{String,Float64}()
-
-                output["meanU"] = mean(rand(d, 1000000))
-
-                return output
-            end
-
 
             t = MSMProblem(options = MSMOptions(maxFuncEvals=1000))
 
             # For the test to make sense, we need to set the field
             # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
             #------------------------------------------------------
-            dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
+            dictEmpiricalMoments = read_empirical_moments(joinpath(@__DIR__, "empiricalMomentsTest.csv"))
             set_empirical_moments!(t, dictEmpiricalMoments)
 
 
@@ -544,27 +603,13 @@ end
 
           tol1dMean = 0.1
 
-          @everywhere function functionTest1d(x)
-
-              # When using one of the deterministic methods of Optim,
-              # we can safely "control" for randomness
-              #-----------------------------------------------------
-              Random.seed!(1234)
-              d = Normal(x[1])
-              output = OrderedDict{String,Float64}()
-
-              output["meanU"] = mean(rand(d, 1000000))
-
-              return output
-          end
-
 
           t = MSMProblem(options = MSMOptions(maxFuncEvals=1000))
 
           # For the test to make sense, we need to set the field
           # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
           #------------------------------------------------------
-          dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
+          dictEmpiricalMoments = read_empirical_moments(joinpath(@__DIR__, "empiricalMomentsTest.csv"))
           set_empirical_moments!(t, dictEmpiricalMoments)
 
 
@@ -574,7 +619,7 @@ end
 
           # A. Set the function: parameter -> simulated moments
           #----------------------------------------------------
-          set_simulate_empirical_moments!(t, functionTest1d)
+          set_simulate_empirical_moments!(t, functionTest1dSeeded)
 
           # A'. Attach weight marix
           W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
@@ -604,20 +649,6 @@ end
 
           tol1dMean = 0.1
 
-          @everywhere function functionTest1d(x)
-
-              # When using one of the deterministic methods of Optim,
-              # we can safely "control" for randomness
-              #-----------------------------------------------------
-              Random.seed!(1234)
-              d = Normal(x[1])
-              output = OrderedDict{String,Float64}()
-
-              output["meanU"] = mean(rand(d, 1000000))
-
-              return output
-          end
-
           # Let's try with the optim minBox on
           #-----------------------------------
           t = MSMProblem(options = MSMOptions(maxFuncEvals=1000, localOptimizer = :LBFGS, minBox = true))
@@ -625,7 +656,7 @@ end
           # For the test to make sense, we need to set the field
           # t.empiricalMoments::OrderedDict{String,Array{Float64,1}}
           #------------------------------------------------------
-          dictEmpiricalMoments = read_empirical_moments(joinpath(Pkg.dir("MSM"), "test/empiricalMomentsTest.csv"))
+          dictEmpiricalMoments = read_empirical_moments(joinpath(@__DIR__, "empiricalMomentsTest.csv"))
           set_empirical_moments!(t, dictEmpiricalMoments)
 
 
@@ -635,7 +666,7 @@ end
 
           # A. Set the function: parameter -> simulated moments
           #----------------------------------------------------
-          set_simulate_empirical_moments!(t, functionTest1d)
+          set_simulate_empirical_moments!(t, functionTest1dSeeded)
 
           # A'. Attach weight marix
           W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
@@ -671,18 +702,6 @@ end
             # Otherwise, BlackBoxOptim does not find the solution
             #----------------------------------------------------
             tol2dMean = 0.2
-
-            @everywhere function functionTest2d(x)
-
-                d = MvNormal( [x[1]; x[2]], eye(2))
-                output = OrderedDict{String,Float64}()
-
-                draws = rand(d, 1000000)
-                output["mean1"] = mean(draws[1,:])
-                output["mean2"] = mean(draws[2,:])
-
-                return output
-            end
 
 
             t = MSMProblem(options = MSMOptions(maxFuncEvals=1000))
@@ -743,22 +762,6 @@ end
             #----------------------------------------------------
             tol2dMean = 0.2
 
-            @everywhere function functionTest2d(x)
-
-                d = MvNormal( [x[1]; x[2]], eye(2))
-                output = OrderedDict{String,Float64}()
-
-                # When using one of the deterministic methods of Optim,
-                # we can safely "control" for randomness
-                #-----------------------------------------------------
-                Random.seed!(1234)
-                draws = rand(d, 1000000)
-                output["mean1"] = mean(draws[1,:])
-                output["mean2"] = mean(draws[2,:])
-
-                return output
-            end
-
 
             t = MSMProblem(options = MSMOptions(maxFuncEvals=1000))
 
@@ -778,7 +781,7 @@ end
             set_priors!(t, dictPriors)
 
             # A. Set the function: parameter -> simulated moments
-            set_simulate_empirical_moments!(t, functionTest2d)
+            set_simulate_empirical_moments!(t, functionTest2dSeeded)
 
             # A'. Attach weight marix
             W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
@@ -812,22 +815,6 @@ end
               #----------------------------------------------------
               tol2dMean = 0.2
 
-              @everywhere function functionTest2d(x)
-
-                  d = MvNormal( [x[1]; x[2]], eye(2))
-                  output = OrderedDict{String,Float64}()
-
-                  # When using one of the deterministic methods of Optim,
-                  # we can safely "control" for randomness
-                  #-----------------------------------------------------
-                  Random.seed!(1234)
-                  draws = rand(d, 1000000)
-                  output["mean1"] = mean(draws[1,:])
-                  output["mean2"] = mean(draws[2,:])
-
-                  return output
-              end
-
 
               t = MSMProblem(options = MSMOptions(maxFuncEvals=1000, localOptimizer = :GradientDescent, minBox = true))
 
@@ -847,7 +834,7 @@ end
               set_priors!(t, dictPriors)
 
               # A. Set the function: parameter -> simulated moments
-              set_simulate_empirical_moments!(t, functionTest2d)
+              set_simulate_empirical_moments!(t, functionTest2dSeeded)
 
               # A'. Attach weight marix
               W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
@@ -946,6 +933,10 @@ end
 
 
     @testset "Testing minimizing a function that may fail" begin
+
+              # Fixed seed: the function fails on 40% of the search interval, and on rare draws
+              # every point evaluated by the global optimizer fell there (all with the same penalty)
+              @everywhere Random.seed!(1234)
 
               #---------------------------------------------------
               tol2dMean = 0.5
@@ -1067,9 +1058,426 @@ end
 
     end
 
-    @testset "Testing Inference" begin
+    @testset "Testing J_test" begin
 
-      tolLinear = 0.05
+        # Correctly specified model: two independent N(theta,1) series, one parameter.
+        # k = 2 moments, l = 1 parameter, so J should be Chi²(1) under the null.
+        # Sigma0 = I, so W = I is the efficient weighting matrix, and the SMM
+        # estimate has a closed form (average of the two moment gaps).
+        tData = 200
+        tSimData = 200 #tau = 1: the old formula T*(1+tau)*g'Wg rejected ~33% of the time
+        alpha = 0.05
+        nbReps = 4000
+        rng = MersenneTwister(1234)
+
+        myProblem = MSMProblem()
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(2)))
+
+        nbRejections = 0
+        for r = 1:nbReps
+
+            x = randn(rng, tData)
+            y = randn(rng, tData)
+            e1 = randn(rng, tSimData) #simulation draws held fixed
+            e2 = randn(rng, tSimData)
+
+            dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
+            dictEmpiricalMoments["mean_x"] = [mean(x), 1.0]
+            dictEmpiricalMoments["mean_y"] = [mean(y), 1.0]
+            set_empirical_moments!(myProblem, dictEmpiricalMoments)
+
+            set_simulate_empirical_moments!(myProblem, theta -> OrderedDict{String,Float64}("mean_x" => theta[1] + mean(e1), "mean_y" => theta[1] + mean(e2)))
+
+            thetaHat = [((mean(x) - mean(e1)) + (mean(y) - mean(e2)))/2]
+
+            J, c = J_test(myProblem, thetaHat, tData, tSimData, alpha)
+
+            # Value of the statistic and critical value
+            if r == 1
+                g = [mean(x) - mean(e1) - thetaHat[1], mean(y) - mean(e2) - thetaHat[1]]
+                @test J ≈ tData/(1.0 + tData/tSimData)*sum(g.^2)
+                @test c ≈ 3.841458820694124 #95% quantile of Chi²(1)
+            end
+
+            nbRejections += (J > c)
+
+        end
+
+        # Empirical size close to the nominal size (standard error ≈ 0.0034)
+        @test 0.03 < nbRejections/nbReps < 0.07
+
+    end
+
+    @testset "Testing p-values and confidence intervals" begin
+
+        # Known asymptotic variance: se = sqrt(Avar[i,i]/tData) = [0.2, 0.3]
+        # theta0 = [0.2, -0.3] gives t-statistics of +1 and -1
+        myProblem = MSMProblem()
+        myProblem.Avar = [4.0 0.0; 0.0 9.0]
+        theta0 = [0.2, -0.3]
+        tData = 100
+        alpha = 0.05
+
+        @test calculate_se(myProblem, tData, 1) ≈ 0.2
+        @test calculate_se(myProblem, tData, 2) ≈ 0.3
+        @test calculate_t(myProblem, theta0, tData, 1) ≈ 1.0
+        @test calculate_t(myProblem, theta0, tData, 2) ≈ -1.0
+
+        # Two-sided p-value for |t| = 1 is 0.3173..., whatever the sign of t
+        @test calculate_pvalue(myProblem, theta0, tData, 1) ≈ 0.31731050786291415
+        @test calculate_pvalue(myProblem, theta0, tData, 2) ≈ 0.31731050786291415
+
+        # 95% confidence interval uses the 97.5% quantile of N(0,1): 1.959963...
+        z = 1.959963984540054
+        CI_lower, CI_upper = calculate_CI(myProblem, theta0, tData, 1, alpha)
+        @test CI_lower ≈ 0.2 - 0.2*z
+        @test CI_upper ≈ 0.2 + 0.2*z
+        CI_lower, CI_upper = calculate_CI(myProblem, theta0, tData, 2, alpha)
+        @test CI_lower ≈ -0.3 - 0.3*z
+        @test CI_upper ≈ -0.3 + 0.3*z
+
+        # summary_table reports the same values
+        df = DataFrame(summary_table(myProblem, theta0, tData, alpha))
+        @test df[:, "Pr(>|t|)"] ≈ [0.31731050786291415, 0.31731050786291415]
+        @test df[:, "CI Lower"] ≈ theta0 .- [0.2, 0.3] .* z
+        @test df[:, "CI Upper"] ≈ theta0 .+ [0.2, 0.3] .* z
+
+    end
+
+    @testset "Testing starting values and multistart with several workers" begin
+
+        # Regression test: results must be matched to the right points even when
+        # workers finish in a different order than the one in which they were started.
+        # The first worker is made slow, so that it finishes last.
+        newWorkers = addprocs(2)
+        @everywhere newWorkers begin
+            using Distributed
+            using MethodOfSimulatedMoments
+            using OrderedCollections
+        end
+        slowWorker = first(workers())
+
+        myProblem = MSMProblem(options = MSMOptions(localOptimizer = :LBFGS, thresholdStartingValue = 0.25))
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [0.5, 0.0, 1.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m" => [0.0, 1.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(1)))
+        # distance = x^2
+        set_simulate_empirical_moments!(myProblem, x -> (myid() == slowWorker && sleep(0.05); OrderedDict{String,Float64}("m" => x[1])))
+        construct_objective_function!(myProblem)
+
+        # Starting values: only x < 0.5 is valid (x^2 < 0.25), sorted by distance
+        Random.seed!(1234)
+        Validx0 = MethodOfSimulatedMoments.search_starting_values(myProblem, 4, verbose = false)
+        @test size(Validx0) == (4, 1)
+        @test all(Validx0[:, 1] .< 0.5)
+        @test issorted(Validx0[:, 1])
+
+        # Multistart: listOptimResults[i] must start from x0[i,:]
+        x0 = reshape(collect(range(0.9, 0.1, length = nworkers())), :, 1)
+        # All local minimizations converge, and they must all be counted
+        listOptimResults = @test_logs (:info, "Convergence reached for $(nworkers()) worker(s).") match_mode=:any msm_multistart!(myProblem, x0 = x0, nums = nworkers(), verbose = false)
+        for workerIndex = 1:nworkers()
+            @test listOptimResults[workerIndex].initial_x == x0[workerIndex, :]
+        end
+        @test msm_multistart_minimizer(myProblem)[1] ≈ 0.0 atol = 1e-4
+
+        # Fewer starting values than workers: explicit error
+        @test_throws ErrorException msm_multistart!(myProblem, x0 = x0, nums = nworkers() - 1, verbose = false)
+
+        rmprocs(newWorkers)
+
+    end
+
+    @testset "Testing robustness of the objective function" begin
+
+        myProblem = MSMProblem()
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [0.5, 0.0, 1.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m" => [0.0, 1.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(1)))
+        penaltyValue = myProblem.options.penaltyValue
+
+        # A simulated moment is missing: penalty value (instead of a KeyError)
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("wrong_name" => x[1]))
+        construct_objective_function!(myProblem)
+        @test myProblem.objective_function([0.3]) == penaltyValue
+
+        # NaN or Inf simulated moments: penalty value
+        for badValue in (NaN, Inf, -Inf)
+            set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m" => badValue))
+            construct_objective_function!(myProblem)
+            @test myProblem.objective_function([0.3]) == penaltyValue
+        end
+
+        # msm_slices must work with a function that requires a Vector{Float64}
+        set_simulate_empirical_moments!(myProblem, (x::Vector{Float64}) -> OrderedDict{String,Float64}("m" => x[1]))
+        construct_objective_function!(myProblem)
+        vXGrid, vYGrid = msm_slices(myProblem, [0.3], nbPoints = 5)
+        @test vYGrid ≈ vXGrid.^2
+
+        # Invalid gridType: explicit error
+        myProblem.options.gridType = :notAGrid
+        @test_throws ErrorException MethodOfSimulatedMoments.search_starting_values(myProblem, 1, verbose = false)
+
+    end
+
+    @testset "Testing lambda (NES optimizers) and populationSize" begin
+
+        # Options: lambda >= 0, even for dxnes
+        @test_throws "lambda must be >= 0" MSMOptions(lambda = -2)
+        @test_throws "even lambda" MSMOptions(lambda = 7)
+        @test MSMOptions(globalOptimizer = :xnes, lambda = 7).lambda == 7
+
+        # populationSize: warning with NES optimizers only, when set by the user
+        @test_logs MSMOptions()
+        @test_logs (:warn, r"populationSize is ignored") MSMOptions(populationSize = 20)
+        @test_logs MSMOptions(populationSize = 20, globalOptimizer = :adaptive_de_rand_1_bin_radiuslimited)
+        @test MSMOptions(populationSize = 20, globalOptimizer = :adaptive_de_rand_1_bin_radiuslimited).populationSize == 20
+
+        # Automatic lambda: BlackBoxOptim's default rounded up to a multiple of the number of workers
+        # (dxnes: even, so one worker idle when the number of workers is odd)
+        @test nes_lambda(:dxnes, 0, 5, 1) == 8
+        @test nes_lambda(:dxnes, 0, 5, 10) == 10
+        @test nes_lambda(:dxnes, 0, 5, 32) == 32
+        @test nes_lambda(:dxnes, 0, 5, 11) == 10
+        @test nes_lambda(:dxnes, 0, 5, 3) == 8
+        @test nes_lambda(:dxnes, 0, 10, 4) == 12
+        @test nes_lambda(:xnes, 0, 5, 11) == 11
+        @test nes_lambda(:dxnes, 12, 5, 32) == 12
+        @test_throws "even lambda" nes_lambda(:dxnes, 7, 5, 1)
+        @test_throws "not a natural evolution strategy" nes_lambda(:adaptive_de_rand_1_bin_radiuslimited, 0, 5, 1)
+
+        # With one worker, the automatic lambda is BlackBoxOptim's own default
+        for method in (:dxnes, :xnes, :separable_nes), d in (1, 2, 5, 10, 30)
+            bbDefault = bbsetup(x -> sum(abs2, x); Method = method, SearchRange = (-1.0, 1.0), NumDimensions = d, TraceMode = :silent)
+            @test nes_lambda(method, 0, d, 1) == bbDefault.optimizer.lambda
+        end
+
+        # lambda is passed to BlackBoxOptim, and logged with verbose = true
+        myProblem = MSMProblem(options = MSMOptions(maxFuncEvals = 40))
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x$(i)" => [0.5, 0.0, 1.0] for i in 1:5))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m$(i)" => [0.0] for i in 1:5))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(5)))
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m$(i)" => x[i] for i in 1:5))
+        construct_objective_function!(myProblem)
+        expectedLambda = nes_lambda(:dxnes, 0, 5, nworkers())
+        @test_logs (:info, r"dxnes: λ = \d+ points per generation") match_mode=:any set_bbSetup!(myProblem, verbose = true)
+        @test myProblem.bbSetup.optimizer.lambda == expectedLambda
+        myProblem.options.lambda = 12
+        msm_optimize!(myProblem, verbose = false)
+        @test myProblem.bbSetup.optimizer.lambda == 12
+
+    end
+
+    @testset "Testing small utilities" begin
+
+        # get_now: "yyyy-mm-dd--HHh-MMm-SSs", a valid date and time, close to now
+        stamp = get_now()
+        m = match(r"^(\d{4}-\d{2}-\d{2})--(\d{1,2})h-(\d{1,2})m-(\d{1,2})s$", stamp)
+        @test m !== nothing
+        t = MethodOfSimulatedMoments.Dates.DateTime(MethodOfSimulatedMoments.Dates.Date(m[1]), MethodOfSimulatedMoments.Dates.Time(parse(Int, m[2]), parse(Int, m[3]), parse(Int, m[4])))
+        @test abs(MethodOfSimulatedMoments.Dates.now() - t) < MethodOfSimulatedMoments.Dates.Second(5)
+
+        # linspace(z_start, z_end, z_n)
+        @test linspace(0.0, 1.0, 5) == [0.0, 0.25, 0.5, 0.75, 1.0]
+
+        # latin_hypercube_sampling(mins, maxs, n): n×dims matrix
+        @test size(latin_hypercube_sampling([0.0, 0.0, 0.0], [1.0, 1.0, 1.0], 5)) == (5, 3)
+
+    end
+
+    @testset "Testing check_problem" begin
+
+        # A problem set up correctly: no error, no log message
+        myProblem = MSMProblem(options = MSMOptions(maxFuncEvals = 20))
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [0.5, 0.0, 1.0], "y" => [0.5, 0.0, 1.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m1" => [0.0], "m2" => [0.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(2)))
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m1" => x[1], "m2" => x[2]))
+        construct_objective_function!(myProblem)
+        @test (@test_logs check_problem(myProblem)) === nothing
+
+        # Fields that are not set
+        @test_throws "set_priors!" check_problem(MSMProblem())
+        emptyProblem = MSMProblem(priors = myProblem.priors)
+        @test_throws "set_empirical_moments!" check_problem(emptyProblem)
+        set_empirical_moments!(emptyProblem, myProblem.empiricalMoments)
+        set_weight_matrix!(emptyProblem, myProblem.W)
+        @test_throws "set_simulate_empirical_moments!" check_problem(emptyProblem)
+        set_simulate_empirical_moments!(emptyProblem, myProblem.simulate_empirical_moments)
+        @test_throws "construct_objective_function!" check_problem(emptyProblem)
+
+        # Default 1×1 weight matrix with 2 moments: error, also in msm_optimize! and msm_multistart!
+        myProblem.W = Matrix(1.0 .* I(1))
+        @test_throws "W is 1×1, but there are 2 empirical moments" check_problem(myProblem)
+        @test_throws "W is 1×1" msm_optimize!(myProblem, verbose = false)
+        @test_throws "W is 1×1" msm_multistart!(myProblem, verbose = false)
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(2)))
+
+        # A missing moment: error
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m1" => x[1], "wrong_name" => x[2]))
+        construct_objective_function!(myProblem)
+        @test_throws "does not return the empirical moment(s) [\"m2\"]" check_problem(myProblem)
+
+        # An extra moment: warning only
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m1" => x[1], "extra" => 1.0, "m2" => x[2]))
+        construct_objective_function!(myProblem)
+        @test_logs (:warn, r"extra") check_problem(myProblem)
+
+        # Non-finite simulated moments at the initial values: error
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m1" => NaN, "m2" => x[2]))
+        construct_objective_function!(myProblem)
+        @test_throws "Non-finite simulated moment(s) [\"m1\"]" check_problem(myProblem)
+
+        # The simulation throws at the initial values: error (with the original error logged),
+        # which says how to skip the check. With check = false, the optimization runs
+        set_simulate_empirical_moments!(myProblem, x -> error("typo in the simulation function"))
+        construct_objective_function!(myProblem)
+        @test_logs (:error, "The simulation of moments failed at the initial values of the priors") @test_throws "check = false" check_problem(myProblem)
+        @test_logs (:error, r"failed at the initial values") @test_throws "check = false" msm_optimize!(myProblem, verbose = false)
+        @test_logs (:info, r"An error occurred") match_mode=:any msm_optimize!(myProblem, verbose = false, check = false)
+        @test msm_minimum(myProblem) == Inf
+
+        # With a finite penalty value, a distance larger than the penalty value: warning
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m1" => x[1], "m2" => x[2]))
+        construct_objective_function!(myProblem)
+        myProblem.options.penaltyValue = 0.1
+        @test_logs (:warn, r"larger than penaltyValue") check_problem(myProblem)
+
+    end
+
+    @testset "Testing the order of simulate_empirical_moments_array" begin
+
+        # The array follows the order of the empirical moments (the order of W),
+        # whatever the order of the moments returned by the simulation function
+        myProblem = MSMProblem()
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m1" => [0.0], "m2" => [0.0]))
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m2" => 2.0*x[1], "extra" => 99.0, "m1" => x[1]))
+        @test myProblem.simulate_empirical_moments_array([1.0]) == [1.0, 2.0]
+        # Jacobian: one row per empirical moment, in the same order (d m1/dx = 1, d m2/dx = 2)
+        @test calculate_D(myProblem, [1.0]) ≈ [1.0; 2.0;;]
+
+        # Without empirical moments: the order of the simulated moments
+        otherProblem = MSMProblem()
+        set_simulate_empirical_moments!(otherProblem, myProblem.simulate_empirical_moments)
+        @test otherProblem.simulate_empirical_moments_array([1.0]) == [2.0, 99.0, 1.0]
+
+    end
+
+    @testset "Testing the evaluation budget of local minimizations" begin
+
+        # Rosenbrock function (distance = (1 - x)^2 + 100 (y - x^2)^2), started far from its minimum [1, 1]
+        nbCalls = Ref(0)
+        myProblem = MSMProblem(options = MSMOptions(maxFuncEvals = 50))
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [-1.2, -5.0, 5.0], "y" => [1.0, -5.0, 5.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m1" => [0.0], "m2" => [0.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(2)))
+        set_simulate_empirical_moments!(myProblem, x -> (nbCalls[] += 1; OrderedDict{String,Float64}("m1" => 1.0 - x[1], "m2" => 10.0*(x[2] - x[1]^2))))
+        construct_objective_function!(myProblem)
+
+        # maxFuncEvals counts the evaluations of finite-difference gradients too:
+        # stop at the end of the iteration during which the budget is reached (an LBFGS iteration
+        # with a long line search can take ~25 evaluations here; before the fix, maxFuncEvals was the
+        # number of iterations, i.e. several hundred evaluations)
+        for (localOptimizer, minBox) in [(:LBFGS, false), (:NelderMead, false), (:LBFGS, true)]
+            myProblem.options.localOptimizer = localOptimizer
+            myProblem.options.minBox = minBox
+            nbCalls[] = 0
+            optimResults = msm_localmin(myProblem, [-1.2, 1.0], verbose = false)
+            @test 50 <= nbCalls[] <= 100
+            @test Optim.converged(optimResults) == false
+        end
+
+        # A large enough budget: convergence
+        myProblem.options.localOptimizer = :LBFGS
+        myProblem.options.minBox = false
+        myProblem.options.maxFuncEvals = 10000
+        optimResults = msm_localmin(myProblem, [-1.2, 1.0], verbose = false)
+        @test Optim.converged(optimResults) == true
+        @test Optim.minimizer(optimResults) ≈ [1.0, 1.0] atol = 1e-3
+
+        # msm_multistart!: if no local minimization converged, the best finite local minimum is used
+        myProblem.options.maxFuncEvals = 50
+        x0 = repeat([-1.2 1.0], nworkers())
+        @test_logs (:info, r"None of the local minimizations converged") match_mode=:any msm_multistart!(myProblem, x0 = x0, verbose = false)
+        @test msm_multistart_minimum(myProblem) < myProblem.objective_function([-1.2, 1.0])
+        @test Optim.converged(myProblem.optimResults) == false
+
+    end
+
+    @testset "Testing msm_multistart! with failed local minimizations" begin
+
+        myProblem = MSMProblem()
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [0.5, 0.0, 1.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m" => [0.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(1)))
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m" => x[1]))
+        construct_objective_function!(myProblem)
+        x0 = fill(0.5, nworkers(), 1)
+
+        # verbose is passed to the local minimizations
+        logs, _ = Test.collect_test_logs(() -> msm_multistart!(myProblem, x0 = x0, verbose = false))
+        @test any(occursin("Starting value", string(log.message)) for log in logs) == false
+        logs, _ = Test.collect_test_logs(() -> msm_multistart!(myProblem, x0 = x0, verbose = true))
+        @test any(occursin("Starting value", string(log.message)) for log in logs) == true
+
+        # A local minimization that throws: one clear message, result nothing, no MethodError
+        myProblem.objective_function = x -> error("boom")
+        logs, listOptimResults = Test.collect_test_logs(() -> msm_multistart!(myProblem, x0 = x0, verbose = false, check = false))
+        messages = [string(log.message) for log in logs]
+        @test all(listOptimResults .=== nothing)
+        @test any(occursin("failed: ", m) for m in messages)
+        @test any(occursin("MethodError", m) for m in messages) == false
+        @test "None of the local minimizations returned a finite value." in messages
+
+    end
+
+    @testset "Testing msm_slices at a parameter equal to 0" begin
+
+        myProblem = MSMProblem()
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [0.0, -1.0, 1.0], "y" => [0.5, 0.0, 1.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m1" => [0.0], "m2" => [0.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(2)))
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m1" => x[1], "m2" => x[2]))
+        construct_objective_function!(myProblem)
+
+        vXGrid, vYGrid = msm_slices(myProblem, [0.0, 0.5], nbPoints = 5, offset = 0.001)
+        # x = 0: the slice uses the width of the prior (2), y = 0.5: percent deviation
+        @test vXGrid[:, 1] ≈ collect(range(-0.002, 0.002, length = 5))
+        @test vXGrid[:, 2] ≈ collect(range(0.4995, 0.5005, length = 5))
+        @test vYGrid[:, 1] ≈ vXGrid[:, 1].^2 .+ 0.25
+
+    end
+
+    @testset "Testing the verbose option of msm_optimize!" begin
+
+        myProblem = MSMProblem(options = MSMOptions(maxFuncEvals = 50))
+        set_priors!(myProblem, OrderedDict{String,Array{Float64,1}}("x" => [0.5, 0.0, 1.0]))
+        set_empirical_moments!(myProblem, OrderedDict{String,Array{Float64,1}}("m" => [0.0, 1.0]))
+        set_weight_matrix!(myProblem, Matrix(1.0 .* I(1)))
+        set_simulate_empirical_moments!(myProblem, x -> OrderedDict{String,Float64}("m" => x[1]))
+        construct_objective_function!(myProblem)
+
+        # Returns what f() prints to stdout
+        function captured_stdout(f)
+            mktemp() do path, io
+                redirect_stdout(f, io)
+                flush(io)
+                read(path, String)
+            end
+        end
+
+        # verbose = true: BlackBoxOptim displays its progress
+        output = captured_stdout(() -> msm_optimize!(myProblem, verbose = true))
+        @test occursin("Starting optimization", output)
+
+        # verbose = false: nothing printed, no log message
+        output = captured_stdout(() -> (@test_logs msm_optimize!(myProblem, verbose = false)))
+        @test output == ""
+        @test myProblem.bbResults !== nothing
+
+    end
+
+    @testset "Testing Inference" begin
 
       # Inference in the linear model
       #------------------------------
@@ -1221,12 +1629,6 @@ end
       # No big deal here, because we use Optim
       minimizer = msm_local_minimizer(myProblem)
 
-      # The minimizer should not be too far from the true values
-      #---------------------------------------------------------
-      @test minimizer[1] ≈  alpha0[1] atol = tolLinear
-      @test minimizer[2] ≈  beta0[1] atol = tolLinear
-      @test minimizer[3] ≈  beta0[2] atol = tolLinear
-
       # Empirical Distance matrix
       #--------------------------
       X = zeros(T, 5)
@@ -1278,6 +1680,15 @@ end
       # 2nd column : std error
       for i =1:size(df,1)
         @test df[i, "Std. Error"] > 0.
+      end
+
+      # The minimizer should not be too far from the true values:
+      # within 4 standard errors (a fixed tolerance can be smaller than
+      # the sampling noise, and then depends on the random sample)
+      #---------------------------------------------------------
+      trueValues = [alpha0; beta0]
+      for i = 1:length(trueValues)
+        @test abs(minimizer[i] - trueValues[i]) < 4*calculate_se(myProblem, T, i)
       end
 
       # confidence interval

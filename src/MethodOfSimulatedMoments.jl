@@ -1,4 +1,4 @@
-module MSM
+module MethodOfSimulatedMoments
 
     #---------------------------------------------------------------------------
     # Dependencies
@@ -9,16 +9,13 @@ module MSM
     using CSV
     using FiniteDifferences
     using DataFrames
-    using DataStructures
     using OrderedCollections
     using Dates
     using Distributed
     using Random
-    using Logging
     using Statistics
     using Distributions
     using LinearAlgebra
-    using SharedArrays
     using LatinHypercubeSampling
     using Sobol
     using StatsBase
@@ -33,10 +30,6 @@ module MSM
     # Types
     #------
     include("types.jl");
-
-    # API
-    #----
-    include("api.jl")
 
     # General functions, useful at several places
     #---------------------------------------------
@@ -69,17 +62,15 @@ module MSM
     export default_function, rosenbrock2d
     export is_global_optimizer, is_local_optimizer
     export convert_to_optim_algo, convert_to_fminbox
-    export is_bb_optimizer, is_optim_optimizer
+    export is_bb_optimizer, is_optim_optimizer, is_nes_optimizer
 
-
-    # Functions and types in api.jl
-    #-------------------------------
 
     # Functions and types in generic.jl
     #----------------------------------
     export set_simulate_empirical_moments!, construct_objective_function!
+    export check_problem
     export set_priors!, set_weight_matrix!, set_empirical_moments!, set_Sigma0!
-    export set_bbSetup!, generate_bbSearchRange
+    export set_bbSetup!, generate_bbSearchRange, nes_lambda
     export create_lower_bound, create_upper_bound
     export set_global_optimizer!
     export latin_hypercube_sampling, sobol_sampling

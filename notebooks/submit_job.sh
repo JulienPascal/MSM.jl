@@ -10,5 +10,7 @@ echo "== Starting run at $(date)"
 echo "== Job ID: ${SLURM_JOBID}"
 echo "== Node list: ${SLURM_NODELIST}"
 echo "== Submit dir. : ${SLURM_SUBMIT_DIR}"
-# Estimate on cluster
+
+# Estimate on cluster (OnCluster is detected automatically inside a SLURM job;
+# one worker per SLURM task)
 julia $PWD/LinearModelCluster.jl

@@ -1,16 +1,24 @@
 """
-  msm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
+  msm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true, check::Bool = true)
 
 Function to launch an optimization. To be used after the following functions
 have been called: (i) set_empirical_moments! (ii) set_priors!
 (iii) set_simulate_empirical_moments! (iv) construct_objective_function!
+With `verbose = false`, the progress of the optimizer is not displayed.
+With `check = true`, `check_problem` is called first: it throws an error if the
+problem is not set up correctly, or if the simulation fails at the initial values
+of the priors.
 """
-function msm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
+function msm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true, check::Bool = true)
+
+  if check == true
+    check_problem(sMMProblem)
+  end
 
   # Initialize a BlackBoxOptim problem
   # this modifies sMMProblem.bbSetup
   #-----------------------------------
-  set_global_optimizer!(sMMProblem)
+  set_global_optimizer!(sMMProblem, verbose = verbose)
 
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------
@@ -45,7 +53,7 @@ function msm_optimize!(sMMProblem::MSMProblem; verbose::Bool = true)
 end
 
 """
-  function msm_minimizer(sMMProblem::MSMProblem)
+  msm_minimizer(sMMProblem::MSMProblem)
 
 Function to get the parameter value minimizing the objective function
 """
@@ -54,6 +62,10 @@ function msm_minimizer(sMMProblem::MSMProblem)
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------
   if is_bb_optimizer(sMMProblem.options.globalOptimizer) == true
+
+    if sMMProblem.bbResults === nothing
+      error("No global optimization results. Please call msm_optimize! first.")
+    end
 
     best_candidate(sMMProblem.bbResults)
 
@@ -70,7 +82,7 @@ end
 
 
 """
-  function msm_minimum(sMMProblem::MSMProblem)
+  msm_minimum(sMMProblem::MSMProblem)
 
 Function to get the minimum of the objective function
 """
@@ -79,6 +91,10 @@ function msm_minimum(sMMProblem::MSMProblem)
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------
   if is_bb_optimizer(sMMProblem.options.globalOptimizer) == true
+
+    if sMMProblem.bbResults === nothing
+      error("No global optimization results. Please call msm_optimize! first.")
+    end
 
     best_fitness(sMMProblem.bbResults)
 
@@ -118,18 +134,7 @@ function msm_refine_globalmin!(sMMProblem::MSMProblem; verbose::Bool = true)
 
   if is_local_optimizer(sMMProblem.options.localOptimizer) == true
 
-    # If using Fminbox option is true
-    #-------------------------------
-    if sMMProblem.options.minBox == true
-
-        lower = create_lower_bound(sMMProblem)
-        upper = create_upper_bound(sMMProblem)
-
-        sMMProblem.optimResults = optimize(sMMProblem.objective_function, lower, upper, x0, convert_to_fminbox(sMMProblem.options.localOptimizer), Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
-
-    else
-        sMMProblem.optimResults = optimize(sMMProblem.objective_function, x0, convert_to_optim_algo(sMMProblem.options.localOptimizer), Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
-    end
+    sMMProblem.optimResults = run_local_optimizer(sMMProblem, x0, verbose = verbose)
 
   # In the future, we may use other local minimizer
   # routines. For the moment, let's return an error
@@ -146,7 +151,7 @@ end
 
 
 """
-  function msm_local_minimizer(sMMProblem::MSMProblem)
+  msm_local_minimizer(sMMProblem::MSMProblem)
 
 Function to get the parameter value minimizing the objective function (local)
 """
@@ -155,6 +160,10 @@ function msm_local_minimizer(sMMProblem::MSMProblem)
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------
   if is_optim_optimizer(sMMProblem.options.localOptimizer) == true
+
+    if sMMProblem.optimResults === nothing
+      error("No local optimization results. Please call msm_refine_globalmin! or msm_multistart! first (msm_multistart! stores results only if at least one local minimization returned a finite value).")
+    end
 
     Optim.minimizer(sMMProblem.optimResults)
 
@@ -170,15 +179,19 @@ function msm_local_minimizer(sMMProblem::MSMProblem)
 end
 
 """
-  function msm_local_minimum(sMMProblem::MSMProblem)
+  msm_local_minimum(sMMProblem::MSMProblem)
 
-Function to get the local minimum value of the objetive function
+Function to get the local minimum value of the objective function
 """
 function msm_local_minimum(sMMProblem::MSMProblem)
 
   # If the global optimizer is using BlackBoxOptim
   #-----------------------------------------------
   if is_optim_optimizer(sMMProblem.options.localOptimizer) == true
+
+    if sMMProblem.optimResults === nothing
+      error("No local optimization results. Please call msm_refine_globalmin! or msm_multistart! first (msm_multistart! stores results only if at least one local minimization returned a finite value).")
+    end
 
     Optim.minimum(sMMProblem.optimResults)
 
@@ -195,7 +208,7 @@ end
 
 
 """
-  function msm_multistart_minimizer(sMMProblem::MSMProblem)
+  msm_multistart_minimizer(sMMProblem::MSMProblem)
 
 Function to get the parameter value minimizing the objective function when
 using the multistart algorithm
@@ -208,9 +221,9 @@ function msm_multistart_minimizer(sMMProblem::MSMProblem)
 end
 
 """
-  function msm_multistart_minimum(sMMProblem::MSMProblem)
+  msm_multistart_minimum(sMMProblem::MSMProblem)
 
-Function to get the minimum value of the objetive function when
+Function to get the minimum value of the objective function when
 using the multistart algorithm
 """
 function msm_multistart_minimum(sMMProblem::MSMProblem)
@@ -222,26 +235,33 @@ end
 
 
 """
-  msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true)
+  msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true, check::Bool = true)
 
 Function to run several local minimization algorithms in parallel, with different
-starting values. The minimum is calculated as the minimum of the local minima.
-Changes sMMProblem.optimResults. This function also returns
-a list containing Optim results.
+starting values. The minimum is calculated as the minimum of the local minima that
+converged. If none converged, the best finite local minimum is used instead, with a
+message saying so. Changes sMMProblem.optimResults. This function also returns
+a list containing Optim results (`nothing` for a local minimization that threw an error).
+With `check = true`, `check_problem` is called first (see `msm_optimize!`).
 """
-function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true)
+function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0), nums::Int64 = nworkers(), verbose::Bool = true, check::Bool = true)
+
+  if check == true
+    check_problem(sMMProblem)
+  end
 
   # Safety checks
   #--------------
   if nums < nworkers()
-    errors("nums < nworkers()")
+    error("nums < nworkers()")
   elseif nums > nworkers()
     info("nums > nworkers(). Some starting values will be ignored.")
   end
 
-  # To store minization results
+  # To store minimization results
+  # (results[workerIndex] must correspond to the starting value myGrid[workerIndex,:])
   #----------------------------
-  results = []
+  results = Vector{Any}(undef, nworkers())
 
   # Look for valid starting values (for which convergence is reached)
   #-------------------------------------------------------------------
@@ -270,7 +290,8 @@ function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0)
       #---------------------------------------
       @sync for (workerIndex, w) in enumerate(workers())
 
-        @async push!(results, @fetchfrom w wrap_msm_localmin(sMMProblem, myGrid[workerIndex,:], verbose = true))
+        # Store by index: tasks finish in any order
+        @async results[workerIndex] = @fetchfrom w wrap_msm_localmin(sMMProblem, myGrid[workerIndex,:], verbose = verbose)
 
       end
 
@@ -288,33 +309,50 @@ function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0)
 
       push!(listOptimResults, results[workerIndex])
 
-      try
+      # The local minimization threw an error (logged by wrap_msm_localmin)
+      if results[workerIndex] === nothing
+        continue
+      end
 
-        minimumValue = Optim.minimum(results[workerIndex])
-        minimizer = Optim.minimizer(results[workerIndex])
+      if Optim.converged(results[workerIndex]) == true
 
-        if minimumValue < minValue && Optim.converged(results[workerIndex]) == true
+        nbConvergenceReached += 1
 
+        if Optim.minimum(results[workerIndex]) < minValue
           minIndex = workerIndex
-          minValue = minimumValue
-          minimizerValue = minimizer
-          nbConvergenceReached += 1
-
+          minValue = Optim.minimum(results[workerIndex])
+          minimizerValue = Optim.minimizer(results[workerIndex])
         end
 
-      catch myError
-        info("$(myError)")
       end
 
     end
 
-
-    # D. If none of the optimization converged
-    #-----------------------------------------
+    # C. If none of the local minimizations converged: best finite local minimum
+    #-----------------------------------------------------------------------------
     if minIndex == 0
-      info("None of the local optimizer algorithm converged.")
+
+      for (workerIndex, w) in enumerate(workers())
+        if results[workerIndex] !== nothing && isfinite(Optim.minimum(results[workerIndex])) == true && Optim.minimum(results[workerIndex]) < minValue
+          minIndex = workerIndex
+          minValue = Optim.minimum(results[workerIndex])
+          minimizerValue = Optim.minimizer(results[workerIndex])
+        end
+      end
+
+      if minIndex != 0
+        info("None of the local minimizations converged. Using the best finite local minimum instead (worker $(minIndex)), which did not converge: check it, or increase maxFuncEvals.")
+      end
+
     else
       info("Convergence reached for $(nbConvergenceReached) worker(s).")
+    end
+
+    # D. If none of the local minimizations returned a finite value
+    #---------------------------------------------------------------
+    if minIndex == 0
+      info("None of the local minimizations returned a finite value.")
+    else
       info("Minimum value found with worker $(minIndex)")
       sMMProblem.optimResults = results[minIndex]
     end
@@ -329,7 +367,7 @@ function msm_multistart!(sMMProblem::MSMProblem; x0 = Array{Float64}(undef, 0,0)
   end
 
   if verbose == true
-    if nbConvergenceReached != 0
+    if minIndex != 0
       info("Best value found with starting values = $(myGrid[minIndex,:]).")
       info("Best value = $(minValue).")
       info("Minimizer = $(minimizerValue)")
@@ -360,18 +398,7 @@ function msm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Boo
 
     if is_local_optimizer(sMMProblem.options.localOptimizer) == true
 
-    # If using Fminbox option is true
-    #-------------------------------
-    if sMMProblem.options.minBox == true
-
-        lower = create_lower_bound(sMMProblem)
-        upper = create_upper_bound(sMMProblem)
-
-        optimResults = optimize(sMMProblem.objective_function, lower, upper, x0, convert_to_fminbox(sMMProblem.options.localOptimizer), Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
-
-    else
-        optimResults = optimize(sMMProblem.objective_function, x0, convert_to_optim_algo(sMMProblem.options.localOptimizer), Optim.Options(iterations = sMMProblem.options.maxFuncEvals))
-    end
+    optimResults = run_local_optimizer(sMMProblem, x0, verbose = verbose)
 
     # In the future, we may use other local minimizer
     # routines. For the moment, let's return an error
@@ -388,15 +415,64 @@ end
 
 
 """
+  run_local_optimizer(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
 
+Minimize the objective function with the local optimizer (Optim), starting from x0, with at
+most `sMMProblem.options.maxFuncEvals` evaluations of the objective function, finite-difference
+gradients included. Optim's own counter (`f_calls_limit`) does not count the evaluations used by
+finite differences, so the evaluations are counted here, and Optim is stopped by a callback at the
+end of the iteration during which the budget is reached.
+"""
+function run_local_optimizer(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
+
+  nbEvaluations = Ref(0)
+
+  function counted_objective_function(x)
+    nbEvaluations[] += 1
+    sMMProblem.objective_function(x)
+  end
+
+  # Optim stops when the callback returns true
+  budget_reached(state) = nbEvaluations[] >= sMMProblem.options.maxFuncEvals
+
+  # Each iteration evaluates the objective function at least once:
+  # the limit on the number of iterations never binds before the budget
+  optimOptions = Optim.Options(iterations = sMMProblem.options.maxFuncEvals, callback = budget_reached)
+
+  # If using Fminbox option is true
+  #-------------------------------
+  if sMMProblem.options.minBox == true
+
+      lower = create_lower_bound(sMMProblem)
+      upper = create_upper_bound(sMMProblem)
+
+      optimResults = optimize(counted_objective_function, lower, upper, x0, convert_to_fminbox(sMMProblem.options.localOptimizer), optimOptions)
+
+  else
+      optimResults = optimize(counted_objective_function, x0, convert_to_optim_algo(sMMProblem.options.localOptimizer), optimOptions)
+  end
+
+  if verbose == true && nbEvaluations[] >= sMMProblem.options.maxFuncEvals
+    info("Local minimization stopped after $(nbEvaluations[]) evaluations of the objective function (maxFuncEvals = $(sMMProblem.options.maxFuncEvals)).")
+  end
+
+  return optimResults
+
+end
+
+
+"""
+  wrap_msm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
+
+Call msm_localmin. If the local minimization throws an error, log it and return `nothing`.
 """
 function wrap_msm_localmin(sMMProblem::MSMProblem, x0::Array{Float64,1}; verbose::Bool = true)
 
   try
     msm_localmin(sMMProblem, x0, verbose = verbose)
   catch myError
-    info("$(myError)")
-    info("Error with msm_localmin")
+    info("Local minimization from starting value $(x0) failed: $(myError)")
+    nothing
   end
 
 end
@@ -434,7 +510,7 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
   #Each row is a new point and each column is a dimension of this points.
   #---------------------------------------------------------------------
   Validx0 = zeros(numPoints, length(lower_bound))
-  distanceValue = zeros(numPoints) #to store the distance associated to each point
+  distanceValue = zeros(numPoints) #distanceValue[i] is the distance associated to Validx0[i,:]
   nbValidx0Found = 0
 
   # Create many grids (stochastic draws) with many potential points
@@ -451,7 +527,7 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
   elseif sMMProblem.options.gridType == :Sobol
     candidates_starting_values = sobol_sampling(lower_bound, upper_bound, Int(sMMProblem.options.maxTrialsStartingValues*numPoints))
   else
-    err("sMMProblem.options.gridType = $(sMMProblem.options.gridType) is not a valid sampling procedure.")
+    error("sMMProblem.options.gridType = $(sMMProblem.options.gridType) is not a valid sampling procedure.")
   end
 
   # Split the grid into chunks
@@ -471,47 +547,33 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
   #----------------------------------------------------------------------------
   while nbValidx0Found < numPoints
 
-    results = []
     listGridsIndex += 1
 
     if listGridsIndex > sMMProblem.options.maxTrialsStartingValues
       error("Maximum number of attempts reached without success. maxTrialsStartingValues = $(sMMProblem.options.maxTrialsStartingValues)")
     end
 
-    # Use available workers to simulate moments
-    #------------------------------------------
-    @sync for (workerIndex, w) in enumerate(workers())
+    # Use available workers to calculate the distance of each candidate
+    # pmap returns results in the same order as the candidates
+    #------------------------------------------------------------------
+    candidates = [listGrids[listGridsIndex][row, :] for row = 1:size(listGrids[listGridsIndex], 1)]
 
-      @async push!(results, @fetchfrom w sMMProblem.objective_function(listGrids[listGridsIndex][workerIndex, :]))
-
-    end
+    results = pmap(sMMProblem.objective_function, candidates,
+                   on_error = myError -> (info("$(myError)"); sMMProblem.options.penaltyValue))
 
     # Check for convergence
     #----------------------
-    for (workerIndex, w) in enumerate(workers())
+    for (candidateIndex, distance) in enumerate(results)
 
-      # Set penalty value by default
-      distanceValue[workerIndex] = sMMProblem.options.penaltyValue
+      # discard inf and NaN distances, values equal to penaltyValue and values above the threshold
+      if isfinite(distance) == true && distance != sMMProblem.options.penaltyValue && distance < sMMProblem.options.thresholdStartingValue && nbValidx0Found < numPoints
 
-      try
+        nbValidx0Found +=1
 
-        distanceValue[workerIndex] = results[workerIndex]
+        Validx0[nbValidx0Found,:] = candidates[candidateIndex]
+        distanceValue[nbValidx0Found] = distance
+        info("Valid starting value = $(Validx0[nbValidx0Found,:]), distance = $(distance)")
 
-        # discard inf distances, values equal to penaltyValue and values above the threshold
-        if isinf(distanceValue[workerIndex]) == false && distanceValue[workerIndex] != sMMProblem.options.penaltyValue && distanceValue[workerIndex] < sMMProblem.options.thresholdStartingValue
-
-          nbValidx0Found +=1
-
-          if nbValidx0Found <= numPoints
-
-            Validx0[nbValidx0Found,:] = listGrids[listGridsIndex][workerIndex, :]
-            info("Valid starting value = $(Validx0[nbValidx0Found,:]), distance = $(distanceValue[workerIndex])")
-          end
-
-        end
-
-      catch myError
-        info("$(myError)")
       end
 
     end
@@ -521,6 +583,7 @@ function search_starting_values(sMMProblem::MSMProblem, numPoints::Int64; verbos
   # sorting starting values according to distance value (in ascending order)
   p = sortperm(distanceValue) #get the ascending order
   Validx0 = Validx0[p,:]  #re-order rows
+  distanceValue = distanceValue[p] #keep distances aligned with starting values
 
   if verbose == true
     info("Found $(nbValidx0Found) valid starting value(s)")

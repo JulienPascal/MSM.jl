@@ -1,3 +1,44 @@
 *.jld2
 *.bson
-paper/paper_local.pdf
+paper/paper_local.pdf*
+
+# Local Claude Code files (keep out of the public repo)
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+.mcp.json
+PLAN_JULIA1_1_13.md
+J_TEST_DERIVATION.md
+MSM_jl_review.md
+PLAN_MACROMODELLING.md
+
+# Reference papers (copyrighted, local only)
+papers/**/*.pdf
+Manifest.toml
+
+# Jupyter autosave copies
+.ipynb_checkpoints/
+
+# Folder of the economic models: only the notebooks and the Project.toml of their environment are
+# tracked (not the Manifest, the Python environment created by CondaPkg, the data written by the
+# notebooks, or working copies). Add a "!" line for each new notebook to track.
+notebooks/models/*
+!notebooks/models/Project.toml
+!notebooks/models/RBC.ipynb
+# Dynare.jl notebook, in its own environment: everything is tracked except the data written by the
+# notebook, including the Manifest (it records the versions of the dependencies that work with
+# Dynare.jl 0.10.4)
+!notebooks/models/dynare/
+notebooks/models/dynare/fake_data_RBC.csv
+!notebooks/models/dynare/Manifest.toml
+
+# Local helper to re-run all the notebooks, and its logs
+notebooks/run_all_notebooks.sh
+notebooks/run_logs/
+
+# Figures and tables written by the notebooks
+notebooks/**/*.png
+notebooks/**/*.csv
+
+# Documentation built by Documenter.jl (the published site is on the gh-pages branch)
+docs/build/

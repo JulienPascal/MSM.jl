@@ -2,4 +2,4 @@
 
 Contributions welcome!
 
-See [CONTRIBUTING.md](https://github.com/JulienPascal/MSM.jl/blob/main/CONTRIBUTING.md)
+See [CONTRIBUTING.md](https://github.com/JulienPascal/MethodOfSimulatedMoments.jl/blob/main/CONTRIBUTING.md)
