@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Getting started · MethodOfSimulatedMoments.jl</title><meta name="title" content="Getting started · MethodOfSimulatedMoments.jl"/><meta property="og:title" content="Getting started · MethodOfSimulatedMoments.jl"/><meta property="twitter:title" content="Getting started · MethodOfSimulatedMoments.jl"/><meta name="description" content="Documentation for MethodOfSimulatedMoments.jl."/><meta property="og:description" content="Documentation for MethodOfSimulatedMoments.jl."/><meta property="twitter:description" content="Documentation for MethodOfSimulatedMoments.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">MethodOfSimulatedMoments.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../installation/">Installation</a></li><li class="is-active"><a class="tocitem" href>Getting started</a><ul class="internal"><li><a class="tocitem" href="#Example-in-serial"><span>Example in serial</span></a></li><li><a class="tocitem" href="#Example-in-parallel"><span>Example in parallel</span></a></li></ul></li><li><a class="tocitem" href="../functions/">Functions and Types</a></li><li><a class="tocitem" href="../references/">References</a></li><li><a class="tocitem" href="../contributing/">Contributing</a></li><li><a class="tocitem" href="../license/">License</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Getting started</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Getting started</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JulienPascal/MethodOfSimulatedMoments.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JulienPascal/MethodOfSimulatedMoments.jl/blob/main/docs/src/gettingstarted.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Getting-Started"><a class="docs-heading-anchor" href="#Getting-Started">Getting Started</a><a id="Getting-Started-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Started" title="Permalink"></a></h1><p>Our goal is to estimate the parameter vector <span>$\theta$</span> of an economic model by the method of simulated moments. The MSM estimator <span>$\hat{\theta}_{MSM}$</span> minimizes the weighted distance between the empirical moments and the simulated moments, measured by the objective function <span>$g$</span>:</p><p class="math-container">\[\begin{aligned}
+\hat{\theta}_{MSM} &amp;= \underset{\theta \in \Theta}{\arg\min} \; g(\theta), \\[4pt]
+g(\theta) &amp;= \big(m(\theta) - m^{*}\big)^{\top} \, W \, \big(m(\theta) - m^{*}\big),
+\end{aligned}\]</p><p>where <span>$m^{*}$</span> is the vector of empirical moments, <span>$m(\theta)$</span> is the vector of moments calculated with data simulated from the model at the parameter values <span>$\theta$</span>, <span>$W$</span> is a weighting matrix, and <span>$\Theta$</span> is the set of admissible parameter values. Once we have found <span>$\hat{\theta}_{MSM}$</span>, we also want to build confidence intervals for it.</p><p>While this looks like a simple function minimization, many bad things can happen in practice. The function <span>$g$</span> may: (a) fail in some areas of the parameter space, (b) have several local minima, in which a local optimizer may get stuck, (c) be slow to evaluate and hard to parallelize efficiently. <a href="https://github.com/JulienPascal/MethodOfSimulatedMoments.jl">MethodOfSimulatedMoments.jl</a> uses minimization algorithms that are robust to the problems mentioned above. You may choose between two options:</p><ol><li>Global minimization algorithms from <a href="https://github.com/robertfeldt/BlackBoxOptim.jl">BlackBoxOptim</a></li><li>A multistart algorithm using several local optimization routines from <a href="https://github.com/JuliaNLSolvers/Optim.jl">Optim.jl</a></li></ol><p>Let&#39;s follow a learning-by-doing approach. As a warm-up, let&#39;s first estimate parameters in serial. In a second step, we use several workers on a cluster.</p><h2 id="Example-in-serial"><a class="docs-heading-anchor" href="#Example-in-serial">Example in serial</a><a id="Example-in-serial-1"></a><a class="docs-heading-anchor-permalink" href="#Example-in-serial" title="Permalink"></a></h2><p>In a real-world scenario, one would use empirical data. Here, let&#39;s simulate a fake dataset.</p><pre><code class="language-julia hljs">using MethodOfSimulatedMoments
+using DataStructures
+using OrderedCollections
+using Random
+using Distributions
+using Statistics
+using LinearAlgebra
+using Distributed
+using Plots
+Random.seed!(1234)  #for replicability reasons
+T = 100000          #number of periods
+P = 2               #number of explanatory variables
+beta0 = rand(P)     #choose true coefficients by drawing from a uniform distribution on [0,1]
+alpha0 = rand(1)[]  #intercept
+theta0 = 0.0 #coefficient to create serial correlation in the error terms
+
+# Generation of error terms
+# row = individual dimension
+# column = time dimension
+U = zeros(T)
+d = Normal()
+U[1] = rand(d, 1)[] #first error term
+for t = 2:T
+    U[t] = rand(d, 1)[] + theta0*U[t-1]
+end
+
+# Let&#39;s simulate the explanatory variables x_t
+x = zeros(T, P)
+d = Uniform(0, 5)
+for p = 1:P
+    x[:,p] = rand(d, T)
+end
+
+# Let&#39;s calculate the resulting y_t
+y = zeros(T)
+for t=1:T
+    y[t] = alpha0 + x[t,1]*beta0[1] + x[t,2]*beta0[2] + U[t]
+end
+
+# Visualize data
+p1 = scatter(x[1:100,1], y[1:100], xlabel = &quot;x1&quot;, ylabel = &quot;y&quot;, legend=:none, smooth=true)
+p2 = scatter(x[1:100,2], y[1:100], xlabel = &quot;x2&quot;, ylabel = &quot;y&quot;, legend=:none, smooth=true)
+p = plot(p1, p2);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">GKS: cannot open display - headless operation mode active</code></pre><p><img src="../f-fake-data.png" alt/></p><h3 id="Step-1.-Initializing-an-MSMProblem"><a class="docs-heading-anchor" href="#Step-1.-Initializing-an-MSMProblem">Step 1. Initializing an MSMProblem</a><a id="Step-1.-Initializing-an-MSMProblem-1"></a><a class="docs-heading-anchor-permalink" href="#Step-1.-Initializing-an-MSMProblem" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Select a global optimizer (see BlackBoxOptim.jl) and a local minimizer (see Optim.jl):
+myProblem = MSMProblem(options = MSMOptions(maxFuncEvals=10000, globalOptimizer = :dxnes, localOptimizer = :LBFGS));</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">MSMProblem(OrderedDict{String, Vector{Float64}}(), [1.0;;], OrderedDict{String, Vector{Float64}}(), OrderedDict{String, Float64}(), 0.0, MethodOfSimulatedMoments.default_function, MethodOfSimulatedMoments.default_function, MethodOfSimulatedMoments.default_function, MSMOptions(:dxnes, :LBFGS, 10000, &quot;2026-10-07--9h-22m-34s&quot;, false, false, 50, 0, Inf, :LHC, false, 20, Inf), nothing, nothing, nothing, Matrix{Float64}(undef, 0, 0), Matrix{Float64}(undef, 0, 0))</code></pre><h3 id="Step-2.-Set-empirical-moments-and-weight-matrix"><a class="docs-heading-anchor" href="#Step-2.-Set-empirical-moments-and-weight-matrix">Step 2. Set empirical moments and weight matrix</a><a id="Step-2.-Set-empirical-moments-and-weight-matrix-1"></a><a class="docs-heading-anchor-permalink" href="#Step-2.-Set-empirical-moments-and-weight-matrix" title="Permalink"></a></h3><p>Choose the set of empirical moments to match and the weight matrix <span>$W$</span> using the functions <code>set_empirical_moments!</code> and <code>set_weight_matrix!</code>.</p><pre><code class="language-julia hljs">dictEmpiricalMoments = OrderedDict{String,Array{Float64,1}}()
+dictEmpiricalMoments[&quot;mean&quot;] = [mean(y)] #informative on the intercept
+dictEmpiricalMoments[&quot;mean_x1y&quot;] = [mean(x[:,1] .* y)] #informative on betas
+dictEmpiricalMoments[&quot;mean_x2y&quot;] = [mean(x[:,2] .* y)] #informative on betas
+dictEmpiricalMoments[&quot;mean_x1y^2&quot;] = [mean((x[:,1] .* y).^2)] #informative on betas
+dictEmpiricalMoments[&quot;mean_x2y^2&quot;] = [mean((x[:,2] .* y).^2)] #informative on betas
+
+W = Matrix(1.0 .* I(length(dictEmpiricalMoments)))#initialization
+#Special case: diagonal matrix
+#Sum of square percentage deviations from empirical moments
+#(you may choose something else)
+for (indexMoment, k) in enumerate(keys(dictEmpiricalMoments))
+    W[indexMoment,indexMoment] = 1.0/(dictEmpiricalMoments[k][1])^2
+end
+
+set_empirical_moments!(myProblem, dictEmpiricalMoments)
+set_weight_matrix!(myProblem, W)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5×5 Matrix{Float64}:
+ 0.172423  0.0        0.0        0.0          0.0
+ 0.0       0.0223442  0.0        0.0          0.0
+ 0.0       0.0        0.0194769  0.0          0.0
+ 0.0       0.0        0.0        0.000155884  0.0
+ 0.0       0.0        0.0        0.0          0.000117392</code></pre><h3 id="Step-3.-Set-priors"><a class="docs-heading-anchor" href="#Step-3.-Set-priors">Step 3. Set priors</a><a id="Step-3.-Set-priors-1"></a><a class="docs-heading-anchor-permalink" href="#Step-3.-Set-priors" title="Permalink"></a></h3><p>Our &quot;prior&quot; belief regarding the parameter values is to be specified using <code>set_priors!()</code>. It is not a full-fledged prior probability distribution, but simply an initial guess for each parameter, as well as lower and upper bounds:</p><pre><code class="language-julia hljs">dictPriors = OrderedDict{String,Array{Float64,1}}()
+# Of the form: [initial_guess, lower_bound, upper_bound]
+dictPriors[&quot;alpha&quot;] = [0.5, 0.001, 1.0]
+dictPriors[&quot;beta1&quot;] = [0.5, 0.001, 1.0]
+dictPriors[&quot;beta2&quot;] = [0.5, 0.001, 1.0]
+set_priors!(myProblem, dictPriors)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">OrderedDict{String, Vector{Float64}} with 3 entries:
+  &quot;alpha&quot; =&gt; [0.5, 0.001, 1.0]
+  &quot;beta1&quot; =&gt; [0.5, 0.001, 1.0]
+  &quot;beta2&quot; =&gt; [0.5, 0.001, 1.0]</code></pre><h3 id="Step-4.-Specifying-the-function-generating-simulated-moments"><a class="docs-heading-anchor" href="#Step-4.-Specifying-the-function-generating-simulated-moments">Step 4. Specifying the function generating simulated moments</a><a id="Step-4.-Specifying-the-function-generating-simulated-moments-1"></a><a class="docs-heading-anchor-permalink" href="#Step-4.-Specifying-the-function-generating-simulated-moments" title="Permalink"></a></h3><p>The function generating simulated moments must return an <strong>ordered dictionary</strong> containing the <strong>keys of dictEmpiricalMoments</strong>. Use <code>set_simulate_empirical_moments!</code> and <code>construct_objective_function!</code>.</p><p><strong>Remark:</strong> we &quot;freeze&quot; randomness during the minimization step. One way to do that is to generate draws from a Uniform([0,1]) outside of the objective function and to use <a href="https://en.wikipedia.org/wiki/Inverse_transform_sampling">inverse transform sampling</a> to generate draws from a normal distribution. Otherwise, the objective function would be &quot;noisy&quot; and the minimization algorithms would have a hard time finding the global minimum.</p><pre><code class="language-julia hljs"># x[1] corresponds to the intercept; x[2] corresponds to beta1; x[3] corresponds to beta2
+function functionLinearModel(x; uniform_draws::Array{Float64,1}, simX::Array{Float64,2}, nbDraws::Int64 = length(uniform_draws), burnInPerc::Int64 = 0)
+    T = nbDraws
+    P = 2       #number of explanatory variables
+    alpha = x[1]
+    beta = x[2:end]
+    theta = 0.0     #coefficient to create serial correlation in the error terms
+
+    # Creation of error terms
+    # row = individual dimension
+    # column = time dimension
+    U = zeros(T)
+    d = Normal()
+    # Inverse cdf (i.e. quantile)
+    gaussian_draws = quantile.(d, uniform_draws)
+    U[1] = gaussian_draws[1] #first error term
+    for t = 2:T
+        U[t] = gaussian_draws[t] + theta*U[t-1]
+    end
+
+    # Let&#39;s calculate the resulting y_t
+    y = zeros(T)
+    for t=1:T
+        y[t] = alpha + simX[t,1]*beta[1] + simX[t,2]*beta[2] + U[t]
+    end
+
+    # Get rid of the burn-in phase:
+    #------------------------------
+    startT = max(1, Int(nbDraws * (burnInPerc / 100)))
+
+    # Moments:
+    #---------
+    output = OrderedDict{String,Float64}()
+    output[&quot;mean&quot;] = mean(y[startT:nbDraws])
+    output[&quot;mean_x1y&quot;] = mean(simX[startT:nbDraws,1] .* y[startT:nbDraws])
+    output[&quot;mean_x2y&quot;] = mean(simX[startT:nbDraws,2] .* y[startT:nbDraws])
+    output[&quot;mean_x1y^2&quot;] = mean((simX[startT:nbDraws,1] .* y[startT:nbDraws]).^2)
+    output[&quot;mean_x2y^2&quot;] = mean((simX[startT:nbDraws,2] .* y[startT:nbDraws]).^2)
+
+    return output
+end
+
+# Let&#39;s freeze the randomness during the minimization
+d_Uni = Uniform(0,1)
+nbDraws = 100000 #number of draws in the simulated data
+uniform_draws = rand(d_Uni, nbDraws)
+simX = zeros(length(uniform_draws), 2)
+d = Uniform(0, 5)
+for p = 1:2
+  simX[:,p] = rand(d, length(uniform_draws))
+end
+
+# Attach the function parameters -&gt; simulated moments:
+set_simulate_empirical_moments!(myProblem, x -&gt; functionLinearModel(x, uniform_draws = uniform_draws, simX = simX))
+
+# Construct the objective (m-m*)&#39;W(m-m*):
+construct_objective_function!(myProblem)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::MethodOfSimulatedMoments.var&quot;#objective_function_MSM#construct_objective_function!##0&quot;{MSMProblem}) (generic function with 1 method)</code></pre><h3 id="Step-5.-Running-the-optimization"><a class="docs-heading-anchor" href="#Step-5.-Running-the-optimization">Step 5. Running the optimization</a><a id="Step-5.-Running-the-optimization-1"></a><a class="docs-heading-anchor-permalink" href="#Step-5.-Running-the-optimization" title="Permalink"></a></h3><p>Use the global optimization algorithm specified in <code>globalOptimizer</code>:</p><pre><code class="language-julia hljs"># Global optimization:
+msm_optimize!(myProblem, verbose = false)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(Any[6.03008003622917e-7], Any[[0.24361174405780286, 0.3156404165141131, 0.5508082361986135]])</code></pre><h3 id="Step-6.-Analyzing-the-results"><a class="docs-heading-anchor" href="#Step-6.-Analyzing-the-results">Step 6. Analyzing the results</a><a id="Step-6.-Analyzing-the-results-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6.-Analyzing-the-results" title="Permalink"></a></h3><h4 id="Step-6.A.-Point-estimates"><a class="docs-heading-anchor" href="#Step-6.A.-Point-estimates">Step 6.A. Point estimates</a><a id="Step-6.A.-Point-estimates-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6.A.-Point-estimates" title="Permalink"></a></h4><pre><code class="language-julia hljs">minimizer = msm_minimizer(myProblem)
+minimum_val = msm_minimum(myProblem)
+println(&quot;Minimum objective function = $(minimum_val)&quot;)
+println(&quot;Estimated value for alpha = $(minimizer[1]). True value for alpha = $(alpha0[1])&quot;)
+println(&quot;Estimated value for beta1 = $(minimizer[2]). True value for beta1 = $(beta0[1])&quot;)
+println(&quot;Estimated value for beta2 = $(minimizer[3]). True value for beta2 = $(beta0[2])&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Minimum objective function = 6.03008003622917e-7
+Estimated value for alpha = 0.24361174405780286. True value for alpha = 0.21858665481883066
+Estimated value for beta1 = 0.3156404165141131. True value for beta1 = 0.32597672886359486
+Estimated value for beta2 = 0.5508082361986135. True value for beta2 = 0.5490511363155669</code></pre><h4 id="Step-6.B.-Inference"><a class="docs-heading-anchor" href="#Step-6.B.-Inference">Step 6.B. Inference</a><a id="Step-6.B.-Inference-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6.B.-Inference" title="Permalink"></a></h4><h5 id="Estimation-of-\\Sigma_0"><a class="docs-heading-anchor" href="#Estimation-of-\\Sigma_0">Estimation of <span>$\Sigma_0$</span></a><a id="Estimation-of-\\Sigma_0-1"></a><a class="docs-heading-anchor-permalink" href="#Estimation-of-\\Sigma_0" title="Permalink"></a></h5><p>The precision of the estimates depends on <span>$\Sigma_0$</span>, the (long-run) variance-covariance matrix of the empirical moments:</p><p class="math-container">\[\sqrt{T} \, \big(m^{*} - m_0\big) \xrightarrow{d} \mathcal{N}\big(0, \Sigma_0\big),\]</p><p>where <span>$T$</span> is the number of periods in the empirical data and <span>$m_0$</span> is the true value of the moments. Each empirical moment is an average over periods (for instance, the average of <span>$x_{1t} y_t$</span>), so <span>$\Sigma_0$</span> can be estimated from the series being averaged. Here, we know that the error terms are not serially correlated (the serial correlation coefficient is set to 0 in the code above), so <span>$\Sigma_0$</span> is simply the variance-covariance matrix of these series. In the presence of serial correlation, a heteroskedasticity and autocorrelation consistent (HAC) estimator would be needed, such as the Newey-West estimator <code>cov_NW</code>.</p><pre><code class="language-julia hljs"># Empirical Series
+#-----------------
+X = zeros(T, 5)
+X[:,1] = y
+X[:,2] = (x[:,1] .* y)
+X[:,3] = (x[:,2] .* y)
+X[:,4] = (x[:,1] .* y).^2
+X[:,5] = (x[:,2] .* y).^2
+Sigma0 = cov(X)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5×5 Matrix{Float64}:
+   1.84038    6.21563    7.35346    112.463    139.716
+   6.21563   35.3399    23.179      674.692    471.601
+   7.35346   23.179     40.9529     456.958    821.615
+ 112.463    674.692    456.958    14771.1    10243.8
+ 139.716    471.601    821.615    10243.8    18700.0</code></pre><h5 id="Asymptotic-variance"><a class="docs-heading-anchor" href="#Asymptotic-variance">Asymptotic variance</a><a id="Asymptotic-variance-1"></a><a class="docs-heading-anchor-permalink" href="#Asymptotic-variance" title="Permalink"></a></h5><h6 id="Theory"><a class="docs-heading-anchor" href="#Theory">Theory</a><a id="Theory-1"></a><a class="docs-heading-anchor-permalink" href="#Theory" title="Permalink"></a></h6><p>The asymptotic variance of the MSM estimator is given by the usual <strong>GMM sandwich formula</strong>, multiplied by <span>$(1 + \tau)$</span> to take into account the noise coming from the simulation:</p><p class="math-container">\[\sqrt{T} \, \big(\hat{\theta}_{MSM} - \theta_0\big) \xrightarrow{d} \mathcal{N}\big(0, V\big),
+\qquad
+V = (1 + \tau) \, \big(D^{\top} W D\big)^{-1} D^{\top} W \, \Sigma_0 \, W D \, \big(D^{\top} W D\big)^{-1},\]</p><p>where <span>$\theta_0$</span> is the true value of the parameters, <span>$D = \partial m(\theta) / \partial \theta^{\top}$</span> is the Jacobian matrix of the simulated moments with respect to the parameters (calculated by finite differences at <span>$\hat{\theta}_{MSM}$</span>, see <code>calculate_D</code>), and <span>$\tau = T / S$</span> is the ratio of the number of periods in the empirical data, <span>$T$</span>, to the number of periods in the simulated data, <span>$S$</span>. The standard error of the <span>$i$</span>-th parameter is <span>$\sqrt{V_{ii} / T}$</span>.</p><p>The factor <span>$(1 + \tau)$</span> is the cost of simulating the moments instead of calculating them exactly: with <span>$S = T$</span>, as in this example, simulation doubles the asymptotic variance; with a long simulated sample (<span>$S \gg T$</span>), the MSM estimator is almost as precise as the GMM estimator. With the optimal weighting matrix <span>$W = \Sigma_0^{-1}$</span>, the formula simplifies to <span>$V = (1 + \tau) \, \big(D^{\top} \Sigma_0^{-1} D\big)^{-1}$</span>.</p><p>This formula applies when the moments are unconditional averages over time, and when the simulated data are drawn independently of the empirical data. See <a href="https://doi.org/10.1016/0304-4076(91)90098-X">Lee and Ingram (1991)</a>, <a href="https://www.jstor.org/stable/2951768?seq=1">Duffie and Singleton (1993)</a> and Gouriéroux and Monfort (1996) for details.</p><h6 id="Practice"><a class="docs-heading-anchor" href="#Practice">Practice</a><a id="Practice-1"></a><a class="docs-heading-anchor-permalink" href="#Practice" title="Permalink"></a></h6><p>Calculating the asymptotic variance using MethodOfSimulatedMoments.jl is done in two steps:</p><ul><li>setting the value of <span>$\Sigma_0$</span> using the function <code>set_Sigma0!</code>;</li><li>calculating the asymptotic variance <span>$V$</span> using the function <code>calculate_Avar!</code>, with <span>$\tau = T / S$</span>.</li></ul><pre><code class="language-julia hljs">set_Sigma0!(myProblem, Sigma0)
+calculate_Avar!(myProblem, minimizer, tau = T/nbDraws) # nbDraws = number of draws in the simulated data</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3×3 Symmetric{Float64, Matrix{Float64}}:
+ 33.951    -7.96007   -5.04249
+ -7.96007   4.249     -0.942198
+ -5.04249  -0.942198   3.40523</code></pre><h4 id="Step-6.C.-Summarizing-the-results"><a class="docs-heading-anchor" href="#Step-6.C.-Summarizing-the-results">Step 6.C. Summarizing the results</a><a id="Step-6.C.-Summarizing-the-results-1"></a><a class="docs-heading-anchor-permalink" href="#Step-6.C.-Summarizing-the-results" title="Permalink"></a></h4><p>Once the asymptotic variance has been calculated, a summary table can be obtained using the function <code>summary_table</code>. This function has four inputs:</p><ol><li>an MSMProblem;</li><li>the minimizer of the objective function;</li><li>the length of the empirical sample, <span>$T$</span>;</li><li>the significance level <span>$\alpha$</span> of the test <strong>H0:</strong> <span>$\theta_i = 0$</span> against <strong>H1:</strong> <span>$\theta_i \neq 0$</span> (the confidence intervals have a confidence level of <span>$1 - \alpha$</span>).</li></ol><pre><code class="language-julia hljs">df = summary_table(myProblem, minimizer, T, 0.05)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">─────────────────────────────────────────────────────────────
+       Coef.  Std. Error      t  Pr(&gt;|t|)  CI Lower  CI Upper
+─────────────────────────────────────────────────────────────
+x1  0.243612  0.0184258   13.22    &lt;1e-39  0.207498  0.279726
+x2  0.31564   0.00651844  48.42    &lt;1e-99  0.302865  0.328416
+x3  0.550808  0.00583543  94.39    &lt;1e-99  0.539371  0.562245
+─────────────────────────────────────────────────────────────</code></pre><h3 id="Step-7.-Identification-checks-and-J-test"><a class="docs-heading-anchor" href="#Step-7.-Identification-checks-and-J-test">Step 7. Identification checks and J-test</a><a id="Step-7.-Identification-checks-and-J-test-1"></a><a class="docs-heading-anchor-permalink" href="#Step-7.-Identification-checks-and-J-test" title="Permalink"></a></h3><p><strong>Local</strong> identification requires the Jacobian matrix <span>$D$</span> of the function <span>$\theta \mapsto m(\theta)$</span> to have <strong>full column rank</strong> in a neighborhood of the solution:</p><pre><code class="language-julia hljs">D = calculate_D(myProblem, minimizer)
+println(&quot;number of parameters: $(size(D,2))&quot;)
+println(&quot;rank of D is: $(rank(D))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">number of parameters: 3
+rank of D is: 3</code></pre><p>Local identification can also be visually checked by inspecting slices of the objective function in a neighborhood of the estimated value:</p><pre><code class="language-julia hljs">vXGrid, vYGrid = msm_slices(myProblem, minimizer, nbPoints = 7);
+
+using LaTeXStrings;
+p1 = plot(vXGrid[:, 1],vYGrid[:, 1],title = L&quot;\alpha&quot;, label = &quot;&quot;,linewidth = 3, xrotation = 45);
+plot!(p1, [minimizer[1]], seriestype = :vline, label = &quot;&quot;,linewidth = 1);
+p2 = plot(vXGrid[:, 2],vYGrid[:, 2],title = L&quot;\beta_1&quot;, label = &quot;&quot;,linewidth = 3, xrotation = 45);
+plot!(p2, [minimizer[2]], seriestype = :vline, label = &quot;&quot;,linewidth = 1);
+p3 = plot(vXGrid[:, 3],vYGrid[:, 3],title = L&quot;\beta_2&quot;, label = &quot;&quot;,linewidth = 3, xrotation = 45);
+plot!(p3, [minimizer[3]], seriestype = :vline, label = &quot;&quot;,linewidth = 1);
+plot_combined = plot(p1, p2, p3);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: slicing along alpha
+[ Info: slicing along beta1
+[ Info: slicing along beta2</code></pre><p><img src="../slices.png" alt/></p><h4 id="J-test-of-the-over-identifying-restrictions"><a class="docs-heading-anchor" href="#J-test-of-the-over-identifying-restrictions">J-test of the over-identifying restrictions</a><a id="J-test-of-the-over-identifying-restrictions-1"></a><a class="docs-heading-anchor-permalink" href="#J-test-of-the-over-identifying-restrictions" title="Permalink"></a></h4><p>With more moments (<span>$k = 5$</span>) than parameters (<span>$p = 3$</span>), the model is over-identified, and we can test whether all the moments are matched, up to sampling and simulation noise. Under the null hypothesis that the model is correctly specified, the J statistic follows a chi-squared distribution with <span>$k - p$</span> degrees of freedom:</p><p class="math-container">\[J = \frac{T}{1 + \tau} \, \big(m(\hat{\theta}_{MSM}) - m^{*}\big)^{\top} \, \Sigma_0^{-1} \, \big(m(\hat{\theta}_{MSM}) - m^{*}\big) \xrightarrow{d} \chi^2(k - p),\]</p><p>where the factor <span>$1 / (1 + \tau)$</span> accounts for the simulation noise (Lee and Ingram, 1991). This result requires the <strong>optimal weighting matrix</strong> <span>$W = \Sigma_0^{-1}$</span>, which is not the matrix used so far. We therefore estimate the parameters again with <span>$W = \Sigma_0^{-1}$</span>, starting from the previous estimate (the usual two-step procedure), and then use the function <code>J_test</code>. Its inputs are the MSMProblem, the estimate, the number of periods in the empirical data <span>$T$</span> and in the simulated data <span>$S$</span>, and the significance level of the test. It returns the J statistic and the critical value above which the model is rejected:</p><pre><code class="language-julia hljs"># Second step: optimal weighting matrix, and a local minimization from the first-step estimate
+set_weight_matrix!(myProblem, inv(Sigma0))
+construct_objective_function!(myProblem)
+msm_refine_globalmin!(myProblem, verbose = false)
+minimizer_optimal = msm_local_minimizer(myProblem)
+
+J, criticalValue = J_test(myProblem, minimizer_optimal, T, nbDraws, 0.05)
+println(&quot;Estimates with the optimal weighting matrix = $(minimizer_optimal)&quot;)
+println(&quot;J statistic = $(J). Critical value at 5% = $(criticalValue)&quot;)
+println(&quot;The model is $(J &gt; criticalValue ? &quot;rejected&quot; : &quot;not rejected&quot;) at the 5% level&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Estimates with the optimal weighting matrix = [0.24221135187541482, 0.3163637746146608, 0.5495085146860182]
+J statistic = 0.5100275982903257. Critical value at 5% = 5.99146454710798
+The model is not rejected at the 5% level</code></pre><h2 id="Example-in-parallel"><a class="docs-heading-anchor" href="#Example-in-parallel">Example in parallel</a><a id="Example-in-parallel-1"></a><a class="docs-heading-anchor-permalink" href="#Example-in-parallel" title="Permalink"></a></h2><p>To use the package on a cluster, one must make sure that empirical moments, priors and the weight matrix are defined for each worker. This can be done using <code>@everywhere begin end</code> blocks, or by using <a href="https://github.com/ChrisRackauckas/ParallelDataTransfer.jl">ParallelDataTransfer.jl</a>. The function returning simulated moments must also be defined <code>@everywhere</code>. See the file <a href="https://github.com/JulienPascal/MethodOfSimulatedMoments.jl/blob/main/notebooks/LinearModelCluster.jl">LinearModelCluster.jl</a> for details.</p><h3 id="Option-1:-Global-parallel-optimization"><a class="docs-heading-anchor" href="#Option-1:-Global-parallel-optimization">Option 1: Global parallel optimization</a><a id="Option-1:-Global-parallel-optimization-1"></a><a class="docs-heading-anchor-permalink" href="#Option-1:-Global-parallel-optimization" title="Permalink"></a></h3><p>Choose a global optimizer that <strong>supports parallel evaluations</strong>: the natural evolution strategies <code>:dxnes</code> (the default), <code>:xnes</code> and <code>:separable_nes</code>. See the <a href="https://github.com/robertfeldt/BlackBoxOptim.jl">documentation</a> for BlackBoxOptim.jl.</p><p>These methods evaluate <code>lambda</code> points per generation, in parallel, and start the next generation when all of them are done. By default (<code>MSMOptions(lambda = 0)</code>), <code>lambda</code> is BlackBoxOptim&#39;s default for the number of parameters, rounded up to a multiple of <code>nworkers()</code>, so that no worker is idle (see <code>nes_lambda</code>). With <code>verbose = true</code>, <code>msm_optimize!</code> logs the value used, and the number of generations it implies. <code>maxFuncEvals</code> counts evaluations: with more workers, <code>lambda</code> is larger and there are fewer generations for the same <code>maxFuncEvals</code>, so scale <code>maxFuncEvals</code> with <code>lambda</code> (about <code>lambda</code> times the number of generations you want).</p><p>Differential evolution (e.g. <code>:adaptive_de_rand_1_bin_radiuslimited</code>) evaluates about one new point at a time: it gets essentially no speed-up from several workers. <code>populationSize</code> only applies to differential evolution.</p><pre><code class="language-julia hljs">msm_optimize!(myProblem, verbose = false)
+minimizer = msm_minimizer(myProblem)
+minimum_val = msm_minimum(myProblem)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1.0200551965796565e-5</code></pre><h3 id="Option-2:-Multistart-algorithm"><a class="docs-heading-anchor" href="#Option-2:-Multistart-algorithm">Option 2: Multistart algorithm</a><a id="Option-2:-Multistart-algorithm-1"></a><a class="docs-heading-anchor-permalink" href="#Option-2:-Multistart-algorithm" title="Permalink"></a></h3><p>The function <code>msm_multistart!</code> proceeds in two steps:</p><ol><li>It searches for starting values for which the model converges.</li><li>Several local optimization algorithms (specified with <code>localOptimizer</code>) are started in parallel using promising starting values from step 1.</li></ol><p>The &quot;global&quot; minimum is the minimum of the local minima:</p><pre><code class="language-julia hljs">msm_multistart!(myProblem, nums = nworkers(), verbose = false)
+minimizer_multistart = msm_multistart_minimizer(myProblem)
+minimum_multistart = msm_multistart_minimum(myProblem)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1.0200551965802599e-5</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../installation/">« Installation</a><a class="docs-footer-nextpage" href="../functions/">Functions and Types »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Wednesday 7 October 2026 09:24">Wednesday 7 October 2026</span>. Using Julia version 1.13.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
