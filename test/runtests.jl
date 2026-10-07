@@ -935,8 +935,11 @@ end
     @testset "Testing minimizing a function that may fail" begin
 
               # Fixed seed: the function fails on 40% of the search interval, and on rare draws
-              # every point evaluated by the global optimizer fell there (all with the same penalty)
-              @everywhere Random.seed!(1234)
+              # (about 0.4%) dxnes moves into that region and stays there, all its points getting
+              # the same penalty value. A plain Random.seed! is needed: @everywhere runs in another
+              # task, which has its own random number generator. The tasks it starts later derive
+              # their generator from this one, so the draws of this test set are reproducible.
+              Random.seed!(1234)
 
               #---------------------------------------------------
               tol2dMean = 0.5
