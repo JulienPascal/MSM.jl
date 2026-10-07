@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [0.2.0] - 2026-10-06
+## [0.2.0] - 2026-10-07
 
 Starting with the branch `julia_1.13`, the bug fixes and the update to Julia
 1.13 were made with the assistance of Claude Opus 5.5 (Anthropic), used through
@@ -46,18 +46,19 @@ Claude Code.
   so scale `maxFuncEvals` with `lambda`. With one worker, nothing changes.
 - `is_nes_optimizer(s::Symbol)`.
 - A notebook estimating a small DSGE model (a real business cycle model written
-  with MacroModelling.jl): `notebooks/models/RBC.ipynb`, with its own environment.
-  It recovers known parameters from simulated data, and checks the coverage of
-  the confidence intervals and the size of the J-test in a Monte Carlo
-  experiment.
+  with MacroModelling.jl): `notebooks/models/RBC.ipynb`, with its own
+  environment. It recovers known parameters from simulated data, and checks the
+  coverage of the confidence intervals and the size of the J-test in a Monte
+  Carlo experiment.
 - A notebook estimating the same model with Dynare.jl instead of
   MacroModelling.jl to solve and simulate it:
   `notebooks/models/dynare/RBCDynare.ipynb`, with its own environment and the
-  model file `RBC.mod`. Each worker loads the model in its own temporary folder,
-  because Dynare.jl writes files next to the model file. An optional last
-  section runs the `method_of_moments` command of Dynare 6 in Octave (as an
-  external program, with the model file `RBC_mom.mod`) and compares its
-  estimates with those of MethodOfSimulatedMoments.jl. It is skipped when Octave is not installed.
+  model file `RBC.mod`. Each worker loads the model in its own temporary
+  folder, because Dynare.jl writes files next to the model file. An optional
+  last section runs the `method_of_moments` command of Dynare 6 in Octave (as
+  an external program, with the model file `RBC_mom.mod`) and compares its
+  estimates with those of MethodOfSimulatedMoments.jl. It is skipped when
+  Octave is not installed.
 
 ### Changed
 
@@ -94,27 +95,28 @@ Claude Code.
 - `msm_multistart!`: if none of the local minimizations converged, the best
   finite local minimum is now used, with a message saying so. Previously, no
   result was stored.
-- MethodOfSimulatedMoments.jl now requires **Julia 1.10 or later** (1.10 is the current long-term
-  support release). It is tested on Julia 1.13.
+- MethodOfSimulatedMoments.jl now requires **Julia 1.10 or later** (1.10 is the
+  current long-term support release). It is tested on Julia 1.13.
 - `Project.toml` now declares compatibility bounds for every dependency, so
   that a future breaking release of a dependency cannot be installed with
-  MethodOfSimulatedMoments.jl. Only the current major versions are allowed, in particular
-  DataFrames 1 and BlackBoxOptim 0.6 (with the exceptions below).
-- Both **Optim 1 (1.13 or later) and Optim 2** are allowed, so that MethodOfSimulatedMoments.jl can
-  be installed next to packages that still require Optim 1 (e.g.
-  MacroModelling.jl). The test suite passes with Optim 1.13.3 and Optim 2.3.2.
-  The results of local minimizations can differ slightly between the two.
-  Known issue: with Optim 2 only, `localOptimizer = :AcceleratedGradientDescent`
-  can diverge (it does on the Rosenbrock function; it converges with Optim 1).
-  Prefer `:LBFGS` (the default).
+  MethodOfSimulatedMoments.jl. Only the current major versions are allowed, in
+  particular DataFrames 1 and BlackBoxOptim 0.6 (with the exceptions below).
+- Both **Optim 1 (1.13 or later) and Optim 2** are allowed, so that
+  MethodOfSimulatedMoments.jl can be installed next to packages that still
+  require Optim 1 (e.g. MacroModelling.jl). The test suite passes with Optim
+  1.13.3 and Optim 2.3.2. The results of local minimizations can differ
+  slightly between the two. Known issue: with Optim 2 only,
+  `localOptimizer = :AcceleratedGradientDescent` can diverge (it does on the
+  Rosenbrock function; it converges with Optim 1). Prefer `:LBFGS` (the
+  default).
 - Both **OrderedCollections 1 and 2** are allowed, for the same reason:
   MacroModelling.jl's Bayesian estimation requires Turing.jl 0.30 to 0.45,
   whose dependencies require OrderedCollections 1. The test suite passes with
   OrderedCollections 1.8.2 (with Optim 1.13.3) and 2.0.1.
-- Both **CSV 0.10 and CSV 1** are allowed, so that MethodOfSimulatedMoments.jl can be installed next
-  to Dynare.jl (version 0.10.4 requires CSV 0.10). MethodOfSimulatedMoments.jl only uses
-  `CSV.File`, which is the same in both. The test suite passes with CSV 0.10.17
-  and 1.1.0.
+- Both **CSV 0.10 and CSV 1** are allowed, so that MethodOfSimulatedMoments.jl
+  can be installed next to Dynare.jl (version 0.10.4 requires CSV 0.10).
+  MethodOfSimulatedMoments.jl only uses `CSV.File`, which is the same in both.
+  The test suite passes with CSV 0.10.17 and 1.1.0.
 - `msm_minimizer`, `msm_minimum`, `msm_local_minimizer` and `msm_local_minimum`
   now throw an informative error when called before the corresponding
   optimization (or after `msm_multistart!` if no local minimization returned a
@@ -122,11 +124,14 @@ Claude Code.
   They previously returned the result of a dummy optimization of the
   Rosenbrock function. The fields `bbSetup`, `bbResults` and `optimResults` of
   `MSMProblem` are now `nothing` until they are set.
-- Loading MethodOfSimulatedMoments.jl no longer runs a BlackBoxOptim and an Optim optimization at
-  precompile time (they were only used to create those dummy default values).
+- Loading MethodOfSimulatedMoments.jl no longer runs a BlackBoxOptim and an
+  Optim optimization at precompile time (they were only used to create those
+  dummy default values).
 - `convert_to_optim_algo` and `convert_to_fminbox` no longer use
   `eval(Meta.parse(...))`, and throw an error for names that are not supported
   local optimizers.
+
+### Fixed
 
 **These fixes change numerical results.** If you used `J_test`,
 `calculate_pvalue`, `calculate_CI` or `summary_table`, re-run your inference.
@@ -136,12 +141,12 @@ Claude Code.
   quantiles are the square roots of the correct ones, so the test rejected far
   too often.
 - `J_test`: the statistic is now `tData/(1 + tau)*g'Wg`, with
-  `tau = tData/tSimData`, following Lee and Ingram (1991, pp. 202 and 204). It
-  was `tData*(1 + tau)*g'Wg`, as printed in Ruge-Murcia (2012, eq. 13, probably a typo), which
-  overstates J by a factor `(1 + tau)^2`: 4 when the simulated and observed
-  series have the same length. Combined with the previous point, a correctly
-  specified model was rejected 18% to 48% of the time at the 5% level in
-  simulations, instead of 5%. The test still requires `W` to converge to
+  `tau = tData/tSimData`, following Lee and Ingram (1991, pp. 202 and 204). It was
+  `tData*(1 + tau)*g'Wg`, as printed in Ruge-Murcia (2012, eq. 13, probably a
+  typo), which overstates J by a factor `(1 + tau)^2`: 4 when the simulated and
+  observed series have the same length. Combined with the previous point, a
+  correctly specified model was rejected 18% to 48% of the time at the 5% level
+  in simulations, instead of 5%. The test still requires `W` to converge to
   `inv(Sigma0)`.
 - `calculate_pvalue` and the `Pr(>|t|)` column of `summary_table`: the
   two-sided p-value is now `2*ccdf(Normal(), abs(t))`. It was wrong (between 1
@@ -151,13 +156,11 @@ Claude Code.
   `alpha = 0.05`, it previously reported a 90% confidence interval instead of a
   95% one.
 
-### Fixed
-
 - `msm_optimize!` no longer prints a leftover debug message ("hello") on
   every worker.
 - `msm_optimize!(...; verbose = false)` now hides BlackBoxOptim's progress
-  trace and MSM's messages. The `verbose` keyword was previously ignored.
-  `set_global_optimizer!` and `set_bbSetup!` accept the same keyword.
+  trace and the package's messages. The `verbose` keyword was previously
+  ignored. `set_global_optimizer!` and `set_bbSetup!` accept the same keyword.
 - `msm_multistart!` with 2 or more workers and without user-provided `x0`:
   candidate starting values were matched with the distances of *other*
   candidates, because results were collected in the order workers finished.
@@ -215,10 +218,10 @@ Claude Code.
 ### Removed
 
 - The empty file `src/api.jl`.
-
 - Unused dependencies GLM, PlotlyJS and ParallelDataTransfer. The example
   notebooks still use GLM and ParallelDataTransfer: add them to the
   environment you run the notebooks in.
 - Unused dependencies DataStructures, Logging, Pkg and SharedArrays.
   `OrderedDict` still comes from OrderedCollections. If your own code used
-  DataStructures through MethodOfSimulatedMoments.jl, add it to your environment.
+  DataStructures through MethodOfSimulatedMoments.jl, add it to your
+  environment.
