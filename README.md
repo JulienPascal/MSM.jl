@@ -1,9 +1,9 @@
 # MethodOfSimulatedMoments.jl
 
 
-| **Documentation**  | **Build Status** | **Coverage** |
-|:-:|:-:|:-:|
-| [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://JulienPascal.github.io/MethodOfSimulatedMoments.jl/dev)|[![CI](https://github.com/JulienPascal/MethodOfSimulatedMoments.jl/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/JulienPascal/MethodOfSimulatedMoments.jl/actions/workflows/ci.yml?query=branch%3Amain)|[![codecov](https://codecov.io/gh/JulienPascal/MethodOfSimulatedMoments.jl/graph/badge.svg?branch=main)](https://codecov.io/gh/JulienPascal/MethodOfSimulatedMoments.jl)|
+| **Documentation**  | **Build Status** | **Coverage** | **Citation** |
+|:-:|:-:|:-:|:-:|
+| [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://JulienPascal.github.io/MethodOfSimulatedMoments.jl/stable) [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://JulienPascal.github.io/MethodOfSimulatedMoments.jl/dev)|[![CI](https://github.com/JulienPascal/MethodOfSimulatedMoments.jl/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/JulienPascal/MethodOfSimulatedMoments.jl/actions/workflows/ci.yml?query=branch%3Amain)|[![codecov](https://codecov.io/gh/JulienPascal/MethodOfSimulatedMoments.jl/graph/badge.svg?branch=main)](https://codecov.io/gh/JulienPascal/MethodOfSimulatedMoments.jl)|[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23208575.svg)](https://doi.org/10.5281/zenodo.23208575)|
 
 
 `MethodOfSimulatedMoments.jl` is a package designed to facilitate the estimation of economic models
