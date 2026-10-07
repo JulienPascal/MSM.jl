@@ -934,6 +934,10 @@ end
 
     @testset "Testing minimizing a function that may fail" begin
 
+              # Fixed seed: the function fails on 40% of the search interval, and on rare draws
+              # every point evaluated by the global optimizer fell there (all with the same penalty)
+              @everywhere Random.seed!(1234)
+
               #---------------------------------------------------
               tol2dMean = 0.5
               @everywhere d_Uni = Uniform(0,1)
